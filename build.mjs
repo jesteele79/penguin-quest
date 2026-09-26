@@ -64,7 +64,7 @@ fs.writeFileSync('dist/pwa/manifest.webmanifest', JSON.stringify({
   description: 'An open-world 3D math adventure for grades 4 to 6.',
   start_url: './',
   scope: './',
-  display: 'fullscreen',
+  display: 'standalone',
   orientation: 'landscape',
   background_color: '#0b1033',
   theme_color: '#0b1033',

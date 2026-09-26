@@ -75,7 +75,8 @@ export class TitleScreen extends Screen {
     if (d) {
       const crystals = Object.values(d.crystals).filter(Boolean).length;
       const ch = chapterNumber(d);
-      menu.append(btn(`<span class="big">Continue</span><span class="small">${escapeHTML(d.profile.name)} · ${ch === 0 ? 'Prologue' : `Chapter ${ch}`} · ${crystals} of 5 crystals</span>`, () => this.onContinue(), 'primary title-btn', { autofocus: true }));
+      const where = d.festival ? 'Aurora Legend' : ch === 0 ? 'Prologue' : `Chapter ${ch}`;
+      menu.append(btn(`<span class="big">Continue</span><span class="small">${escapeHTML(d.profile.name)} · ${where} · ${crystals} of 5 crystals</span>`, () => this.onContinue(), 'primary title-btn', { autofocus: true }));
       menu.append(btn('<span class="big">New Adventure</span>', () => this.confirmNew(), 'title-btn'));
     } else {
       menu.append(btn('<span class="big">Start Adventure</span>', () => this.onNew(), 'primary title-btn', { autofocus: true }));

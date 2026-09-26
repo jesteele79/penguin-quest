@@ -104,6 +104,7 @@ export class QuestEngine {
     const q = this.st(id);
     if (!q || q.done) return;
     const step = def.steps[q.step];
+    if (!step) return;
     if (step.shard) this.addShard(def.region);
     if (step.reward) this.giveReward(step.reward);
     q.step += 1;
@@ -494,7 +495,8 @@ export class QuestEngine {
   }
 
   crystalShot(base) {
-    return orbitShot(base, { radius: 10, height: 4, lookUp: 3.2, shift: 3.4, prefer: angleToPlayer(base) });
+    // A quarter turn from the player's side, so the player stands beside the crystal instead of in front of it.
+    return orbitShot(base, { radius: 10, height: 4, lookUp: 3.2, shift: 3.4, prefer: angleToPlayer(base) + Math.PI / 2 });
   }
 
   restoreCrystal(region, questId) {
