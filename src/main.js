@@ -213,6 +213,8 @@ function boot() {
 
   window.addEventListener('resize', () => quality.resize(window.innerWidth, window.innerHeight));
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.inGame) G.saveNow(); });
+  // When hosted as a claude.ai artifact, an update reloads open copies: save first so no progress is lost.
+  window.claude?.hot?.snapshot?.(() => { if (G.inGame) G.saveNow(); return {}; });
   const wake = () => { audio.init(); audio.setVolumes(G.save.data.settings.music, G.save.data.settings.sfx); if (!G.inGame) audio.setMood('title'); };
   window.addEventListener('pointerdown', wake, { once: false });
   window.addEventListener('keydown', wake, { once: false });
