@@ -59,7 +59,14 @@ export class Tutor {
   }
 
   pickSkill(domain, { skills, exclude } = {}) {
-    const pool = skills ? skills.map((id) => SKILLS[id]) : this.domainSkills(domain, (s) => !exclude || !exclude.includes(s.id));
+    let pool;
+    if (skills) {
+      const all = skills.map((id) => SKILLS[id]).filter(Boolean);
+      const open = all.filter((s) => this.isUnlocked(s));
+      pool = open.length ? open : all.sort((a, b) => a.grade - b.grade).slice(0, 1);
+    } else {
+      pool = this.domainSkills(domain, (s) => !exclude || !exclude.includes(s.id));
+    }
     if (!pool.length) return null;
     const qn = this.state.qn;
     const due = this.state.retry.find((r) => r.due <= qn && pool.some((s) => s.id === r.skill));
@@ -95,6 +102,7 @@ export class Tutor {
       if (!skill) break;
       let tier = this.tierFor(skill.id);
       if (opts.maxTier) tier = Math.min(tier, opts.maxTier);
+      if (opts.minTier) tier = Math.max(tier, opts.minTier);
       const p = skill.gen(this.rng, tier);
       if (format === 'input' && p.format !== 'input') continue;
       if (format === 'choice' && (!p.choices || p.choices.length < (opts.minChoices ?? 3))) continue;

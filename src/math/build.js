@@ -20,7 +20,7 @@ export function showValue(answer) {
       const v = answer.value;
       if (answer.form) return fracMarkup(v, { mixed: answer.form === 'mixed' });
       const improper = fracMarkup(v);
-      const mixed = fracMarkup(v, { mixed: true });
+      const mixed = fracMarkup(v.reduced, { mixed: true });
       return improper === mixed ? improper : `${improper} = ${mixed}`;
     }
     case 'rem': return answer.r ? `${fmtNum(answer.q)} R${answer.r}` : fmtNum(answer.q);

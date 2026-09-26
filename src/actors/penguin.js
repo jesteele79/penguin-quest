@@ -251,6 +251,34 @@ export class Penguin {
     if (h) this.hatSlot.add(h);
   }
 
+  // A cosmetic sled that appears under the belly while sliding.
+  setSled(kind, color = 0x9a6a44) {
+    if (this.sled) { this.root.remove(this.sled); this.sled = null; }
+    if (!kind) return;
+    const g = new THREE.Group();
+    const mat = solid(color);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 2.5), mat);
+    board.position.y = 0.2;
+    const curl = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 6, 12, Math.PI), mat);
+    curl.position.set(0, 0.55, 1.25);
+    curl.rotation.y = Math.PI / 2;
+    g.add(board, curl);
+    for (const s of [-1, 1]) {
+      const runner = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 2.6), solid(kind === 'comet' ? 0xffffff : 0x3a3a48));
+      runner.position.set(s * 0.55, 0.06, 0.05);
+      g.add(runner);
+    }
+    if (kind === 'comet') {
+      const glow = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.2, 10), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+      glow.rotation.x = -Math.PI / 2;
+      glow.position.set(0, 0.3, -2.3);
+      g.add(glow);
+    }
+    g.visible = false;
+    this.sled = g;
+    this.root.add(g);
+  }
+
   setScarf(color, texKind) {
     this.scarfMat.color.set(texKind ? 0xffffff : color);
     this.scarfMat.map = texKind ? scarfTexture(texKind) : null;
@@ -288,6 +316,7 @@ export class Penguin {
     const targetStretch = 1 + clamp(vy * 0.018, -0.1, 0.14) * this.airAmt;
     this.stretch = damp(this.stretch, targetStretch, 14, dt);
 
+    if (this.sled) this.sled.visible = this.slideAmt > 0.35;
     this.tilt.rotation.z = waddle + Math.sin(t * 11) * 0.03 * this.swimAmt;
     this.tilt.rotation.x = lerp(0, 1.38, this.slideAmt) + lerp(0, 1.2, this.swimAmt * (1 - this.slideAmt)) + Math.sin(t * 3) * 0.05 * this.swimAmt;
     this.tilt.position.y = 1.05 + bounce - lying * 0.2 + Math.sin(t * 3.4) * 0.06 * this.swimAmt;

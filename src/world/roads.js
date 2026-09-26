@@ -221,7 +221,8 @@ export class Roads {
     this.trailUniforms.uScale.value = viewportScale;
     this.trailVisible += ((show && this.target && player ? 1 : 0) - this.trailVisible) * Math.min(1, dt * 3);
     this.trail.visible = this.trailVisible > 0.02;
-    if (!this.trail.visible || !player) return;
+    // While fading out after the goal disappears, the sparkles simply stay where they were.
+    if (!this.trail.visible || !player || !this.target) return;
     this.routeTimer -= dt;
     if (this.routeTimer <= 0 || !this.route) {
       this.route = this.computeRoute(player.x, player.z, this.target.x, this.target.z);

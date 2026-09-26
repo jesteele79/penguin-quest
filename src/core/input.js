@@ -40,14 +40,17 @@ export class Input {
 
   onKeyDown(e) {
     const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
-    if (!inField && GAME_KEYS.has(e.code)) e.preventDefault();
-    if (!e.repeat) {
-      this.held.add(e.code);
-      this.pressedSet.add(e.code);
-    }
     // Activities get the raw event first (answer typing, menus).
     const top = G.top;
     if (top && top.onKey) top.onKey(e, inField);
+    // A key that closed a dialog or menu must not also count as a fresh press for whatever is
+    // underneath, or closing a chat with E would start the chat again.
+    const consumed = G.top !== top;
+    if (!inField && GAME_KEYS.has(e.code)) e.preventDefault();
+    if (!e.repeat) {
+      this.held.add(e.code);
+      if (!consumed) this.pressedSet.add(e.code);
+    }
   }
 
   down(...codes) { return codes.some((c) => this.held.has(c)); }

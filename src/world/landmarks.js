@@ -106,11 +106,15 @@ export class AuroraCrystal {
     const shardGeo = mergeColored([
       { geo: new THREE.OctahedronGeometry(0.3, 0), color: 0xffffff, matrix: mat(0, 0, 0, 0, 0, 0, 1, 1.8, 1) },
     ]);
+    this.shardMats = [];
     for (let i = 0; i < 3; i++) {
-      const s = new THREE.Mesh(shardGeo, this.material);
+      const sm = new THREE.MeshLambertMaterial({ color: DRAINED.clone(), emissive: DRAINED.clone(), emissiveIntensity: 0.15, flatShading: true });
+      const s = new THREE.Mesh(shardGeo, sm);
       scene.add(s);
       this.shards.push(s);
+      this.shardMats.push(sm);
     }
+    this.shardCount = 0;
     this.glowIndex = glow.add(x, y + 3.6, z, DRAINED, 9, 0.5);
     this.glow = glow;
     this.beam = makeBeam(this.color);
@@ -132,6 +136,17 @@ export class AuroraCrystal {
 
   setCharge(f) { this.charge = f; }
   flash() { this.pulse = 1; }
+
+  // Aurora Shards collected for this crystal light up its orbiting shards.
+  setShards(n) {
+    this.shardCount = n;
+    this.shardMats.forEach((m, i) => {
+      const lit = i < n;
+      m.color.copy(lit ? this.color : DRAINED);
+      m.emissive.copy(lit ? this.color : DRAINED);
+      m.emissiveIntensity = lit ? 1.0 : 0.15;
+    });
+  }
 
   update(dt, t) {
     this.level = damp(this.level, this.restored ? 1 : 0, 1.5, dt);

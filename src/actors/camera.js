@@ -82,7 +82,7 @@ export class FollowCam {
       this.computeFollow(player, _desired, _look);
       if (this.releaseFrom) {
         this.releaseT += dt;
-        const t = easeInOut(Math.min(1, this.releaseT / this.releaseDur));
+        const t = this.releaseDur > 0 ? easeInOut(Math.min(1, this.releaseT / this.releaseDur)) : 1;
         _desired.lerpVectors(this.releaseFrom.pos, _desired, t);
         _look.lerpVectors(this.releaseFrom.look, _look, t);
         this.camera.fov = THREE.MathUtils.lerp(this.releaseFrom.fov, this.fovBase, t);
@@ -99,7 +99,7 @@ export class FollowCam {
         this.camera.fov = damp(this.camera.fov, this.fovBase + (player.sliding ? 8 : 0), 4, dt);
       }
     } else {
-      this.blend = Math.min(1, this.blend + dt / this.blendDur);
+      this.blend = this.blendDur > 0 ? Math.min(1, this.blend + dt / this.blendDur) : 1;
       const t = easeInOut(this.blend);
       const target = typeof this.shot.pos === 'function' ? this.shot.pos() : this.shot.pos;
       const look = typeof this.shot.look === 'function' ? this.shot.look() : this.shot.look;

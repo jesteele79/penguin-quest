@@ -36,7 +36,7 @@ export function crystalMaterial(color, emissive = 0.6) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uTime;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-      totalEmissiveRadiance *= vColor * (0.82 + 0.18 * sin(uTime * 2.0 + vViewPosition.y * 0.6 + vViewPosition.x * 0.3));
+      totalEmissiveRadiance *= vColor.rgb * (0.82 + 0.18 * sin(uTime * 2.0 + vViewPosition.y * 0.6 + vViewPosition.x * 0.3));
       {
         float rimF = 1.0 - saturate(dot(normal, normalize(vViewPosition)));
         totalEmissiveRadiance += vec3(0.75, 0.88, 1.0) * pow(rimF, 2.0) * 0.6;

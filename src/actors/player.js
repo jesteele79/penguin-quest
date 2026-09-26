@@ -65,6 +65,16 @@ export class Player {
 
   update(dt, input) {
     const world = this.world;
+    if (this.rail) {
+      // An activity (the slalom) drives position and speed directly.
+      this.grounded = true;
+      this.swimming = false;
+      this.sliding = true;
+      this.model.root.rotation.y = this.yaw;
+      this.model.animate(dt, { speed: this.speed, grounded: true, sliding: true });
+      this.model.updateAttachments(dt, this.groundY, true);
+      return;
+    }
     const fwdIn = this.frozen ? 0 : input.forward;
     const turnIn = this.frozen ? 0 : input.turn;
     const slideKey = !this.frozen && input.slide;
@@ -154,6 +164,8 @@ export class Player {
       if (this.swimming && deepWater && this.pos.y > WATER_Y + 0.4) this.swimming = false;
       if ((this.grounded || this.coyote > 0) && this.jumpBuffer > 0 && !this.swimming) {
         this.vy = JUMP_V + (this.sliding ? 1.5 : 0);
+        // Pressing jump and forward together should clear a gap even from a standstill.
+        if (fwdIn > 0) this.speed = Math.max(this.speed, WALK * 0.85);
         this.grounded = false;
         this.coyote = 0;
         this.jumpBuffer = 0;
@@ -163,10 +175,10 @@ export class Player {
         this.vy -= GRAVITY * dt;
         this.pos.y += this.vy * dt;
         if (this.airAssist && !this.grounded && this.vy < 2) {
-          const t = this.airAssist(this.pos.x, this.pos.z);
+          const t = this.airAssist(this.pos.x, this.pos.z, fx * this.speed, fz * this.speed);
           if (t) {
-            this.pos.x = damp(this.pos.x, t.x, 2.2, dt);
-            this.pos.z = damp(this.pos.z, t.z, 2.2, dt);
+            this.pos.x = damp(this.pos.x, t.x, 3.2, dt);
+            this.pos.z = damp(this.pos.z, t.z, 3.2, dt);
           }
         }
         const g2 = world.groundAt(this.pos.x, this.pos.z, this.pos.y - this.vy * dt);

@@ -280,6 +280,36 @@ export function scarfTexture(kind) {
       g.fillStyle = '#1b2360'; g.fillRect(0, 0, 128, 32);
       const rng = new Rng(5);
       for (let i = 0; i < 30; i++) { g.fillStyle = rng.chance(0.3) ? '#ffe68a' : '#ffffff'; g.fillRect(rng.int(0, 127), rng.int(0, 31), 2, 2); }
+    } else if (kind === 'heart') {
+      g.fillStyle = '#e8434b'; g.fillRect(0, 0, 128, 32);
+      g.fillStyle = '#fff4ec';
+      for (let i = 0; i < 4; i++) {
+        const x = 16 + i * 32, y = 16;
+        g.beginPath(); g.moveTo(x, y + 7); g.bezierCurveTo(x - 10, y, x - 7, y - 8, x, y - 3); g.bezierCurveTo(x + 7, y - 8, x + 10, y, x, y + 7); g.fill();
+      }
+    } else if (kind === 'galaxy') {
+      const grd = g.createLinearGradient(0, 0, 128, 0);
+      grd.addColorStop(0, '#2a1a6a'); grd.addColorStop(0.5, '#6a3ad8'); grd.addColorStop(1, '#1a2a8a');
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 32);
+      const rng = new Rng(11);
+      for (let i = 0; i < 40; i++) { g.fillStyle = rng.chance(0.2) ? '#9fe8ff' : '#ffffff'; g.fillRect(rng.int(0, 127), rng.int(0, 31), 1.5, 1.5); }
+    } else if (kind === 'aurora') {
+      const grd = g.createLinearGradient(0, 0, 128, 0);
+      ['#4dffa0', '#38f0d2', '#55b4ff', '#b483ff', '#ff72c8', '#4dffa0'].forEach((col, i) => grd.addColorStop(i / 5, col));
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 32);
+      g.globalAlpha = 0.35;
+      for (let i = 0; i < 6; i++) { g.fillStyle = '#ffffff'; g.fillRect(0, 3 + i * 5.5, 128, 1.2); }
+      g.globalAlpha = 1;
+    } else if (kind === 'frost') {
+      g.fillStyle = '#bfe6ff'; g.fillRect(0, 0, 128, 32);
+      g.strokeStyle = '#ffffff'; g.lineWidth = 1.6;
+      for (let i = 0; i < 4; i++) {
+        const x = 16 + i * 32, y = 16;
+        for (let k = 0; k < 3; k++) {
+          const a = (k * Math.PI) / 3;
+          g.beginPath(); g.moveTo(x - Math.cos(a) * 8, y - Math.sin(a) * 8); g.lineTo(x + Math.cos(a) * 8, y + Math.sin(a) * 8); g.stroke();
+        }
+      }
     } else {
       g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 32);
     }

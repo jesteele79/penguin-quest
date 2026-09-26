@@ -4,7 +4,10 @@ import { lambert, crystalMaterial } from '../core/materials.js';
 import { Rng } from '../core/rng.js';
 import { createNoise2D, makeFbm } from '../core/noise.js';
 import { smoothstep } from '../core/mathutil.js';
-import { LOC, WORLD_RADIUS, CRYSTALS } from './layout.js';
+import {
+  LOC, WORLD_RADIUS, CRYSTALS, SNOWFLAKES, CHESTS, GLOOM_SPOTS, SURVEY, BEACONS, BEDS, SEEDS, CHICK_SPOTS,
+  NURSERY, PATROL_BOARD, CAULDRON, FESTIVAL, SLALOM, TREASURE_CLUES, gridToWorld,
+} from './layout.js';
 
 const fbm = makeFbm(createNoise2D(777));
 
@@ -99,6 +102,18 @@ const CLEAR = [
   { x: 0, z: 58, r: 9 },
   { x: LOC.skipper.x, z: LOC.skipper.z, r: 8 },
 ];
+
+for (const [x, z] of [...SNOWFLAKES, ...CHESTS, ...SEEDS, ...CHICK_SPOTS]) CLEAR.push({ x, z, r: 4 });
+for (const [x, z] of [...SURVEY, ...BEACONS, ...BEDS]) CLEAR.push({ x, z, r: 6 });
+for (const g of GLOOM_SPOTS) CLEAR.push({ x: g.x, z: g.z, r: 7 });
+for (const p of [NURSERY, PATROL_BOARD, CAULDRON, LOC.purl, LOC.nestle]) CLEAR.push({ x: p.x, z: p.z, r: 5 });
+CLEAR.push({ x: FESTIVAL.x, z: FESTIVAL.z, r: 14 });
+for (const t of TREASURE_CLUES) { const w = gridToWorld(t.gx, t.gy); CLEAR.push({ x: w.x, z: w.z, r: 6 }); }
+// Keep the sled slalom lane free of trees.
+for (let k = 0; k <= 60; k += 4) {
+  const dx = SLALOM.toward.x - SLALOM.top.x, dz = SLALOM.toward.z - SLALOM.top.z, l = Math.hypot(dx, dz);
+  CLEAR.push({ x: SLALOM.top.x + (dx / l) * k, z: SLALOM.top.z + (dz / l) * k, r: 9 });
+}
 
 function isClear(x, z) {
   for (const c of CLEAR) if ((x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r) return false;
