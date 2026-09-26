@@ -8,6 +8,7 @@ import { MAIN, SIDE, RESONANCE_NEED } from './questdata.js';
 import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
+import { orbitShot } from './minigames/common.js';
 
 const NAME_IDEAS = ['Pip', 'Waddles', 'Frosty', 'Nova', 'Pebble', 'Blizzard', 'Sprinkles', 'Tux', 'Iggy', 'Aurora', 'Flipper', 'Comet'];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -467,9 +468,12 @@ export class ShopScreen extends Screen {
   enter() {
     super.enter();
     const p = G.player;
-    const f = new THREE.Vector3(Math.sin(p.yaw), 0, Math.cos(p.yaw));
-    const side = new THREE.Vector3(-f.z, 0, f.x);
-    G.cam.setShot({ pos: p.pos.clone().addScaledVector(f, 5.2).addScaledVector(side, -2.4).add(new THREE.Vector3(0, 2.6, 0)), look: p.pos.clone().add(new THREE.Vector3(0, 1.6, 0)).addScaledVector(side, -1.2), fov: 45 }, 0.9);
+    // Find a clear angle (away from the shopkeeper the player is facing), then turn the penguin
+    // toward the camera so the new gear is seen from the front.
+    const shot = orbitShot(p.pos, { radius: 7, height: 1.9, lookUp: 1.3, shift: 2.6, fov: 45, prefer: -Math.PI / 2 - p.yaw });
+    p.yaw = Math.atan2(shot.pos.x - p.pos.x, shot.pos.z - p.pos.z);
+    p.model.root.rotation.y = p.yaw;
+    G.cam.setShot(shot, 0.9);
   }
 
   exit() { super.exit(); G.cam.release(0.9); G.applyLook(); }

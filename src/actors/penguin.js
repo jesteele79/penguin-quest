@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { PAL, lambert } from '../core/materials.js';
-import { solid, basic, buildHat } from './accessories.js';
+import { solid, buildHat } from './accessories.js';
 import { clamp, damp, lerp } from '../core/mathutil.js';
 import { glowTexture, scarfTexture } from '../core/textures.js';
+import { mergeColored, mat } from '../core/geo.js';
 
-const SPHERE = new THREE.SphereGeometry(1, 28, 20);
+const SPHERE = new THREE.SphereGeometry(1, 24, 16);
 const SPHERE_LO = new THREE.SphereGeometry(1, 14, 10);
 const BEAK = new THREE.ConeGeometry(0.17, 0.46, 14);
 BEAK.rotateX(Math.PI / 2);
@@ -28,6 +29,48 @@ function part(geo, material, x, y, z, sx, sy = sx, sz = sx, cast = true) {
   m.scale.set(sx, sy, sz);
   m.castShadow = cast;
   return m;
+}
+
+// Parts that never move relative to each other are merged into one vertex-colored mesh per
+// color scheme: a penguin costs about a dozen draw calls instead of thirty, which matters on
+// Chromebook GPUs with a dozen friends on screen.
+const GEO_CACHE = new Map();
+let vcMat = null, eyeMat = null;
+const vertexColorMat = () => (vcMat ??= lambert({ vertexColors: true }));
+const eyeMaterial = () => (eyeMat ??= new THREE.MeshBasicMaterial({ vertexColors: true }));
+
+function cachedGeo(key, build) {
+  if (!GEO_CACHE.has(key)) GEO_CACHE.set(key, build());
+  return GEO_CACHE.get(key);
+}
+
+function bodyGeometry(dark, white, sphere = SPHERE) {
+  return cachedGeo(`body${dark}/${white}/${sphere.uuid}`, () => mergeColored([
+    { geo: sphere, color: dark, matrix: mat(0, 1.05, 0, 0, 0, 0, 0.98, 1.1, 0.92) },
+    { geo: sphere, color: white, matrix: mat(0, 0.95, 0.4, 0, 0, 0, 0.74, 0.88, 0.58) },
+  ]));
+}
+
+function headGeometry(dark, white, sphere = SPHERE) {
+  return cachedGeo(`head${dark}/${white}/${sphere.uuid}`, () => mergeColored([
+    { geo: sphere, color: dark, matrix: mat(0, 0, 0, 0, 0, 0, 0.8, 0.78, 0.78) },
+    { geo: sphere, color: white, matrix: mat(0, -0.08, 0.36, 0, 0, 0, 0.62, 0.56, 0.5) },
+    ...[[-0.1, 0.5], [0, 0], [0.1, -0.5]].map(([x, rz]) => ({ geo: TUFT, color: dark, matrix: mat(x, 0.84, 0, 0, 0, rz) })),
+    { geo: BEAK, color: PAL.beak, matrix: mat(0, -0.14, 0.86, 0.12, 0, 0) },
+    ...[-1, 1].map((sx) => ({ geo: SPHERE_LO, color: 0xff9fb4, matrix: mat(sx * 0.44, -0.2, 0.56, 0, 0, 0, 0.12, 0.08, 0.05) })),
+  ]));
+}
+
+function eyeGeometry(iris) {
+  return cachedGeo(`eyes${iris}`, () => mergeColored([-1, 1].flatMap((sx) => {
+    const x = sx * 0.27, z = 0.6;
+    return [
+      { geo: SPHERE_LO, color: 0xffffff, matrix: mat(x, 0, z, 0, 0, 0, 0.21, 0.24, 0.12) },
+      { geo: SPHERE_LO, color: iris, matrix: mat(x, -0.01, z + 0.07, 0, 0, 0, 0.14, 0.16, 0.08) },
+      { geo: SPHERE_LO, color: 0x05060c, matrix: mat(x, -0.01, z + 0.1, 0, 0, 0, 0.085, 0.1, 0.06) },
+      { geo: SPHERE_LO, color: 0xffffff, matrix: mat(x + sx * -0.04 + 0.03, 0.06, z + 0.15, 0, 0, 0, 0.045, 0.045, 0.03) },
+    ];
+  })));
 }
 
 const SEG = 7;
@@ -140,47 +183,29 @@ export class Penguin {
     body.position.y = -1.05;
     this.tilt.add(body);
 
-    const dark = solid(opts.body ?? PAL.penguin);
-    const white = solid(opts.belly ?? PAL.belly);
-    const orange = solid(PAL.beak);
+    const darkColor = opts.body ?? PAL.penguin;
+    const whiteColor = opts.belly ?? PAL.belly;
+    const dark = solid(darkColor);
 
-    this.bodyMesh = part(SPHERE, dark, 0, 1.05, 0, 0.98, 1.1, 0.92);
+    // Tiny penguins (chicks) never fill the screen, so they get cheaper spheres.
+    const sphere = opts.lowPoly ? SPHERE_LO : SPHERE;
+    this.bodyMesh = part(bodyGeometry(darkColor, whiteColor, sphere), vertexColorMat(), 0, 0, 0, 1);
     body.add(this.bodyMesh);
-    body.add(part(SPHERE, white, 0, 0.95, 0.4, 0.74, 0.88, 0.58));
+    // Where the scarf physics treats the body as a ball.
+    this.bodyCenter = new THREE.Object3D();
+    this.bodyCenter.position.set(0, 1.05, 0);
+    body.add(this.bodyCenter);
 
-    // Head
+    // Head (face, tuft, beak and cheeks are one mesh; the eyes stay separate so they can blink)
     const head = this.head = new THREE.Group();
     head.position.set(0, 2.25, 0.05);
     body.add(head);
-    head.add(part(SPHERE, dark, 0, 0, 0, 0.8, 0.78, 0.78));
-    head.add(part(SPHERE, white, 0, -0.08, 0.36, 0.62, 0.56, 0.5));
-    const tuft = new THREE.Group();
-    tuft.position.set(0, 0.72, 0);
-    for (const [x, rz] of [[-0.1, 0.5], [0, 0], [0.1, -0.5]]) {
-      const t = new THREE.Mesh(TUFT, dark);
-      t.position.set(x, 0.12, 0);
-      t.rotation.z = rz;
-      tuft.add(t);
-    }
-    head.add(tuft);
+    head.add(part(headGeometry(darkColor, whiteColor, sphere), vertexColorMat(), 0, 0, 0, 1));
 
     this.eyes = new THREE.Group();
     this.eyes.position.set(0, 0.07, 0);
     head.add(this.eyes);
-    const iris = basic(opts.iris ?? 0x1c3f8a);
-    for (const sx of [-1, 1]) {
-      const e = new THREE.Group();
-      e.position.set(sx * 0.27, 0, 0.6);
-      e.add(part(SPHERE_LO, basic(0xffffff), 0, 0, 0, 0.21, 0.24, 0.12, false));
-      e.add(part(SPHERE_LO, iris, 0, -0.01, 0.07, 0.14, 0.16, 0.08, false));
-      e.add(part(SPHERE_LO, basic(0x05060c), 0, -0.01, 0.1, 0.085, 0.1, 0.06, false));
-      e.add(part(SPHERE_LO, basic(0xffffff), sx * -0.04 + 0.03, 0.06, 0.15, 0.045, 0.045, 0.03, false));
-      this.eyes.add(e);
-    }
-    const beak = part(BEAK, orange, 0, -0.14, 0.86, 1, 1, 1);
-    beak.rotation.x = 0.12;
-    head.add(beak);
-    for (const sx of [-1, 1]) head.add(part(SPHERE_LO, solid(0xff9fb4), sx * 0.44, -0.2, 0.56, 0.12, 0.08, 0.05, false));
+    this.eyes.add(part(eyeGeometry(opts.iris ?? 0x1c3f8a), eyeMaterial(), 0, 0, 0, 1, 1, 1, false));
     this.hatSlot = new THREE.Group();
     head.add(this.hatSlot);
 
@@ -189,7 +214,7 @@ export class Penguin {
     for (const sx of [-1, 1]) {
       const pivot = new THREE.Group();
       pivot.position.set(sx * 0.9, 1.65, 0);
-      const f = part(SPHERE, dark, sx * 0.08, -0.62, 0, 0.17, 0.7, 0.4);
+      const f = part(sphere, dark, sx * 0.08, -0.62, 0, 0.17, 0.7, 0.4);
       pivot.add(f);
       body.add(pivot);
       this.flippers.push({ pivot, side: sx });
@@ -256,10 +281,10 @@ export class Penguin {
     if (this.sled) { this.root.remove(this.sled); this.sled = null; }
     if (!kind) return;
     const g = new THREE.Group();
-    const mat = solid(color);
-    const board = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 2.5), mat);
+    const sledMat = solid(color);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 2.5), sledMat);
     board.position.y = 0.2;
-    const curl = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 6, 12, Math.PI), mat);
+    const curl = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.06, 6, 12, Math.PI), sledMat);
     curl.position.set(0, 0.55, 1.25);
     curl.rotation.y = Math.PI / 2;
     g.add(board, curl);
@@ -286,7 +311,13 @@ export class Penguin {
     for (const t of this.tails) t.setLook(texKind ? 0xffffff : color, texKind);
   }
 
-  setVisible(v) {
+  // Story visibility (setVisible) and distance culling (setCulled) are tracked separately.
+  setVisible(v) { this.shown = v; this.applyVisibility(); }
+
+  setCulled(c) { if (this.culled !== c) { this.culled = c; this.applyVisibility(); } }
+
+  applyVisibility() {
+    const v = this.shown !== false && !this.culled;
     this.root.visible = v;
     this.shadow.visible = v;
     for (const t of this.tails) t.mesh.visible = v;
@@ -375,7 +406,7 @@ export class Penguin {
     this.knot.getWorldPosition(_v);
     _side.set(1, 0, 0).applyQuaternion(this.root.quaternion);
     _back.set(0, 0, -1).applyQuaternion(this.root.quaternion).multiplyScalar(this.lastSpeed || 0);
-    this.bodyMesh.getWorldPosition(_center);
+    this.bodyCenter.getWorldPosition(_center);
     const t = this.time;
     _wind.set(1.4 + Math.sin(t * 0.7) * 0.8, 0, 0.8 + Math.cos(t * 0.9) * 0.6);
     this.tails.forEach((tail, i) => {

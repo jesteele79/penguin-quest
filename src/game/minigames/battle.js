@@ -28,7 +28,7 @@ class BattleActivity {
     G.player.frozen = true;
     G.audio.setMood('battle');
     G.hearts = { now: this.hearts, max: this.maxHearts };
-    G.cam.setShot({ pos: this.center.clone().add(V(0, 9, 11)), look: this.center.clone().add(V(0, 1, -7)), fov: 58 }, 1.2);
+    G.cam.setShot({ pos: this.center.clone().add(V(0, 8, 12)), look: this.center.clone().add(V(0, 3.2, -10)), fov: 58 }, 1.2);
     const panel = G.quiz;
     panel.open({ title: 'Cheer-Up Battle', subtitle: 'Type the answer for the glowing Gloom, then press Enter', color: '#b483ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
@@ -50,8 +50,8 @@ class BattleActivity {
       const g = new Gloom(G.scene, { scale: 0.95 });
       g.position.set(x, G.terrain.heightAt(x, z), z);
       const p = G.tutor.next(Math.random() < 0.25 ? 'lake' : 'ridge', { format: 'input' });
-      const label = G.labels.add(`<span>${toHTML(p.text)}</span>`, { cls: 'gloom-label', pos: g.position, offsetY: 3.1, maxDist: 60 });
-      this.glooms.push({ g, round: new Round(p), label, delay: 1 + i * 2.2, done: false });
+      const label = G.labels.add('<span>?</span>', { cls: 'gloom-label', pos: g.position, offsetY: 3.1, maxDist: 60 });
+      this.glooms.push({ g, round: new Round(p), label, html: `<span>${toHTML(p.text)}</span>`, delay: 1 + i * 2.2, done: false });
     }
     this.state = 'fight';
     this.pickTarget();
@@ -62,7 +62,12 @@ class BattleActivity {
     if (!alive.length) { this.target = null; return; }
     alive.sort((a, b) => a.g.position.distanceTo(this.center) - b.g.position.distanceTo(this.center));
     this.target = alive[0];
-    for (const x of this.glooms) x.label.setClass('target', x === this.target);
+    // Only the Gloom being answered carries its question; the rest wait with a "?" so the labels never pile up.
+    for (const x of this.glooms) {
+      if (x.done) continue;
+      x.label.setClass('target', x === this.target);
+      x.label.set(x === this.target ? x.html : '<span>?</span>');
+    }
     G.quiz.showProblem(this.target.round.p, { format: 'input', showSkill: false });
   }
 

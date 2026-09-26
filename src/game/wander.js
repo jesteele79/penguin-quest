@@ -88,8 +88,9 @@ export class Wanderers {
         g.position.z = it.home.z + Math.sin(it.t * 0.55) * r;
         g.position.y = this.ctx.terrain.heightAt(g.position.x, g.position.z);
       }
-      const near = player.pos.distanceTo(g.position) < 16;
-      g.update(dt, near ? player.pos : null);
+      const d = player.pos.distanceTo(g.position);
+      g.root.visible = d < 110;
+      if (d < 110) g.update(dt, d < 16 ? player.pos : null);
     }
   }
 }

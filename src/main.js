@@ -14,6 +14,7 @@ import { SaveStore } from './game/save.js';
 import { Tutor } from './math/tutor.js';
 import { typedValue } from './math/build.js';
 import { installHarness } from './dev/harness.js';
+import { GAMES } from './game/games.js';
 import { HUD } from './ui/hud.js';
 import { DialogBox } from './ui/dialog.js';
 import { QuizPanel } from './ui/quizpanel.js';
@@ -352,6 +353,7 @@ function startLoop() {
       },
       tp(x, z, yaw = 0) { player.teleport(x, z, yaw); cam.snap(player); tick(1 / 30, true); },
       typed: typedValue,
+      games: GAMES,
       newGame(profile = { name: 'Pip', grade: 5, scarf: 'coral' }) {
         while (G.activities.length) popActivity();
         G.quests.queue.length = 0;

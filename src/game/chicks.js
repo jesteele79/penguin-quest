@@ -13,7 +13,7 @@ export class Chicks {
   constructor(ctx, interactions) {
     this.ctx = ctx;
     this.list = CHICK_SPOTS.map(([x, z], i) => {
-      const model = new Penguin(ctx.scene, { name: 'chick', scale: 0.4, body: 0x7d869f, belly: 0xe6e9f2, scarf: null });
+      const model = new Penguin(ctx.scene, { name: 'chick', scale: 0.4, body: 0x7d869f, belly: 0xe6e9f2, scarf: null, lowPoly: true });
       const y = ctx.terrain.heightAt(x, z);
       model.root.position.set(x, y, z);
       model.root.rotation.y = i * 1.3;
@@ -137,6 +137,7 @@ export class Chicks {
         root.rotation.y = Math.sin(c.t * 0.5 + c.i) * 0.8 + c.yaw * 0;
       }
       const near = player.pos.distanceTo(root.position) < 70;
+      c.model.setCulled(!near);
       if (near) {
         c.model.animate(dt, { speed, grounded: true, celebrate: c.state === 'home' && Math.sin(c.t * 1.3 + c.i) > 0.97 });
         c.model.updateAttachments(dt, root.position.y, false);

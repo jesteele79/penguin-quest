@@ -450,7 +450,11 @@ sup { font-size: 0.62em; }
 .shop-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .coins-big { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 1.5em; }
 .coins-big .ico { width: 1.3em; height: 1.3em; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+/* The wardrobe docks right so the penguin trying things on stays visible on the left. */
+.shop-screen { justify-items: end; background: linear-gradient(90deg, rgba(6, 9, 30, 0) 30%, rgba(6, 9, 30, 0.6)); }
+.screen > .panel.shop-panel { width: min(600px, 64vw) !important; }
+@media (max-width: 860px) { .shop-screen { justify-items: center; } .screen > .panel.shop-panel { width: 100% !important; } }
 .shop-card { flex-direction: column; gap: 6px; padding: 14px 10px; min-height: 124px; }
 .shop-card.equipped { border-color: var(--good); box-shadow: 0 0 0 2px var(--good), 0 4px 0 rgba(8, 12, 44, 0.6); }
 .shop-card .name { font-weight: 600; }

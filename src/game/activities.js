@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../core/state.js';
 import { checkAnswer } from '../math/check.js';
+import { twoShot } from './minigames/common.js';
 
 // ---------------------------------------------------------------- Explore
 export class ExploreActivity {
@@ -57,13 +58,8 @@ export class DialogActivity {
     if (this.useShot) {
       const pp = G.player.pos.clone(), np = this.npc.pos.clone();
       const dir = np.clone().sub(pp).setY(0).normalize();
-      const side = new THREE.Vector3(-dir.z, 0, dir.x);
-      const scale = this.npc.def.look.scale ?? 1;
-      const pos = pp.clone().addScaledVector(dir, -5.5).addScaledVector(side, 2.6).add(new THREE.Vector3(0, 3.4, 0));
-      const look = np.clone().add(new THREE.Vector3(0, 2.0 * scale, 0));
-      const ground = G.terrain.heightAt(pos.x, pos.z) + 1.5;
-      if (pos.y < ground) pos.y = ground;
-      G.cam.setShot({ pos, look, fov: 50 }, 0.8);
+      // Side-on, so neither penguin hides the other; framed high because the dialog box sits low.
+      G.cam.setShot(twoShot(pp, np, { dist: 7.5, up: 2.2, lookUp: 0.8, shift: 0, fov: 50 }), 0.8);
       G.player.yaw = Math.atan2(dir.x, dir.z);
     }
     this.showLine();

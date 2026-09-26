@@ -30,6 +30,8 @@ export class Patrol {
     if (p.day === today) return false;
     p.day = today;
     p.allDone = false;
+    // "In a row" tasks count today's answers only.
+    G.save.data.counters.inARow = 0;
     const rng = new Rng(hashString(today + G.save.data.profile.name));
     const avail = POOL.filter((t) => !t.when || t.when());
     const tasks = [];

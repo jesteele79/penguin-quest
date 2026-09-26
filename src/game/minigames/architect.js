@@ -17,13 +17,13 @@ class ArchitectActivity extends QuizActivity {
     const pad = G.world.ctx.buildPad;
     const fwd = V(Math.sin(pad.yaw), 0, Math.cos(pad.yaw));
     // Stay inside the dome: the entrance arch starts about 11 units from the cave center.
-    const camPos = V(pad.x, pad.y, pad.z).addScaledVector(fwd, 7).add(V(0, 6, 0));
+    const camPos = V(pad.x, pad.y, pad.z).addScaledVector(fwd, 6.2).add(V(0, 8.2, 0));
     const side = V(-fwd.z, 0, fwd.x);
     super({
       title: sculpture ? 'Snow Sculpture Contest' : 'Ice Architect', subtitle: sculpture ? 'The judges love exact measurements!' : `Help Pebble rebuild the cave floor (${count} builds)`,
       color: '#55b4ff', count,
       pick: () => ({ domain: 'cave', skills: sculpture ? SCULPT_SKILLS : BUILD_SKILLS }),
-      shot: { pos: camPos.addScaledVector(side, -2.5), look: V(pad.x, pad.y + 1.2, pad.z).addScaledVector(side, -3.2), fov: 55 },
+      shot: { pos: camPos.addScaledVector(side, -2.5), look: V(pad.x, pad.y + 0.6, pad.z).addScaledVector(side, -3.4), fov: 58 },
       onProblem: (p) => this.prepare(p),
       onCorrect: (p) => this.build(p),
       onFinish: () => this.wrapUp(),
