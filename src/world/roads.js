@@ -44,17 +44,20 @@ uniform float uScale;
 varying float vAlpha;
 void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  vAlpha = aAlpha;
+  // Small sparkles, capped in size and faded right in front of the camera so they never become blobs.
+  vAlpha = aAlpha * smoothstep(5.0, 10.0, -mv.z);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = 0.9 * uScale / max(-mv.z, 0.1);
+  gl_PointSize = min(0.6 * uScale / max(-mv.z, 0.1), 26.0);
 }`;
 
+// Normal (not additive) blending: additive gold vanishes against white snow.
 const trailFrag = /* glsl */ `
 varying float vAlpha;
 void main() {
   float d = length(gl_PointCoord - 0.5) * 2.0;
-  float a = exp(-d * d * 4.0) * vAlpha;
-  gl_FragColor = vec4(vec3(1.0, 0.86, 0.45) * a * 1.6, 1.0);
+  float a = (1.0 - smoothstep(0.55, 1.0, d)) * vAlpha;
+  vec3 col = mix(vec3(1.0, 0.93, 0.55), vec3(1.0, 0.55, 0.08), smoothstep(0.15, 0.8, d));
+  gl_FragColor = vec4(col, a);
   #include <colorspace_fragment>
 }`;
 
@@ -95,7 +98,6 @@ export class Roads {
       fragmentShader: trailFrag,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
     }));
     this.trail.frustumCulled = false;
     this.trail.renderOrder = 6;
