@@ -1,16 +1,21 @@
-{
-  "name": "penguin-quest",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "esbuild": "^0.28.2",
-    "three": "^0.186.1"
-  }
+﻿{
+    "name":  "penguin-quest",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "index.js",
+    "scripts":  {
+                    "build":  "node build.mjs",
+                    "test":  "node --test test/",
+                    "map":  "node tools/layoutmap.mjs"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "devDependencies":  {
+                            "esbuild":  "^0.28.2",
+                            "three":  "^0.186.1"
+                        },
+    "type":  "module"
 }
