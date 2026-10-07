@@ -22,6 +22,13 @@ function mesh(geo, material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1
   return m;
 }
 
+// Head shape and face layout, shared by the penguin model and anything worn on the face.
+export const HEAD_R = { x: 0.8, y: 0.78, z: 0.78 };
+export const FACE = { eyeX: 0.27, eyeY: -0.06, beakY: -0.25 };
+// Hats sit this much higher than the head centre so the brim clears the big eyes.
+export const HAT_LIFT = 0.13;
+const faceZ = (x, y) => HEAD_R.z * Math.sqrt(1 - (x / HEAD_R.x) ** 2 - (y / HEAD_R.y) ** 2);
+
 // Every hat is built in head-local space: origin at the head center, head radius ~0.78.
 export const HATS = {
   beanie(color = 0x3aa0ff) {
@@ -131,8 +138,11 @@ export const HATS = {
     // Professor: round glasses sit on the face, plus a small tweed cap.
     const g = new THREE.Group();
     const rim = solid(0x3b2a1a);
-    for (const s of [-1, 1]) g.add(mesh(new THREE.TorusGeometry(0.2, 0.035, 6, 18), rim, s * 0.27, 0.06, 0.74));
-    g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.14, 6), rim, 0, 0.08, 0.78, 0, 0, Math.PI / 2));
+    const z = faceZ(FACE.eyeX, FACE.eyeY) + 0.06;
+    // The hat slot is lifted, so the glasses come back down to eye level.
+    const y = FACE.eyeY - HAT_LIFT;
+    for (const s of [-1, 1]) g.add(mesh(new THREE.TorusGeometry(0.23, 0.035, 6, 20), rim, s * FACE.eyeX, y, z, 0, s * 0.42, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 6), rim, 0, y + 0.04, z + 0.04, 0, 0, Math.PI / 2));
     g.add(mesh(new THREE.SphereGeometry(0.8, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), solid(0x6b5a44), 0, 0.2, -0.05, -0.15, 0, 0, 1, 0.55, 1));
     return g;
   },
@@ -156,6 +166,7 @@ export function bowTie(color = 0xd8333f) {
 
 export function apron(color = 0xff9fc6) {
   // phi is centered on +z (phi = PI/2 faces forward in SphereGeometry).
-  const m = mesh(new THREE.SphereGeometry(1, 16, 12, Math.PI / 2 - 0.9, 1.8, 0.9, 1.2), solid(color), 0, 1.05, 0.06, 0, 0, 0, 0.8, 0.95, 0.82);
+  // Sized just outside the body (radii 1.0, 1.02, 0.95 at y 1.0) so it drapes over the belly.
+  const m = mesh(new THREE.SphereGeometry(1, 20, 14, Math.PI / 2 - 0.85, 1.7, 0.95, 1.15), solid(color), 0, 1.0, 0.02, 0, 0, 0, 1.03, 1.04, 0.98);
   return m;
 }

@@ -72,6 +72,9 @@ function fishGeometry() {
   ]);
 }
 
+// Scratch objects reused every frame (allocating them per frame causes garbage-collection hitches).
+const TMP = { m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), p: new THREE.Vector3(), s: new THREE.Vector3() };
+
 export class Water {
   constructor(scene, terrain) {
     this.terrain = terrain;
@@ -164,7 +167,7 @@ export class Water {
   }
 
   updateFloes(time) {
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
+    const { m, q, e, p, s } = TMP;
     this.floes.forEach((f, i) => {
       e.set(Math.sin(time * 0.7 + f.phase) * 0.03, f.rot + time * 0.01, Math.cos(time * 0.6 + f.phase) * 0.03);
       q.setFromEuler(e);
@@ -178,7 +181,7 @@ export class Water {
 
   update(dt, time) {
     this.uniforms.uTime.value = time;
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
+    const { m, q, e, p, s } = TMP;
     this.fish.forEach((f, i) => {
       f.a += (f.speed / f.r) * dt * 3;
       const x = f.cx + Math.cos(f.a) * f.r, z = f.cz + Math.sin(f.a) * f.r;

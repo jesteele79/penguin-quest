@@ -7,7 +7,7 @@ export function defaultSave() {
     v: 2,
     created: Date.now(),
     profile: { name: 'Pip', grade: 4, scarf: 'coral' },
-    settings: { music: 0.5, sfx: 0.8, quality: 'auto', gentle: false, readAloud: false, bigText: false, showTrail: true, pace: 'daily' },
+    settings: { music: 0.5, sfx: 0.8, voice: 1, quality: 'auto', gentle: false, readAloud: false, bigText: false, textSize: 1, easyRead: false, textSpeed: 'normal', reduceMotion: null, showTrail: true, pace: 'daily' },
     pos: null,
     q: {},
     tracked: null,

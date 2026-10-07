@@ -41,6 +41,9 @@ export class Player {
     this.talking = false;
     this.lookYaw = undefined;
     this.inWaterBarrier = false;
+    this.idleTime = 0;
+    // Where the current goal is; after a moment of standing still the penguin glances toward it.
+    this.objective = null;
   }
 
   teleport(x, z, yaw = this.yaw, y = null) {
@@ -60,6 +63,7 @@ export class Player {
 
   celebrate(seconds = 1.6) {
     this.celebrateT = seconds;
+    this.model.spin();
     if (this.grounded) { this.vy = 7; this.grounded = false; }
   }
 
@@ -215,8 +219,17 @@ export class Player {
       if (this.stepAcc > 3) { this.stepAcc = 0; this.events.push({ type: 'stroke' }); }
     }
 
+    const busy = this.frozen || fwdIn || turnIn || slideKey || !this.grounded || this.swimming || this.talking;
+    this.idleTime = busy ? 0 : this.idleTime + dt;
+    let look = this.lookYaw;
+    if (look === undefined && this.objective && this.idleTime > 2.5 && this.idleTime < 24) {
+      const want = Math.atan2(this.objective.x - this.pos.x, this.objective.z - this.pos.z);
+      look = clamp(wrapAngle(want - this.yaw), -1.1, 1.1);
+    }
+
     this.model.root.rotation.y = this.yaw;
     this.model.animate(dt, {
+      idleTime: this.idleTime,
       speed: this.speed,
       grounded: this.grounded,
       sliding: this.sliding,
@@ -224,7 +237,7 @@ export class Player {
       vy: this.vy,
       celebrate: this.celebrateT > 0,
       talking: this.talking,
-      lookYaw: this.lookYaw,
+      lookYaw: look,
       happy: this.celebrateT > 0,
     });
     this.model.updateAttachments(dt, this.swimming ? WATER_Y - 0.4 : this.groundY, true);

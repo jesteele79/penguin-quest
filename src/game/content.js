@@ -5,7 +5,7 @@ import { bowTie, apron } from '../actors/accessories.js';
 export const NPCS = {
   professor: {
     name: 'Professor Waddlesworth', pos: LOC.professor, pitch: 360, accent: '#d8333f',
-    look: { scale: 1.12, body: 0x2c3252, scarf: null, hat: 'scholar', extras: (p) => { const b = bowTie(0xd8333f); b.position.set(0, 1.75, 0.8); p.body.add(b); } },
+    look: { scale: 1.12, body: 0x2c3252, scarf: null, hat: 'scholar', extras: (p) => { const b = bowTie(0xd8333f); b.position.set(0, 1.58, 0.82); p.body.add(b); } },
     portrait: { glasses: true, hat: 'cap', accent: '#d8333f' },
   },
   mo: { name: 'Mo', pos: { x: LOC.kids.x - 3, z: LOC.kids.z + 1 }, pitch: 760, accent: '#4ddb7a', look: { scale: 0.62, scarf: 0x4ddb7a }, portrait: { kid: true, accent: '#4ddb7a' } },
@@ -22,7 +22,7 @@ export const NPCS = {
   skipper: { name: 'Scout Skipper', pos: LOC.skipper, pitch: 440, accent: '#3aa0ff', look: { scale: 1.04, hat: 'beanie', hatColor: 0x3aa0ff, scarf: 0x3aa0ff }, portrait: { hat: 'beanie', accent: '#3aa0ff' } },
   purl: {
     name: 'Granny Purl', pos: LOC.purl, pitch: 460, accent: '#e8434b', faceTo: LOC.campfire,
-    look: { scale: 0.98, body: 0x333a58, hat: 'beanie', hatColor: 0xe8434b, scarf: 0xe8434b, extras: (p) => { const b = bowTie(0xffffff); b.position.set(0, 1.72, 0.82); p.body.add(b); } },
+    look: { scale: 0.98, body: 0x333a58, hat: 'beanie', hatColor: 0xe8434b, scarf: 0xe8434b, extras: (p) => { const b = bowTie(0xffffff); b.position.set(0, 1.36, 0.9); p.body.add(b); } },
     portrait: { hat: 'beanie', glasses: true, accent: '#e8434b' },
   },
   nestle: {

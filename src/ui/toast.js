@@ -2,6 +2,11 @@ import { el } from './dom.js';
 
 export class Toasts {
   constructor(root) {
+    // Messages show one at a time, long enough to read, and wait while a dialog is on screen.
+    this.queue = [];
+    this.current = null;
+    this.log = [];
+    this.blocked = () => false;
     this.stack = el('div', { class: 'toasts', 'aria-live': 'polite' });
     this.banner = el('div', { class: 'banner' });
     this.flash = el('div', { class: 'flash' });
@@ -9,12 +14,34 @@ export class Toasts {
     root.append(this.stack, this.banner, this.flash, this.fade);
   }
 
-  toast(html, { icon = '', ms = 2600, kind = '' } = {}) {
-    const t = el('div', { class: `toast ${kind}`, html: `${icon}<span>${html}</span>` });
+  toast(html, { icon = '', ms = 0, kind = '' } = {}) {
+    const words = html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).length;
+    const dur = Math.max(ms, 2800 + words * 200);
+    if (this.queue.some((q) => q.html === html) || this.current?.html === html) return;
+    this.queue.push({ html, icon, kind, dur });
+    this.log.unshift({ html, t: Date.now() });
+    if (this.log.length > 40) this.log.pop();
+    this.pump();
+  }
+
+  pump() {
+    if (this.current || !this.queue.length) return;
+    if (this.blocked()) {
+      clearTimeout(this.retryT);
+      this.retryT = setTimeout(() => this.pump(), 300);
+      return;
+    }
+    const item = this.queue.shift();
+    this.current = item;
+    const t = el('div', { class: `toast ${item.kind}`, html: `${item.icon}<span>${item.html}</span>` });
     this.stack.append(t);
     requestAnimationFrame(() => t.classList.add('show'));
-    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, ms);
-    while (this.stack.children.length > 4) this.stack.firstChild.remove();
+    // A shorter wait when more messages are lined up, so nothing piles up.
+    const dur = this.queue.length ? Math.max(2200, item.dur * 0.7) : item.dur;
+    setTimeout(() => {
+      t.classList.remove('show');
+      setTimeout(() => { t.remove(); this.current = null; this.pump(); }, 300);
+    }, dur);
   }
 
   // Big centered celebration: title + subtitle in a region color. Banners wait their turn so a

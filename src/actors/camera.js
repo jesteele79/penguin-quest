@@ -62,7 +62,7 @@ export class FollowCam {
     this.releaseT = 0;
   }
 
-  addShake(amount) { this.shake = Math.min(1.2, this.shake + amount); }
+  addShake(amount) { if (!document.documentElement.classList.contains('reduce-motion')) this.shake = Math.min(1.2, this.shake + amount); }
 
   update(dt, player, input) {
     const m = input.takeMouse();

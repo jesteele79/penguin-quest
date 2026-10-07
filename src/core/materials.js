@@ -21,6 +21,31 @@ export function withRim(material, { color = 0xa9c8ff, power = 2.6, strength = 0.
   return material;
 }
 
+// Half-Lambert "wrap" lighting (Valve): light wraps past the shadow line, so round characters read as soft
+// and plush instead of going flat on their dark side.
+const PLUSH_LIGHTS = THREE.ShaderChunk.lights_lambert_pars_fragment.replace(
+  'float dotNL = saturate( dot( geometryNormal, directLight.direction ) );',
+  'float dotNL = dot( geometryNormal, directLight.direction ) * 0.5 + 0.5; dotNL *= dotNL;',
+);
+export function plush(material) {
+  const prev = material.onBeforeCompile;
+  const key = material.customProgramCacheKey();
+  material.onBeforeCompile = (shader, renderer) => {
+    prev?.call(material, shader, renderer);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <lights_lambert_pars_fragment>', PLUSH_LIGHTS)
+      // A soft fill from the camera's side, so a character seen from behind (the player, most of the time)
+      // still shows its round shape instead of a dark silhouette.
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      totalEmissiveRadiance += diffuseColor.rgb * pow(saturate(dot(normal, normalize(vViewPosition))), 1.5) * 0.3;`);
+  };
+  material.customProgramCacheKey = () => `${key}|plush`;
+  return material;
+}
+
+// Characters get a warm rim, which separates them from the cold blue night around them.
+export const CHARACTER_RIM = { color: 0xffe6d8, power: 2.6, strength: 0.24 };
+
 export function lambert(opts = {}, rim) {
   const m = new THREE.MeshLambertMaterial(opts);
   return rim === false ? m : withRim(m, rim);
@@ -48,7 +73,7 @@ export function crystalMaterial(color, emissive = 0.6) {
 
 // Shared palette (sRGB hex).
 export const PAL = {
-  penguin: 0x1e2746,
+  penguin: 0x26305c,
   belly: 0xf6f8ff,
   beak: 0xff9d2e,
   feet: 0xff8a1f,

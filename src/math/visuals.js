@@ -302,6 +302,119 @@ const R = {
     return svg(left + cols.length * cw + 10, 106, s, 'ratio table');
   },
 
+  // Tape (bar) diagram: each row is a strip of segments sized by value, with an optional total bracket.
+  // rows: [{ segs: [{ v, label, alt?, unknown? }], total?, totalLabel? }]
+  tape({ rows }) {
+    const W = 380, x0 = 12, x1 = W - 12, rowH = 40, gap = 34;
+    const maxSum = Math.max(...rows.map((r) => r.segs.reduce((a, s) => a + s.v, 0)));
+    let b = '', y = 24;
+    for (const row of rows) {
+      const sum = row.segs.reduce((a, s) => a + s.v, 0);
+      const span = ((x1 - x0) * sum) / maxSum;
+      let x = x0;
+      for (const s of row.segs) {
+        const w = Math.max(28, (span * s.v) / sum);
+        b += `<rect x="${x}" y="${y}" width="${w}" height="${rowH}" class="${s.unknown ? 'v-empty' : s.alt ? 'v-fill2 v-soft' : 'v-fill v-soft'} v-edge" rx="3"/>`;
+        if (s.label) b += t(x + w / 2, y + rowH / 2, s.label, s.unknown ? 'v-t v-strong' : 'v-t', 'middle', s.label.length > 6 ? 12 : 15);
+        x += w;
+      }
+      if (row.totalLabel) {
+        const ty = y - 8;
+        b += `<path d="M${x0},${ty + 6} L${x0},${ty} L${x},${ty} L${x},${ty + 6}" class="v-arc"/>`;
+        b += t((x0 + x) / 2, ty - 10, row.totalLabel, 'v-t v-strong', 'middle', 14);
+      }
+      y += rowH + gap;
+    }
+    return svg(W, y - gap + 12, b, 'tape diagram');
+  },
+
+  // A 10 by 10 grid: whole tenths shade as full columns, extra hundredths as single squares.
+  hundred({ tenths = 0, hundredths = 0 }) {
+    const S = 17, x0 = 8, y0 = 8;
+    let b = '';
+    for (let c = 0; c < 10; c++) for (let r = 0; r < 10; r++) {
+      const k = c * 10 + r;
+      const cls = c < tenths ? 'v-fill' : k < tenths * 10 + hundredths ? 'v-fill2' : 'v-empty';
+      b += `<rect x="${x0 + c * S}" y="${y0 + r * S}" width="${S}" height="${S}" class="${cls} v-edge"/>`;
+    }
+    return svg(S * 10 + 16, S * 10 + 16, b, `${tenths} tenths and ${hundredths} hundredths shaded`);
+  },
+
+  // A protractor with both scales. The angle's first ray lies along the baseline on the `from` side.
+  protractor({ deg, from = 'right' }) {
+    const W = 360, cx = 180, cy = 176, r = 150;
+    const P = (a, rr) => [cx + rr * Math.cos((a * Math.PI) / 180), cy - rr * Math.sin((a * Math.PI) / 180)];
+    let b = `<path d="M${cx - r},${cy} A${r},${r} 0 0 1 ${cx + r},${cy} Z" class="v-empty v-edge"/>`;
+    for (let a = 0; a <= 180; a += 5) {
+      const major = a % 10 === 0;
+      const [ax, ay] = P(a, r), [bx, by] = P(a, r - (major ? 13 : 7));
+      b += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" class="v-tick"/>`;
+      if (a % 20 === 0) {
+        const [ox, oy] = P(a, r - 24), [ix, iy] = P(a, r - 44);
+        b += t(ox, oy, String(180 - a), 'v-t2', 'middle', 10.5);
+        b += t(ix, iy, String(a), 'v-t2 v-strong', 'middle', 10.5);
+      }
+    }
+    b += `<line x1="${cx - r}" y1="${cy}" x2="${cx + r}" y2="${cy}" class="v-axis"/>`;
+    const start = from === 'right' ? 0 : 180;
+    const end = from === 'right' ? deg : 180 - deg;
+    for (const a of [start, end]) {
+      const [x, y] = P(a, r + 10);
+      b += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" class="v-ray"/>`;
+    }
+    const lo = Math.min(start, end), hi = Math.max(start, end);
+    const [p0x, p0y] = P(lo, 34), [p1x, p1y] = P(hi, 34);
+    b += `<path d="M${p0x},${p0y} A34,34 0 0 0 ${p1x},${p1y}" class="v-arc"/>`;
+    b += `<circle cx="${cx}" cy="${cy}" r="4" class="v-dot"/>`;
+    return svg(W, cy + 14, b, 'protractor');
+  },
+
+  // A polygon from SHAPES with right-angle marks, equal-side ticks and an optional dashed line.
+  shape({ name, line }) {
+    const pts = SHAPES[name];
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const s = Math.min(230 / (maxX - minX), 160 / (maxY - minY));
+    const pad = 30;
+    const X = (x) => pad + (x - minX) * s, Y = (y) => pad + (maxY - y) * s;
+    const W = pad * 2 + (maxX - minX) * s, H = pad * 2 + (maxY - minY) * s;
+    let b = `<polygon points="${pts.map((p) => `${X(p[0])},${Y(p[1])}`).join(' ')}" class="v-fill v-soft v-edge"/>`;
+    const n = pts.length;
+    const len = pts.map((p, i) => Math.hypot(pts[(i + 1) % n][0] - p[0], pts[(i + 1) % n][1] - p[1]));
+    const groups = [];
+    len.forEach((l, i) => { const g = groups.find((q) => Math.abs(q.l - l) < 1e-3); if (g) g.sides.push(i); else groups.push({ l, sides: [i] }); });
+    let mark = 0;
+    for (const g of groups) {
+      if (g.sides.length < 2 || g.sides.length === n && n > 4) continue;
+      mark += 1;
+      for (const i of g.sides) {
+        const a = pts[i], c = pts[(i + 1) % n];
+        const mx = X((a[0] + c[0]) / 2), my = Y((a[1] + c[1]) / 2);
+        const dx = X(c[0]) - X(a[0]), dy = Y(c[1]) - Y(a[1]), L = Math.hypot(dx, dy);
+        const nx = -dy / L, ny = dx / L, ux = dx / L, uy = dy / L;
+        for (let k = 0; k < mark; k++) {
+          const o = (k - (mark - 1) / 2) * 5;
+          b += `<line x1="${mx + ux * o - nx * 6}" y1="${my + uy * o - ny * 6}" x2="${mx + ux * o + nx * 6}" y2="${my + uy * o + ny * 6}" class="v-tick"/>`;
+        }
+      }
+    }
+    pts.forEach((p, i) => {
+      const a = pts[(i + n - 1) % n], c = pts[(i + 1) % n];
+      const ux = a[0] - p[0], uy = a[1] - p[1], vx = c[0] - p[0], vy = c[1] - p[1];
+      if (Math.abs(ux * vx + uy * vy) > 1e-6 * Math.hypot(ux, uy) * Math.hypot(vx, vy) * 1e3) return;
+      const k = 12 / s, lu = Math.hypot(ux, uy), lv = Math.hypot(vx, vy);
+      const q1 = [p[0] + (ux / lu) * k, p[1] + (uy / lu) * k], q3 = [p[0] + (vx / lv) * k, p[1] + (vy / lv) * k];
+      const q2 = [q1[0] + (vx / lv) * k, q1[1] + (vy / lv) * k];
+      b += `<path d="M${X(q1[0])},${Y(q1[1])} L${X(q2[0])},${Y(q2[1])} L${X(q3[0])},${Y(q3[1])}" class="v-arc"/>`;
+    });
+    if (line) {
+      const [[ax, ay], [cx2, cy2]] = line;
+      const ex = cx2 - ax, ey = cy2 - ay, el = Math.hypot(ex, ey), ext = 0.18 * Math.max(maxX - minX, maxY - minY);
+      b += `<line x1="${X(ax - (ex / el) * ext)}" y1="${Y(ay - (ey / el) * ext)}" x2="${X(cx2 + (ex / el) * ext)}" y2="${Y(cy2 + (ey / el) * ext)}" class="v-dash v-symline"/>`;
+    }
+    return svg(W, H, b, name);
+  },
+
   fracgrid({ rows, cols, rowsShaded, colsShaded }) {
     const S = 170, x0 = 10, y0 = 10, ch = S / rows, cw = S / cols;
     let b = '';
@@ -312,6 +425,27 @@ const R = {
     }
     return svg(S + 20, S + 20, b, 'fraction multiplication grid');
   },
+};
+
+// Shapes for the geometry skills, in units (y up). Right angles and equal sides are found from the points.
+const hex = Array.from({ length: 6 }, (_, i) => [Math.cos((i * Math.PI) / 3), Math.sin((i * Math.PI) / 3)]);
+const pent = Array.from({ length: 5 }, (_, i) => [Math.cos(Math.PI / 2 + (i * 2 * Math.PI) / 5), Math.sin(Math.PI / 2 + (i * 2 * Math.PI) / 5)]);
+export const SHAPES = {
+  square: [[0, 0], [1, 0], [1, 1], [0, 1]],
+  rectangle: [[0, 0], [1.7, 0], [1.7, 1], [0, 1]],
+  rhombus: [[0.8, 0], [1.6, 0.6], [0.8, 1.2], [0, 0.6]],
+  parallelogram: [[0, 0], [1.3, 0], [1.8, 0.9], [0.5, 0.9]],
+  trapezoid: [[0, 0], [1.8, 0], [1.35, 0.9], [0.45, 0.9]],
+  rightTrapezoid: [[0, 0], [1.6, 0], [1.0, 0.9], [0, 0.9]],
+  kite: [[0.6, 0], [1.2, 1.0], [0.6, 1.5], [0, 1.0]],
+  equilateral: [[0, 0], [1, 0], [0.5, Math.sqrt(3) / 2]],
+  isosceles: [[0, 0], [1, 0], [0.5, 1.25]],
+  scalene: [[0, 0], [1.4, 0], [0.3, 0.8]],
+  rightTriangle: [[0, 0], [1.3, 0], [0, 0.9]],
+  obtuseTriangle: [[0, 0], [1.6, 0], [-0.45, 0.6]],
+  acuteTriangle: [[0, 0], [1.2, 0], [0.5, 1.0]],
+  hexagon: hex,
+  pentagon: pent,
 };
 
 function icon(kind, x, y, s) {

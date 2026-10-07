@@ -383,4 +383,151 @@ const surface = {
   },
 };
 
-export const CAVE_SKILLS = [perimeter, areaRect, angleType, convert, areaMissing, angleAdd, volume, coord, areaTri, surface];
+// Reading a protractor: the classic slip is reading the other scale, which gives 180 minus the angle.
+const protractor = {
+  id: 'protractor', domain: D, grade: 4, cc: '4.MD.6', name: 'Measure angles with a protractor', short: 'protractor',
+  gen(rng, tier) {
+    let deg = tier === 1 ? rng.int(2, 16) * 10 : rng.int(3, 33) * 5;
+    if (deg === 90) deg = tier === 1 ? 70 : 115;
+    const from = tier === 3 ? 'left' : 'right';
+    return P({
+      skill: this.id, tier,
+      text: 'Read the protractor. How many degrees is the angle?',
+      visual: { kind: 'protractor', deg, from },
+      answer: num(deg),
+      choices: makeChoices(rng, deg, [
+        { value: 180 - deg, why: `Start at the 0 that sits on the angle's first ray (on the ${from}) and use that scale.` },
+        deg + 10, deg - 10, deg + 5,
+      ], labelNum),
+      hint: `Find the 0 where the first ray lies (on the ${from}). Count along that scale to the other ray. Is the angle smaller or bigger than a square corner (90°)?`,
+      steps: [`The first ray is on the ${from}, so use the scale that starts at 0 on the ${from}.`, `The other ray points to ${deg}°.`, `The angle is ${deg < 90 ? 'smaller' : 'bigger'} than 90°, so ${deg}° makes sense.`],
+      meta: { value: deg },
+    });
+  },
+};
+
+// Lines of symmetry. Lines are in the same units as SHAPES in visuals.js.
+const SYMMETRY = {
+  square: { n: 4, yes: [[[0.5, -0.1], [0.5, 1.1]], [[0, 0], [1, 1]]], no: [] },
+  rectangle: { n: 2, yes: [[[0.85, 0], [0.85, 1]], [[0, 0.5], [1.7, 0.5]]], no: [[[0, 0], [1.7, 1]]] },
+  rhombus: { n: 2, yes: [[[0.8, 0], [0.8, 1.2]], [[0, 0.6], [1.6, 0.6]]], no: [] },
+  parallelogram: { n: 0, yes: [], no: [[[0.9, 0], [0.9, 0.9]], [[0, 0], [1.8, 0.9]]] },
+  trapezoid: { n: 1, yes: [[[0.9, 0], [0.9, 0.9]]], no: [[[0, 0.45], [1.8, 0.45]]] },
+  kite: { n: 1, yes: [[[0.6, 0], [0.6, 1.5]]], no: [[[0, 1.0], [1.2, 1.0]]] },
+  equilateral: { n: 3, yes: [[[0.5, 0], [0.5, Math.sqrt(3) / 2]]], no: [] },
+  isosceles: { n: 1, yes: [[[0.5, 0], [0.5, 1.25]]], no: [[[0, 0.5], [1, 0.5]]] },
+  scalene: { n: 0, yes: [], no: [[[0.55, 0], [0.55, 0.8]]] },
+  hexagon: { n: 6, yes: [[[-1, 0], [1, 0]]], no: [] },
+  pentagon: { n: 5, yes: [[[0, -1], [0, 1]]], no: [] },
+};
+const SHAPE_WORDS = {
+  square: 'square', rectangle: 'rectangle', rhombus: 'rhombus', parallelogram: 'parallelogram', trapezoid: 'trapezoid',
+  kite: 'kite', equilateral: 'triangle', isosceles: 'triangle', scalene: 'triangle', hexagon: 'hexagon', pentagon: 'pentagon',
+};
+
+const symmetry = {
+  id: 'symmetry', domain: D, grade: 4, cc: '4.G.3', name: 'Lines of symmetry', short: 'symmetry',
+  gen(rng, tier) {
+    if (tier === 1) {
+      // Is the dashed line a line of symmetry? Folding along it must match both halves exactly.
+      const pool = Object.entries(SYMMETRY).flatMap(([name, s]) => [...s.yes.map((l) => ({ name, l, ok: true })), ...s.no.map((l) => ({ name, l, ok: false }))]);
+      const q = rng.pick(pool);
+      const word = SHAPE_WORDS[q.name];
+      const why = q.ok ? 'Fold along the line: both halves land exactly on top of each other.' : 'Fold along the line: the two halves do not match up, so it is not a line of symmetry.';
+      return P({
+        skill: this.id, tier,
+        text: `Is the dashed line a line of symmetry for this ${word}?`,
+        visual: { kind: 'shape', name: q.name, line: q.l },
+        answer: pick(),
+        choices: [
+          { label: 'Yes', value: 'yes', correct: q.ok, why: q.ok ? undefined : why },
+          { label: 'No', value: 'no', correct: !q.ok, why: q.ok ? why : undefined },
+        ],
+        hint: 'Imagine folding the shape along the dashed line. Would the two halves match exactly?',
+        steps: [why],
+        answerText: q.ok ? 'Yes' : 'No',
+      });
+    }
+    const names = tier === 2 ? ['square', 'rectangle', 'isosceles', 'scalene', 'kite', 'equilateral'] : ['rhombus', 'parallelogram', 'trapezoid', 'hexagon', 'pentagon', 'rectangle', 'equilateral'];
+    const name = rng.pick(names);
+    const n = SYMMETRY[name].n;
+    const word = SHAPE_WORDS[name];
+    const tips = {
+      rectangle: 'A rectangle folds in half up-and-down and side-to-side, but not along a diagonal.',
+      parallelogram: 'A slanted parallelogram has no fold where both halves match, not even the diagonals.',
+      square: 'A square folds evenly across the middle both ways and along both diagonals.',
+    };
+    return P({
+      skill: this.id, tier,
+      text: `How many lines of symmetry does this ${word} have?`,
+      visual: { kind: 'shape', name },
+      answer: num(n),
+      choices: makeChoices(rng, n, [n + 1, Math.max(0, n - 1), n + 2, name === 'rectangle' ? 4 : 2, 0, 1].map((v) => (v === n ? null : { value: v, why: tips[name] })), (v) => String(v), 4, { allowNeg: true }),
+      hint: 'Look for every way to fold the shape so both halves match exactly. Try up-and-down, side-to-side and corner-to-corner.',
+      steps: [tips[name] ?? `There ${n === 1 ? 'is' : 'are'} ${n} way${n === 1 ? '' : 's'} to fold this ${word} so both halves match.`, `So it has ${n} line${n === 1 ? '' : 's'} of symmetry.`],
+      meta: { value: n },
+    });
+  },
+};
+
+// Classify triangles by angles and quadrilaterals by sides and angles.
+const classify = {
+  id: 'shape_classify', domain: D, grade: 4, cc: '4.G.2', name: 'Classify shapes', short: 'classify shapes',
+  gen(rng, tier) {
+    if (tier === 1) {
+      const [name, kind] = rng.pick([['rightTriangle', 'right'], ['obtuseTriangle', 'obtuse'], ['acuteTriangle', 'acute'], ['equilateral', 'acute']]);
+      const why = { right: 'It has one square corner (90°), so it is a right triangle.', obtuse: 'One angle is wider than a square corner, so it is an obtuse triangle.', acute: 'Every angle is smaller than a square corner, so it is an acute triangle.' };
+      return P({
+        skill: this.id, tier,
+        text: 'What kind of triangle is this?',
+        visual: { kind: 'shape', name },
+        answer: pick(),
+        choices: ['acute', 'right', 'obtuse'].map((k) => ({ label: `${k} triangle`, value: k, correct: k === kind, why: k === kind ? undefined : why[kind] })),
+        hint: 'Look at the biggest angle. Is it smaller than, equal to, or bigger than a square corner?',
+        steps: [why[kind]],
+        answerText: `${kind} triangle`,
+      });
+    }
+    if (tier === 2) {
+      const facts = {
+        square: '4 equal sides and 4 right angles',
+        rectangle: '4 right angles, with opposite sides equal',
+        rhombus: '4 equal sides, but no right angles',
+        parallelogram: '2 pairs of parallel sides, but no right angles and not all sides equal',
+        trapezoid: 'exactly 1 pair of parallel sides',
+      };
+      const name = rng.pick(Object.keys(facts));
+      return P({
+        skill: this.id, tier,
+        text: 'What is the best name for this shape?',
+        visual: { kind: 'shape', name },
+        answer: pick(),
+        choices: rng.shuffle(Object.keys(facts)).slice(0, 4).concat(name).filter((v, i, a) => a.indexOf(v) === i).slice(-4)
+          .map((k) => ({ label: k, value: k, correct: k === name, why: k === name ? undefined : `This shape has ${facts[name]}.` })),
+        hint: 'Count the equal sides (the little tick marks) and look for square corners and parallel sides.',
+        steps: [`It has ${facts[name]}.`, `So the best name is ${name}.`],
+        answerText: name,
+      });
+    }
+    const q = rng.pick([
+      { text: 'A shape has 4 equal sides and no right angles. What is it?', a: 'rhombus', why: 'Equal sides with no square corners make a rhombus. A square would need right angles.' },
+      { text: 'A four-sided shape has exactly one pair of parallel sides. What is it?', a: 'trapezoid', why: 'Exactly one pair of parallel sides is a trapezoid.' },
+      { text: 'A shape has 4 right angles but its sides are not all equal. What is it?', a: 'rectangle', why: 'Four right angles with unequal sides make a rectangle, not a square.' },
+      { text: 'A shape has 4 equal sides and 4 right angles. What is the best name for it?', a: 'square', why: 'It is also a rectangle and a rhombus, but square is the most exact name.' },
+      { text: 'A triangle has one angle of 120°. What kind of triangle is it?', a: 'obtuse triangle', why: '120° is wider than 90°, so the triangle is obtuse.' },
+      { text: 'A triangle has one angle of exactly 90°. What kind of triangle is it?', a: 'right triangle', why: 'A 90° angle is a right angle.' },
+    ]);
+    const options = q.a.includes('triangle') ? ['acute triangle', 'right triangle', 'obtuse triangle'] : ['square', 'rectangle', 'rhombus', 'trapezoid'];
+    return P({
+      skill: this.id, tier,
+      text: q.text,
+      answer: pick(),
+      choices: options.map((k) => ({ label: k, value: k, correct: k === q.a, why: k === q.a ? undefined : q.why })),
+      hint: 'Picture the shape. Check the sides, the corners and any parallel sides.',
+      steps: [q.why],
+      answerText: q.a,
+    });
+  },
+};
+
+export const CAVE_SKILLS = [perimeter, areaRect, angleType, protractor, convert, areaMissing, angleAdd, classify, symmetry, volume, coord, areaTri, surface];

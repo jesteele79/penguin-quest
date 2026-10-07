@@ -3,7 +3,7 @@ const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
 const MOODS = {
   title: { bpm: 70, chords: [[50, 57, 61, 66], [47, 54, 57, 62], [43, 50, 54, 59], [45, 52, 57, 61]], box: 0.55, bass: true, kick: false, pluck: false },
-  explore: { bpm: 76, chords: [[50, 57, 61, 66], [47, 54, 57, 62], [43, 50, 54, 59], [45, 52, 57, 61]], box: 0.7, bass: true, kick: false, pluck: false },
+  explore: { bpm: 76, chords: [[50, 57, 61, 66], [47, 54, 57, 62], [43, 50, 54, 59], [45, 52, 57, 61]], box: 0.7, bass: true, kick: false, pluck: false, layered: true },
   quiz: { bpm: 84, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [47, 54, 59, 62], [45, 52, 57, 61]], box: 0.35, bass: true, kick: false, pluck: true },
   battle: { bpm: 112, chords: [[47, 54, 59, 62], [43, 50, 55, 59], [50, 57, 62, 66], [45, 52, 57, 61]], box: 0.45, bass: true, kick: true, pluck: true, drive: true },
   boss: { bpm: 100, chords: [[40, 47, 52, 55], [48, 55, 60, 64], [50, 57, 62, 66], [47, 54, 59, 63]], box: 0.4, bass: true, kick: true, pluck: true, drive: true, scale: [4, 7, 9, 11, 2] },
@@ -12,6 +12,9 @@ const MOODS = {
 const PENTA = [0, 2, 4, 7, 9];
 // D major pentatonic (same notes as B minor pentatonic), as pitch classes.
 const SCALE_D = [2, 4, 6, 9, 11];
+// Every effect is in the music's key (D major) so feedback sounds like part of the score.
+const D5 = 74;
+const penta = (step) => D5 + PENTA[((step % 5) + 5) % 5] + 12 * Math.floor(step / 5);
 
 export class AudioEngine {
   constructor() {
@@ -20,6 +23,18 @@ export class AudioEngine {
     this.sfxVol = 0.8;
     this.mood = null;
     this.voicePitch = 1;
+    // Music layers: 0 to 5, one per restored aurora crystal (pad always, then bass, bells, plucks, shaker, lead).
+    this.layers = 1;
+    this.duck = 1;
+  }
+
+  setLayers(n) { this.layers = Math.max(1, Math.min(5, n)); }
+
+  // Quieter music under quizzes and reading, so the question has the room.
+  setDuck(on) {
+    this.duck = on ? 0.6 : 1;
+    if (!this.ctx) return;
+    this.musicBus.gain.setTargetAtTime(this.musicVol * this.duck, this.ctx.currentTime, 0.4);
   }
 
   init() {
@@ -61,7 +76,7 @@ export class AudioEngine {
     this.musicVol = music; this.sfxVol = sfx;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.musicBus.gain.setTargetAtTime(music, t, 0.1);
+    this.musicBus.gain.setTargetAtTime(music * this.duck, t, 0.1);
     this.sfxBus.gain.setTargetAtTime(sfx, t, 0.1);
     this.windGain?.gain.setTargetAtTime(0.022 * sfx, t, 0.3);
   }
@@ -202,14 +217,16 @@ export class AudioEngine {
         this.noise({ dur: 0.3, vol: 0.06, f: 600, to: 350, q: 0.8 });
         break;
       case 'correct': {
-        const base = 72;
-        [0, 4, 7, 12].forEach((s, i) => this.bell(midi(base + s), i * 0.075, 0.1, 0.9));
-        this.tone({ f: midi(96), type: 'sine', dur: 0.4, vol: 0.03, when: 0.3 });
+        // A rising pentatonic run that starts one step higher for each answer in a streak.
+        const k = Math.min(o.streak ?? 0, 9);
+        [0, 1, 2, 4].forEach((s, i) => this.bell(midi(penta(k + s)), i * 0.07, 0.1, 0.9));
+        this.tone({ f: midi(penta(k + 7)), type: 'sine', dur: 0.4, vol: 0.03, when: 0.28 });
         break;
       }
       case 'wrong':
-        this.tone({ f: midi(64), type: 'sine', dur: 0.2, vol: 0.09 });
-        this.tone({ f: midi(60), type: 'sine', dur: 0.3, vol: 0.08, when: 0.16 });
+        // A soft, curious "hmm?" in key: never a buzzer.
+        this.tone({ f: midi(69), type: 'triangle', dur: 0.16, vol: 0.06, lp: 1600 });
+        this.tone({ f: midi(66), type: 'triangle', dur: 0.26, vol: 0.055, when: 0.13, lp: 1400 });
         break;
       case 'hint':
         this.bell(midi(81), 0, 0.07, 0.6); this.bell(midi(88), 0.09, 0.05, 0.6);
@@ -236,7 +253,10 @@ export class AudioEngine {
         this.tone({ f: (o.pitch ?? 520) * (0.9 + r() * 0.25), type: 'triangle', dur: 0.045, vol: 0.035, send: false });
         break;
       case 'click':
-        this.tone({ f: 1400, type: 'sine', dur: 0.03, vol: 0.05, send: false });
+        this.tone({ f: 1400 * (0.95 + r() * 0.1), type: 'sine', dur: 0.03, vol: 0.05, send: false });
+        break;
+      case 'tab':
+        this.tone({ f: midi(penta(3)) * (0.97 + r() * 0.06), type: 'triangle', dur: 0.06, vol: 0.04, send: false });
         break;
       case 'open':
         this.noise({ dur: 0.3, vol: 0.05, f: 800, to: 2600, q: 0.8 });
@@ -254,7 +274,7 @@ export class AudioEngine {
         this.noise({ dur: 0.3, vol: 0.06, f: 3000, to: 800, q: 0.9 });
         break;
       case 'cheer':
-        [0, 4, 7, 11, 14].forEach((s, i) => this.bell(midi(76 + s), i * 0.05, 0.07, 0.8));
+        [0, 4, 7, 11, 14].forEach((s, i) => this.bell(midi(D5 + s), i * 0.05, 0.07, 0.8));
         this.tone({ f: 220, to: 880, type: 'sine', dur: 0.25, vol: 0.07 });
         break;
       case 'hurt':
@@ -262,12 +282,12 @@ export class AudioEngine {
         this.tone({ f: 180, to: 110, type: 'sine', dur: 0.35, vol: 0.1 });
         break;
       case 'fanfare': {
-        const seq = [[67, 0], [72, 0.14], [76, 0.28], [79, 0.42], [84, 0.62]];
+        const seq = [[69, 0], [74, 0.14], [78, 0.28], [81, 0.42], [86, 0.62]];
         seq.forEach(([m, w]) => {
           this.tone({ f: midi(m), type: 'sawtooth', dur: 0.4, vol: 0.05, when: w, lp: 2200 });
           this.bell(midi(m + 12), w, 0.04, 0.6);
         });
-        [60, 64, 67, 72].forEach((m) => this.tone({ f: midi(m), type: 'triangle', dur: 1.4, vol: 0.05, a: 0.05, r: 1, when: 0.62, lp: 2600 }));
+        [62, 66, 69, 74].forEach((m) => this.tone({ f: midi(m), type: 'triangle', dur: 1.4, vol: 0.05, a: 0.05, r: 1, when: 0.62, lp: 2600 }));
         break;
       }
       case 'build':
@@ -296,24 +316,35 @@ export class AudioEngine {
   }
 
   // --- music ---
+  // A new mood starts on the next downbeat (all moods share the key), so music never cuts to silence.
   setMood(mood) {
-    if (!this.ctx || mood === this.mood) return;
-    this.mood = mood;
-    this.moodDef = MOODS[mood] || null;
-    this.beat = 0;
-    this.nextTime = this.ctx.currentTime + 0.1;
-    const t = this.ctx.currentTime;
-    this.musicBus.gain.cancelScheduledValues(t);
-    this.musicBus.gain.setValueAtTime(0.0001, t);
-    this.musicBus.gain.linearRampToValueAtTime(this.musicVol, t + 1.5);
+    if (!this.ctx || mood === (this.pending ?? this.mood)) return;
+    if (!this.moodDef) {
+      this.mood = mood;
+      this.moodDef = MOODS[mood] || null;
+      this.beat = 0;
+      this.nextTime = this.ctx.currentTime + 0.1;
+      const t = this.ctx.currentTime;
+      this.musicBus.gain.cancelScheduledValues(t);
+      this.musicBus.gain.setValueAtTime(0.0001, t);
+      this.musicBus.gain.linearRampToValueAtTime(this.musicVol * this.duck, t + 1.5);
+      return;
+    }
+    this.pending = mood;
   }
 
   tick() {
     const c = this.ctx;
     if (!c || !this.moodDef || c.state !== 'running') return;
-    const m = this.moodDef;
-    const spb = 60 / m.bpm;
     while (this.nextTime < c.currentTime + 0.25) {
+      if (this.pending && this.beat % 4 === 0) {
+        this.mood = this.pending;
+        this.moodDef = MOODS[this.pending] || this.moodDef;
+        this.pending = null;
+        this.beat = 0;
+      }
+      const m = this.moodDef;
+      const spb = 60 / m.bpm;
       this.scheduleEighth(this.nextTime - c.currentTime, m, spb);
       this.nextTime += spb / 2;
       this.beat += 0.5;
@@ -333,7 +364,9 @@ export class AudioEngine {
         this.tone({ f: midi(n + 12), type: 'sine', dur: spb * 8, vol: 0.012, a: 1.2, r: 2, when: w, bus: 'music', detune: 6 });
       }
     }
-    if (m.bass && (posInBar === 0 || posInBar === 2 || (m.drive && Number.isInteger(this.beat)))) {
+    // Exploring, the band grows with the aurora: each restored crystal adds a layer.
+    const layers = m.layered ? this.layers : 5;
+    if (m.bass && layers >= 2 && (posInBar === 0 || posInBar === 2 || (m.drive && Number.isInteger(this.beat)))) {
       this.tone({ f: midi(chord[0] - 12), type: m.drive ? 'triangle' : 'sine', dur: spb * (m.drive ? 0.9 : 1.8), vol: m.drive ? 0.07 : 0.06, a: 0.02, r: 0.4, when: w, bus: 'music', send: false });
     }
     if (m.kick && (posInBar === 0 || posInBar === 2)) {
@@ -342,7 +375,14 @@ export class AudioEngine {
     if (m.kick && (posInBar === 1 || posInBar === 3)) {
       this.noise({ dur: 0.12, vol: 0.035, f: 2400, q: 0.8, when: w, bus: 'music' });
     }
-    if (Math.random() < m.box) {
+    if (m.layered && layers >= 5 && posInChord === 4) {
+      // Lead: a short pentatonic phrase answering the chord.
+      [0, 1, 2].forEach((k, i) => this.tone({ f: midi(penta(Math.floor(Math.random() * 3) + k + 2)), type: 'triangle', dur: spb * 0.9, vol: 0.022, a: 0.02, r: spb * 0.6, when: w + i * spb * 0.5, bus: 'music', lp: 2600 }));
+    }
+    if (m.layered && layers >= 4 && !Number.isInteger(this.beat)) {
+      this.noise({ dur: 0.05, vol: 0.016, f: 6500, q: 1.4, when: w, bus: 'music' });
+    }
+    if (Math.random() < m.box * (m.layered ? 0.4 + layers * 0.12 : 1)) {
       // Music box: mostly chord tones, sometimes a pentatonic neighbor, in a high octave.
       const pcs = Math.random() < 0.6 ? chord.map((n) => n % 12) : (m.scale ?? SCALE_D);
       const pc = pcs[Math.floor(Math.random() * pcs.length)];
@@ -350,7 +390,7 @@ export class AudioEngine {
       const note = octave + ((pc - (octave % 12)) + 12) % 12;
       this.bell(midi(note), w, 0.028, 1.1, 'music');
     }
-    if (m.pluck && Number.isInteger(this.beat)) {
+    if ((m.pluck || (m.layered && layers >= 3)) && Number.isInteger(this.beat)) {
       const n = chord[(Math.floor(this.beat) + 1) % chord.length] + 12;
       this.tone({ f: midi(n), type: 'triangle', dur: 0.25, vol: 0.03, a: 0.003, r: 0.2, when: w, bus: 'music' });
     }

@@ -83,6 +83,8 @@ export function toSpeech(markup) {
   s = s.replace(/\{(-?)([\d?]+) ([\d?]+)\/([\d?]+)\}/g, (_, neg, w, n, d) => `${neg ? 'negative ' : ''}${w} and ${fracWords(n, +d)}`);
   s = s.replace(/\{(-?)([\d?]+)\/([\d?]+)\}/g, (_, neg, n, d) => `${neg ? 'negative ' : ''}${fracWords(n, +d)}`);
   s = s.replace(/\*\*/g, '');
+  // A minus sign in front of a number is a negative number, read the way a teacher says it.
+  s = s.replace(/(^|[\s(=,:])−(\d)/g, '$1negative $2');
   s = s.replace(/(\w)\^2/g, '$1 squared').replace(/(\w)\^3/g, '$1 cubed').replace(/(\w)\^(\d+)/g, '$1 to the power of $2');
   s = s.replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ').replace(/\+/g, ' plus ')
     .replace(/=/g, ' equals ').replace(/○/g, ' compared to ').replace(/°/g, ' degrees').replace(/\?/g, ' what?');

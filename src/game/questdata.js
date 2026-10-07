@@ -327,6 +327,7 @@ export const MAIN = [
         lines: [
           ['king', 'Thank you, {name}. For the first time in forever, I feel warm.'],
           ['king', 'Please, take this Aurora Crown. You are the bravest, kindest penguin in all of Glacier Bay.'],
+          ['king', 'And look: the Glooms are not shadows at all. They are lost starlight, finally finding their way home.'],
           ['king', 'And... would you come back tomorrow? I have an idea. A wonderful, sparkly idea.'],
         ],
         reward: { items: ['hat:crown'] },
@@ -401,6 +402,7 @@ export const SIDE = [
     offer: [
       ['professor', 'Would you help me with my star charts? I count shooting stars and comets every night.'],
       ['professor', 'There is a fresh chart at my easel every day. Finish charts on three different days and I will give you something special.'],
+      ['professor', 'Funny thing: my oldest chart has a gap in it, as if a whole piece of the sky went missing long ago. I have never solved that mystery.'],
     ],
     steps: [{ type: 'count', counter: 'chartDays', need: 3, absolute: true, turnin: 'professor', text: (n) => `Finish star charts on 3 different days (${n}/3)`, target: 'easel', after: [['professor', 'Three days of star charts! This Star Chart scarf is covered in real constellations. Wear it well!']], reward: { items: ['scarf:star'] } }],
   },
@@ -461,6 +463,7 @@ export const CHATTER = {
     'If a puzzle feels tricky, press H for a hint. Even great scientists ask for hints.',
     'Check the Aurora Patrol board by my igloo. There are new tasks every day!',
     'Penguins are wonderful swimmers. Jump in the lake and hold Shift to zoom!',
+    'This cracked star badge? A souvenir from my days in the old Star Guild. A long story, for another day.',
   ],
   mo: ['There are 30 golden snowflakes hidden around the bay. Some are on top of hills!'],
   lulu: ['Did you know penguins can belly-slide really fast? Hold Shift while you run. Wheee!', 'The sledding hill is just south of here!'],

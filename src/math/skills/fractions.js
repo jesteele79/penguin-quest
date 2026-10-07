@@ -481,4 +481,55 @@ const divFrac = {
   },
 };
 
-export const GROVE_SKILLS = [identify, equiv, compare, addLike, fill, simplify, mixed, timesWhole, addUnlike, ofWhole, mult, divUnit, divFrac];
+// Word problems with like denominators (join, separate) and a fraction times a whole number.
+const fracWord = {
+  id: 'frac_word', domain: D, grade: 4, cc: '4.NF.3d', name: 'Fraction word problems', short: 'fraction stories',
+  gen(rng, tier) {
+    if (tier === 3) {
+      const [a, b] = coprimePair(rng, 3, 8);
+      const k = rng.int(3, 7);
+      const ans = F(a * k, b);
+      return P({
+        skill: this.id, tier,
+        text: `Each lantern uses {${a}/${b}} of a cup of glow oil. How many cups of oil do ${k} lanterns use?`,
+        answer: frac(ans),
+        choices: makeChoices(rng, ans, [
+          { value: F(a * k, b * k), why: `${k} lanterns use ${k} groups of {${a}/${b}}. Multiply only the top number.` },
+          F(a + k, b), F(a * k, b).add(1), F(a, b * k),
+        ], labMixed),
+        hint: `${k} lanterns × {${a}/${b}} cup each. Multiply the top number by ${k}.`,
+        hintVisual: { kind: 'tape', rows: [{ segs: Array.from({ length: k }, () => ({ v: 1, label: `${a}/${b}` })), totalLabel: '?' }] },
+        steps: [`${k} × {${a}/${b}} = {${a * k}/${b}}.`, ...(a * k > b ? [`{${a * k}/${b}} = ${fm(ans, { mixed: true })} cups.`] : [])],
+        meta: { value: ans },
+      });
+    }
+    const d = rng.pick(tier === 1 ? [4, 5, 6, 8] : [6, 8, 10, 12]);
+    const join = tier === 1 || rng.chance(0.5);
+    let a = rng.int(1, d - 2), c = rng.int(1, d - 1 - a);
+    if (!join) { const whole = rng.int(a + 1, d); [a, c] = [whole, rng.int(1, whole - 1)]; }
+    const ans = join ? F(a + c, d) : F(a - c, d);
+    const story = join
+      ? `Fern waters {${a}/${d}} of her garden in the morning and {${c}/${d}} of it in the afternoon. What fraction of the garden did she water?`
+      : `Pebble had {${a}/${d}} of a tank of lamp oil. The lamp burned {${c}/${d}} of a tank. How much oil is left?`;
+    return P({
+      skill: this.id, tier,
+      text: story,
+      answer: frac(ans),
+      choices: makeChoices(rng, ans, join ? [
+        { value: F(a + c, d + d), why: `The pieces are still ${d}ths, so the bottom number stays ${d}. Add only the tops.` },
+        F(a + c + 1, d), F(a, d), F(a * c, d),
+      ] : [
+        { value: F(a + c, d), why: 'Some oil burned away, so take it away: subtract.' },
+        F(a - c + 1, d), F(c, d), F(a, d),
+      ], labMixed),
+      hint: join ? `Both parts are ${d}ths. Add the numbers on top; the bottom stays ${d}.` : `Both amounts are ${d}ths. Subtract the tops; the bottom stays ${d}.`,
+      hintVisual: { kind: 'bars', bars: [{ parts: d, shaded: a }, { parts: d, shaded: c }] },
+      steps: join
+        ? [`{${a}/${d}} + {${c}/${d}}: add the tops, ${a} + ${c} = ${a + c}.`, `The bottom stays ${d}: {${a + c}/${d}}.`]
+        : [`{${a}/${d}} − {${c}/${d}}: subtract the tops, ${a} − ${c} = ${a - c}.`, `The bottom stays ${d}: {${a - c}/${d}}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const GROVE_SKILLS = [identify, equiv, compare, addLike, fill, simplify, mixed, timesWhole, fracWord, addUnlike, ofWhole, mult, divUnit, divFrac];

@@ -188,16 +188,16 @@ export function buildNature(ctx) {
   };
   pines.forEach((list, k) => {
     const mesh = new THREE.InstancedMesh(pineGeometry(k === 1), treeMat, list.length);
-    mesh.castShadow = true;
     mesh.receiveShadow = true;
     placeInstances(mesh, list, true);
     scene.add(mesh);
+    ctx.shadowCasters.add(mesh);
   });
   if (deadTrees.length) {
     const dm = new THREE.InstancedMesh(deadTreeGeometry(), lambert({ vertexColors: true }, { color: 0x9a6bff, strength: 0.5 }), deadTrees.length);
-    dm.castShadow = true;
     placeInstances(dm, deadTrees, true, 0.4);
     scene.add(dm);
+    ctx.shadowCasters.add(dm);
     ctx.deadTrees = dm;
   }
 
@@ -220,7 +220,6 @@ export function buildNature(ctx) {
   const rockMat = lambert({ vertexColors: true, flatShading: true }, { strength: 0.3 });
   rockLists.forEach((list, k) => {
     const mesh = new THREE.InstancedMesh(rockGeos[k], rockMat, list.length);
-    mesh.castShadow = true;
     mesh.receiveShadow = true;
     list.forEach((t, i) => {
       e.set(0, t.ry, 0); q.setFromEuler(e);
@@ -235,6 +234,7 @@ export function buildNature(ctx) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
     scene.add(mesh);
+    ctx.shadowCasters.add(mesh);
   });
 
   // ---- Crystal clusters ----
@@ -284,8 +284,8 @@ export function buildNature(ctx) {
   ctx.crystalMeshes = {};
   for (const [kind, list] of Object.entries(clusters)) {
     if (!list.length) continue;
+    // Glowing crystals cast no shadow: light comes out of them.
     const mesh = new THREE.InstancedMesh(clusterGeo, crystalMaterial(CRYSTAL_COLORS[kind], kind === 'gloom' ? 0.35 : 0.7), list.length);
-    mesh.castShadow = true;
     placeInstances(mesh, list, false);
     scene.add(mesh);
     ctx.crystalMeshes[kind] = mesh;

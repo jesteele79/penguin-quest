@@ -11,7 +11,13 @@ import { buildLandmarks } from './landmarks.js';
 import { Roads } from './roads.js';
 import { Effects } from './effects.js';
 import { SHARED_TIME } from '../core/materials.js';
+import { ShadowCasters } from './shadowcasters.js';
 import { WATER_Y } from './layout.js';
+
+// Shadow-camera axes: three's lookAt puts x along up × direction and y along direction × x.
+const SHADOW_R = new THREE.Vector3(0, 1, 0).cross(MOON_DIR).normalize();
+const SHADOW_U = MOON_DIR.clone().cross(SHADOW_R).normalize();
+const _snap = new THREE.Vector3();
 
 export class World {
   constructor(scene, renderer, quality) {
@@ -29,7 +35,8 @@ export class World {
     this.moon = new THREE.DirectionalLight(0xc9d6ff, 2.0);
     this.moon.castShadow = true;
     const sc = this.moon.shadow.camera;
-    sc.left = -48; sc.right = 48; sc.top = 48; sc.bottom = -48; sc.near = 1; sc.far = 260;
+    // A box fitted around the player: the further the box reaches, the blurrier every shadow gets.
+    sc.left = -34; sc.right = 34; sc.top = 34; sc.bottom = -34; sc.near = 1; sc.far = 260;
     this.moon.shadow.bias = -0.0006;
     this.moon.shadow.normalBias = 0.04;
     this.moon.shadow.mapSize.set(2048, 2048);
@@ -44,6 +51,7 @@ export class World {
     this.lanterns = [];
 
     this.sky = new Sky(scene);
+    this.shadowCasters = new ShadowCasters(scene);
     this.terrainMesh = buildTerrainMesh(this.terrain);
     scene.add(this.terrainMesh);
     this.glow = new GlowField(scene, 1500);
@@ -58,6 +66,7 @@ export class World {
       glow: this.glow,
       terrainMesh: this.terrainMesh,
       lanterns: this.lanterns,
+      shadowCasters: this.shadowCasters,
       world: this,
     };
     this.ctx = ctx;
@@ -88,23 +97,30 @@ export class World {
     this.effects.update(dt, time, camera, this.pixelScale);
     for (const a of this.animated) a(dt, time);
 
-    // Moon shadow frustum follows the player.
-    this.moon.position.set(focus.x + MOON_DIR.x * 120, focus.y + MOON_DIR.y * 120, focus.z + MOON_DIR.z * 120);
-    this.moon.target.position.copy(focus);
+    // Moon shadow box follows the player, snapped to whole shadow-map texels so shadow edges don't crawl.
+    const sc = this.moon.shadow.camera;
+    const texel = (sc.right - sc.left) / this.moon.shadow.mapSize.x;
+    const a = Math.round(focus.dot(SHADOW_R) / texel) * texel;
+    const b = Math.round(focus.dot(SHADOW_U) / texel) * texel;
+    _snap.copy(SHADOW_R).multiplyScalar(a).addScaledVector(SHADOW_U, b).addScaledVector(MOON_DIR, focus.dot(MOON_DIR));
+    this.moon.position.copy(_snap).addScaledVector(MOON_DIR, 120);
+    this.moon.target.position.copy(_snap);
+    this.shadowCasters.update(focus);
 
-    // Assign the warm point lights to the two lanterns closest to the camera.
-    if (this.lanterns.length) {
-      const cx = camera.position.x, cz = camera.position.z;
-      const sorted = this.lanterns
-        .map((l) => ({ l, d: (l.x - cx) ** 2 + (l.z - cz) ** 2 }))
-        .sort((a, b) => a.d - b.d);
-      this.warmLights.forEach((light, i) => {
-        const s = sorted[i];
-        if (!s || s.d > 90 * 90) { light.visible = false; return; }
-        light.visible = true;
-        light.position.set(s.l.x, s.l.y, s.l.z);
-        light.intensity = (s.l.intensity ?? 38) * (0.92 + Math.sin(time * 9 + i * 3) * 0.04 + Math.sin(time * 23 + i) * 0.03);
-      });
-    }
+    // The warm point lights go to the two lanterns closest to the camera. Out of range they fade to zero
+    // rather than switching off: hiding a light changes the light count, which recompiles every shader.
+    const cx = camera.position.x, cz = camera.position.z;
+    let i0 = -1, i1 = -1, d0 = Infinity, d1 = Infinity;
+    this.lanterns.forEach((l, i) => {
+      const d = (l.x - cx) ** 2 + (l.z - cz) ** 2;
+      if (d < d0) { i1 = i0; d1 = d0; i0 = i; d0 = d; } else if (d < d1) { i1 = i; d1 = d; }
+    });
+    this.warmLights.forEach((light, i) => {
+      const idx = i === 0 ? i0 : i1, d = i === 0 ? d0 : d1;
+      const l = this.lanterns[idx];
+      if (l) light.position.set(l.x, l.y, l.z);
+      const want = l && d < 90 * 90 ? (l.intensity ?? 38) * (0.92 + Math.sin(time * 9 + i * 3) * 0.04 + Math.sin(time * 23 + i) * 0.03) : 0;
+      light.intensity = want;
+    });
   }
 }

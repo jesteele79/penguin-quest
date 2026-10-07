@@ -17,6 +17,8 @@ class Screen {
   constructor(cls) {
     this.root = el('div', { class: `screen ${cls}`, role: 'dialog' });
     this.cls = cls;
+    // The 3D world stops (and keeps its last frame) behind full-screen menus: saves battery and heat.
+    this.freezesWorld = true;
   }
 
   enter() {
@@ -216,6 +218,15 @@ export class SettingsScreen extends Screen {
       const b = btn(s[key] ? 'On' : 'Off', () => { s[key] = !s[key]; b.textContent = s[key] ? 'On' : 'Off'; b.classList.toggle('on', s[key]); b.setAttribute('aria-pressed', String(s[key])); G.applySettings(); }, `toggle ${s[key] ? 'on' : ''}`, { id, 'aria-pressed': String(!!s[key]) });
       return el('div', { class: 'set-row' }, el('div', {}, el('label', { for: id, text: label }), note ? el('div', { class: 'note', text: note }) : null), b);
     };
+    const choice = (label, note, key, options) => {
+      const seg = el('div', { class: 'seg', 'data-cols': options.length });
+      for (const [value, text] of options) {
+        seg.append(btn(text, () => { s[key] = value; G.applySettings(); this.render(); this.root.querySelector(`[data-k="${key}:${String(value)}"]`)?.focus(); },
+          s[key] === value ? 'sel' : '', { 'data-k': `${key}:${String(value)}`, 'aria-pressed': String(s[key] === value) }));
+      }
+      return el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: label }), note ? el('div', { class: 'note', text: note }) : null), seg);
+    };
+    if (s.textSize === undefined) s.textSize = s.bigText ? 1.25 : 1;
     const quality = el('div', { class: 'seg', 'data-cols': 4 });
     for (const q of ['auto', 'low', 'medium', 'high']) {
       quality.append(btn(cap(q), () => { s.quality = q; G.applySettings(true); this.render(); this.root.querySelector(`[data-q="${q}"]`)?.focus(); }, s.quality === q ? 'sel' : '', { 'data-q': q }));
@@ -224,10 +235,14 @@ export class SettingsScreen extends Screen {
       el('h1', { text: 'Settings' }),
       slider('set-music', 'Music', 'music'),
       slider('set-sfx', 'Sound effects', 'sfx'),
+      slider('set-voice', 'Read-aloud voice', 'voice'),
       el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: 'Graphics' }), el('div', { class: 'note', text: G.qualityNote() })), quality),
       toggle('set-gentle', 'Gentle mode', 'gentle', 'Glooms wait patiently in battles.'),
-      toggle('set-read', 'Read problems aloud', 'readAloud'),
-      toggle('set-big', 'Bigger text', 'bigText'),
+      toggle('set-read', 'Read aloud', 'readAloud', 'Questions and story lines are read out loud.'),
+      choice('Text size', null, 'textSize', [[1, '100%'], [1.25, '125%'], [1.5, '150%']]),
+      toggle('set-easy', 'Easy reading', 'easyRead', 'Wider spacing and cream pages for questions and stories.'),
+      choice('Story text speed', null, 'textSpeed', [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast'], ['instant', 'Instant']]),
+      choice('Motion', 'Fewer bounces, no shaking or freeze-frames.', 'reduceMotion', [[null, 'Auto'], [false, 'Full'], [true, 'Reduced']]),
       toggle('set-trail', 'Golden guide trail', 'showTrail', 'Sparkles that lead to your next goal. G toggles it.'),
       el('div', { class: 'row end' }, btn('Done', () => this.close(), 'primary'))));
   }
@@ -330,12 +345,12 @@ export class JournalScreen extends Screen {
 
   render() {
     this.root.innerHTML = '';
-    const tabs = el('div', { class: 'tabs', role: 'tablist', 'data-cols': 4 });
-    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', 'Aurora Patrol'], ['collect', 'Collections']]) {
+    const tabs = el('div', { class: 'tabs', role: 'tablist', 'data-cols': 5 });
+    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', 'Aurora Patrol'], ['collect', 'Collections'], ['chats', 'Chats']]) {
       tabs.append(btn(label, () => { this.tab = id; this.render(); this.root.querySelector(`[data-tab="${id}"]`)?.focus(); }, this.tab === id ? 'sel' : '', { 'data-tab': id, role: 'tab' }));
     }
     const body = el('div', { class: 'journal-body' });
-    body.innerHTML = { story: () => this.story(), side: () => this.side(), patrol: () => this.patrol(), collect: () => this.collect() }[this.tab]();
+    body.innerHTML = { story: () => this.story(), side: () => this.side(), patrol: () => this.patrol(), collect: () => this.collect(), chats: () => this.chats() }[this.tab]();
     body.addEventListener('click', (e) => {
       const b = e.target.closest('[data-track]');
       if (!b) return;
@@ -359,6 +374,16 @@ export class JournalScreen extends Screen {
       else text = stepSummary(st);
       return `<li class="${done ? 'done' : cur ? 'cur' : ''}">${done ? '✓ ' : ''}${escapeHTML(text)}${st.shard ? ' <span class="shard">shard</span>' : ''}</li>`;
     }).join('')}</ol>`;
+  }
+
+  // Everything friends said recently, newest first, so nothing important is missed.
+  chats() {
+    const lines = G.dialog.log;
+    const notes = G.toasts.log.slice(0, 12);
+    if (!lines.length && !notes.length) return '<p class="note">Nothing yet. Go say hello to someone!</p>';
+    const chat = lines.map((l) => `<div class="chat-line"><b style="color:${l.accent ?? 'var(--lantern)'}">${escapeHTML(l.who || 'Story')}</b> ${escapeHTML(l.text)}</div>`).join('');
+    const news = notes.length ? `<h2>Recent messages</h2>${notes.map((n) => `<div class="chat-line note">${n.html}</div>`).join('')}` : '';
+    return `<h2>Recent chats</h2>${chat}${news}`;
   }
 
   story() {
@@ -462,6 +487,7 @@ function stepSummary(st) {
 export class ShopScreen extends Screen {
   constructor(buyMode) {
     super('shop-screen');
+    this.freezesWorld = false;
     this.buyMode = buyMode;
     this.tab = 'scarf';
   }

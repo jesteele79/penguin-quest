@@ -455,4 +455,70 @@ const mulWord = {
   },
 };
 
-export const LAKE_SKILLS = [mulFacts, divFacts, mul2x1, mulWord, mulMulti1, mul2x2, divRem, divMulti, mul3x2, div2digit, mulDec, divDec];
+// Multi-step problems, including deciding what a remainder means (round up, drop it, or report it).
+const RIDES = [['sled', 'sleds'], ['boat', 'boats'], ['ice raft', 'ice rafts'], ['cable car', 'cable cars']];
+const multiStep = {
+  id: 'multistep', domain: D, grade: 4, cc: '4.OA.3', name: 'Multi-step word problems', short: 'multi-step problems',
+  gen(rng, tier) {
+    const [p1, p2] = rng.shuffle(FRIENDS);
+    if (tier === 1) {
+      const a = rng.int(3, 8), b = rng.int(4, 12), c = rng.int(3, 15);
+      const ans = a * b + c;
+      return P({
+        skill: this.id, tier,
+        text: `${p1} has ${a} buckets with ${b} fish in each, and catches ${c} more. How many fish does ${p1} have now?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: a + b + c, why: `${a} buckets of ${b} means ${a} × ${b}, not ${a} + ${b}.` }, a * b, a * (b + c), ...nearInts(rng, ans, 4)], labelNum),
+        hint: 'Step 1: how many fish are in the buckets? Step 2: add the new ones.',
+        hintVisual: { kind: 'tape', rows: [{ segs: [...Array.from({ length: a }, () => ({ v: b, label: String(b) })), { v: c, label: `+${c}`, alt: true }], totalLabel: '?' }] },
+        steps: [`Fish in buckets: ${a} × ${b} = ${a * b}.`, `Add the new ones: ${a * b} + ${c} = ${ans}.`],
+        meta: { op: 'expr', value: ans },
+      });
+    }
+    if (tier === 2) {
+      const k = rng.int(3, 9), each = rng.int(6, 14), used = rng.int(2, each - 2);
+      const total = k * each, ans = each - used;
+      return P({
+        skill: this.id, tier,
+        text: `${total} snowballs are shared equally by ${k} friends. Then each friend throws ${used} of theirs. How many snowballs does each friend have left?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: total - used, why: `First share the ${total} snowballs: ${total} ÷ ${k}. Then take away ${used}.` }, each, each + used, ...nearInts(rng, ans, 3)], labelNum),
+        hint: `First find how many each friend gets: ${total} ÷ ${k}.`,
+        hintVisual: { kind: 'tape', rows: [{ segs: Array.from({ length: k }, (_, i) => ({ v: each, label: i === 0 ? '?' : '', unknown: i === 0 })), totalLabel: String(total) }] },
+        steps: [`Each friend gets ${total} ÷ ${k} = ${each}.`, `After throwing: ${each} − ${used} = ${ans}.`],
+        meta: { op: 'expr', value: ans },
+      });
+    }
+    const [one, many] = rng.pick(RIDES);
+    const size = rng.int(4, 9);
+    const n = rng.int(3, 11) * size + rng.int(1, size - 1);
+    const q = Math.floor(n / size), r = n % size;
+    const ask = rng.pick(['need', 'full', 'left']);
+    const ans = ask === 'need' ? q + 1 : ask === 'full' ? q : r;
+    const text = {
+      need: `${n} penguins are going to the festival. Each ${one} holds ${size} penguins. How many ${many} are needed so that everyone gets a ride?`,
+      full: `${p2} has ${n} crystal beads and puts ${size} on each necklace. How many necklaces can ${p2} finish?`,
+      left: `${p2} has ${n} crystal beads and puts ${size} on each necklace. After making as many necklaces as possible, how many beads are left over?`,
+    }[ask];
+    const why = {
+      need: `${q} ${many} leave ${r} penguin${r > 1 ? 's' : ''} behind. They need one more ${one}!`,
+      full: 'The leftover beads are not enough for another whole necklace.',
+      left: 'The question asks for the leftover beads, which is the remainder.',
+    }[ask];
+    return P({
+      skill: this.id, tier,
+      text,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [
+        { value: ask === 'need' ? q : q + 1, why },
+        { value: ask === 'left' ? q : r, why: ask === 'left' ? 'That is how many necklaces. The question asks what is left over.' : 'That is the remainder. Think about what the question is asking for.' },
+        ans + 2,
+      ], labelNum),
+      hint: `Divide ${n} by ${size}. Then think: what does the remainder mean here?`,
+      steps: [`${n} ÷ ${size} = ${q} R${r}.`, ask === 'need' ? `${q} ${many} are full and ${r} penguin${r > 1 ? 's' : ''} still need a seat, so ${q} + 1 = ${q + 1} ${many}.` : ask === 'full' ? `${q} necklaces are finished. The ${r} leftover beads are not enough for another.` : `The remainder is ${r}, so ${r} beads are left over.`],
+      meta: { op: 'expr', value: ans },
+    });
+  },
+};
+
+export const LAKE_SKILLS = [mulFacts, divFacts, mul2x1, mulWord, mulMulti1, mul2x2, divRem, divMulti, multiStep, mul3x2, div2digit, mulDec, divDec];

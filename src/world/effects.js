@@ -59,6 +59,8 @@ void main() {
 
 const POOL = 700;
 
+const ONE = new THREE.Vector3(1, 1, 1);
+
 export class Effects {
   constructor(scene, terrain) {
     this.scene = scene;
@@ -102,6 +104,7 @@ export class Effects {
     this.fpCursor = 0;
     this.fpSide = 1;
     this._m = new THREE.Matrix4();
+    this._p = new THREE.Vector3();
     this._q = new THREE.Quaternion();
     this._e = new THREE.Euler();
     this._c = new THREE.Color();
@@ -176,7 +179,7 @@ export class Effects {
     const ox = Math.cos(yaw) * 0.32 * this.fpSide, oz = -Math.sin(yaw) * 0.32 * this.fpSide;
     this._e.set(0, yaw, 0);
     this._q.setFromEuler(this._e);
-    this._m.compose(new THREE.Vector3(x + ox, y, z + oz), this._q, new THREE.Vector3(1, 1, 1));
+    this._m.compose(this._p.set(x + ox, y, z + oz), this._q, ONE);
     this.footprints.setMatrixAt(this.fpCursor, this._m);
     this.fpCursor = (this.fpCursor + 1) % 90;
     this.footprints.instanceMatrix.needsUpdate = true;

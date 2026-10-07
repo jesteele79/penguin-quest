@@ -1,5 +1,8 @@
 import { el, escapeHTML } from './dom.js';
-import { portraitSVG } from './icons.js';
+import { portraitSVG, ICON } from './icons.js';
+import { speak } from './quizpanel.js';
+
+const SPEEDS = { slow: 28, normal: 48, fast: 85, instant: Infinity };
 
 // Storybook dialog box with typewriter text.
 export class DialogBox {
@@ -8,15 +11,22 @@ export class DialogBox {
     this.portrait = el('div', { class: 'dlg-portrait' });
     this.name = el('div', { class: 'dlg-name' });
     this.text = el('div', { class: 'dlg-text' });
-    this.more = el('div', { class: 'dlg-more', html: '<kbd>Enter</kbd> next' });
+    this.more = el('div', { class: 'dlg-more', html: '<kbd>Enter</kbd> next <span class="dlg-arrow">▼</span>' });
+    this.speakBtn = el('button', { class: 'btn ghost dlg-speak', type: 'button', 'aria-label': 'Read this aloud', html: ICON.speaker });
+    this.speakBtn.addEventListener('click', (e) => { e.stopPropagation(); speak(this.full); });
     this.box = el('div', { class: 'dlg panel', role: 'dialog', 'aria-live': 'polite' },
-      this.portrait, el('div', { class: 'dlg-body' }, this.name, this.text), this.more);
+      this.portrait, el('div', { class: 'dlg-body' }, this.name, this.text), this.speakBtn, this.more);
     this.box.addEventListener('click', () => this.onClick && this.onClick());
     root.append(this.box);
     this.full = '';
     this.shown = 0;
     this.speed = 48;
+    this.autoRead = false;
+    // Recent lines, newest first, for the journal's Chats page.
+    this.log = [];
   }
+
+  setSpeed(name) { this.speed = SPEEDS[name] ?? SPEEDS.normal; }
 
   show(line) {
     this.box.classList.add('show');
@@ -30,6 +40,10 @@ export class DialogBox {
     this.text.innerHTML = '';
     this.more.classList.remove('ready');
     this.done = false;
+    this.log.unshift({ who: line.who || '', text: line.text, accent: line.accent });
+    if (this.log.length > 80) this.log.pop();
+    if (this.autoRead) speak(line.text);
+    if (this.speed === Infinity) this.finish();
   }
 
   hide() { this.box.classList.remove('show'); }

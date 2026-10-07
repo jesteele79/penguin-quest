@@ -161,7 +161,9 @@ export class Sky {
         fog: false,
       }),
     );
-    dome.renderOrder = -100;
+    // Drawn after the other opaque objects, with depth testing, so it only shades the sky pixels that
+    // nothing else covered (drawing it first shaded the whole screen once more every frame).
+    dome.renderOrder = 1000;
     dome.frustumCulled = false;
     this.group.add(dome);
 

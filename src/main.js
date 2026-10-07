@@ -17,9 +17,10 @@ import { installHarness } from './dev/harness.js';
 import { GAMES } from './game/games.js';
 import { HUD } from './ui/hud.js';
 import { DialogBox } from './ui/dialog.js';
-import { QuizPanel } from './ui/quizpanel.js';
+import { QuizPanel, setSpeechVolume } from './ui/quizpanel.js';
 import { Toasts } from './ui/toast.js';
 import { WorldLabels } from './ui/labels.js';
+import { TouchControls } from './ui/touch.js';
 import { ExploreActivity } from './game/activities.js';
 import { TitleScreen, NewGameScreen, PauseScreen, MapScreen, JournalScreen } from './game/screens.js';
 import { QuestEngine, REGIONS, CHAPTER_OF } from './game/questengine.js';
@@ -54,7 +55,7 @@ function installHelpers() {
   G.saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(G.saveNow, 1500); };
   G.addCoins = (n, toast = true) => {
     G.save.data.coins += n;
-    if (n > 0) G.audio.play('coin');
+    if (n > 0) { G.audio.play('coin'); G.input?.rumble(0.08, 0.3, 45); }
     if (toast && n > 0) G.toasts.toast(`<b>+${n}</b> fish coins`, { kind: 'gold', ms: 1800 });
   };
   G.addStars = (n) => {
@@ -86,7 +87,16 @@ function installHelpers() {
   G.applySettings = (qualityChanged = false) => {
     const s = G.save.data.settings;
     G.audio.setVolumes(s.music, s.sfx);
-    document.documentElement.style.setProperty('--ui-scale', s.bigText ? '1.18' : '1');
+    // Text size: 100/125/150%. Older saves only had a big-text switch.
+    const size = s.textSize ?? (s.bigText ? 1.25 : 1);
+    document.documentElement.style.setProperty('--ui-scale', String(size));
+    // Reduced motion follows the ChromeOS setting unless a grown-up chose otherwise.
+    G.reduceMotion = s.reduceMotion ?? window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    document.documentElement.classList.toggle('reduce-motion', !!G.reduceMotion);
+    document.documentElement.classList.toggle('easy-read', !!s.easyRead);
+    G.dialog.setSpeed(s.textSpeed);
+    G.dialog.autoRead = !!s.readAloud;
+    setSpeechVolume(s.voice ?? 1);
     if (qualityChanged) G.quality.setMode(s.quality);
   };
   G.qualityNote = () => `Now using ${PRESETS[G.quality.level]?.label ?? 'Medium'}${G.quality.mode === 'auto' ? ' (picked automatically)' : ''}. Lower settings run smoother on Chromebooks.`;
@@ -96,6 +106,9 @@ function installHelpers() {
     journal: (tab) => pushActivity(new JournalScreen(tab)),
   };
   G.toTitle = () => { G.saveNow(); location.reload(); };
+  // A tiny freeze-frame that makes a correct answer land (off with reduced motion).
+  G.hitStopT = 0;
+  G.hitStop = (s) => { if (!G.reduceMotion) G.hitStopT = Math.max(G.hitStopT, s); };
   G.fireworks = fireworks;
 }
 
@@ -157,12 +170,31 @@ function buildPatrolBoard(ctx) {
   ctx.glow.add(x, y + 2.2, z, 0xffd166, 3.5, 0.5);
 }
 
+// ------------------------------------------------------------ colour grade
+// Grading lives inside tone mapping, so every preset gets it with no extra render pass. The Neutral
+// curve keeps the hand-picked palette's hues (ACES washed them out); then cool shadows, warm highlights
+// and a little extra saturation.
+function installGrade() {
+  THREE.ShaderChunk.tonemapping_pars_fragment = THREE.ShaderChunk.tonemapping_pars_fragment.replace(
+    'vec3 CustomToneMapping( vec3 color ) { return color; }',
+    `vec3 CustomToneMapping( vec3 color ) {
+      color = NeutralToneMapping( color );
+      float l = dot( color, vec3( 0.2126, 0.7152, 0.0722 ) );
+      color *= mix( vec3( 0.93, 0.97, 1.07 ), vec3( 1.0 ), smoothstep( 0.0, 0.45, l ) );
+      color *= mix( vec3( 1.0 ), vec3( 1.05, 1.0, 0.93 ), smoothstep( 0.6, 1.0, l ) * 0.6 );
+      color = max( mix( vec3( l ), color, 1.12 ), 0.0 );
+      return color;
+    }`,
+  );
+}
+
 // ------------------------------------------------------------ boot
 function boot() {
   const canvas = document.getElementById('game');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  installGrade();
+  renderer.toneMapping = THREE.CustomToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   const scene = new THREE.Scene();
@@ -192,8 +224,23 @@ function boot() {
   G.dialog = new DialogBox(uiRoot, audio);
   G.dialog.onClick = () => G.dialogClick?.();
   G.quiz = new QuizPanel(uiRoot);
+  const quizOpen = G.quiz.open.bind(G.quiz), quizClose = G.quiz.close.bind(G.quiz);
+  G.quiz.open = (o) => { quizOpen(o); audio.setDuck(true); };
+  G.quiz.close = () => { quizClose(); audio.setDuck(false); };
   G.toasts = new Toasts(uiRoot);
+  G.toasts.blocked = () => G.dialog.box.classList.contains('show');
   G.labels = new WorldLabels(uiRoot);
+  G.hud.attachWorldPrompt(G.labels, () => { G.tappedPrompt = true; });
+  G.touch = new TouchControls(uiRoot, input, { onMenu: () => G.screens.pause(), onJournal: () => G.screens.journal() });
+  // Prompts, the keypad and the controls card follow the device used last.
+  const PAD_USE = { xbox: 'X', ps: '□', nin: 'Y' };
+  input.onMode = (mode) => {
+    document.documentElement.dataset.input = mode;
+    G.quiz.setDevice(mode);
+    G.hud.setPromptKey(mode === 'touch' ? 'Tap' : mode === 'pad' ? PAD_USE[input.family] : 'E');
+    if (mode !== 'keys') G.hud.showControls(false);
+  };
+  document.documentElement.dataset.input = 'keys';
   G.interactions = new Interactions();
   G.npcs = new NPCManager(scene, world, G.labels);
   G.quests = new QuestEngine();
@@ -211,7 +258,7 @@ function boot() {
   quality.setMode(peek?.settings.quality ?? 'auto');
   window.__pq = { G, THREE };
 
-  window.addEventListener('resize', () => quality.resize(window.innerWidth, window.innerHeight));
+  window.addEventListener('resize', () => { quality.resize(window.innerWidth, window.innerHeight); G.frozenDrawn = false; });
   document.addEventListener('visibilitychange', () => { if (document.hidden && G.inGame) G.saveNow(); });
   // When hosted as a claude.ai artifact, an update reloads open copies: save first so no progress is lost.
   window.claude?.hot?.snapshot?.(() => { if (G.inGame) G.saveNow(); return {}; });
@@ -277,6 +324,7 @@ function syncWorld() {
   ctx.spire.setOpen(!!spireOpen);
   ctx.spire.setFinale(!!d.finale);
   G.world.terrainMesh.userData.uniforms.uGloom.value = d.crystals.ridge ? 0 : 1;
+  G.audio.setLayers(1 + REGIONS.filter((r) => d.crystals[r]).length);
   if (d.flags.floeBridge) buildFloeBridge(d.flags.floeBridge);
 }
 
@@ -333,6 +381,7 @@ function startLoop() {
   const reported = new Set();
   function frame(ts) {
     requestAnimationFrame(frame);
+    if (!G.quality.shouldRender(ts)) return;
     timer.update(ts);
     try {
       tick(timer.getDelta(), true);
@@ -380,6 +429,24 @@ function startLoop() {
   }
 
   function tick(raw, draw) {
+    const t0 = performance.now();
+    // Freeze-frame: hold the picture for a moment, keep reading input.
+    if (G.hitStopT > 0) {
+      G.hitStopT -= raw;
+      input.endFrame();
+      if (draw) G.quality.render();
+      return;
+    }
+    // Behind a full-screen menu the world holds still and is drawn once.
+    if (G.inGame && G.top?.freezesWorld) {
+      G.top.update?.(Math.min(raw, 1 / 20), true);
+      input.endFrame();
+      if (draw && !G.frozenDrawn) { G.quality.render(); G.frozenDrawn = true; }
+      return;
+    }
+    G.frozenDrawn = false;
+    input.pollPad();
+    G.touch.update(input.mode === 'touch' && G.inGame && !G.player.frozen);
     const dt = Math.min(raw, 1 / 20);
     time += dt;
     G.time = time;
@@ -391,8 +458,8 @@ function startLoop() {
       player.update(dt, input);
       for (const e of player.takeEvents()) {
         if (e.type === 'step') { G.audio.play('step', { wood: !!e.platform }); if (!e.platform) world.effects.footprint(player.pos.x, player.pos.z, player.yaw); }
-        else if (e.type === 'jump') G.audio.play('jump');
-        else if (e.type === 'land') { G.audio.play('land'); world.effects.snowSpray(player.pos, 0, 0, 2); }
+        else if (e.type === 'jump') { G.audio.play('jump'); player.model.hop(); }
+        else if (e.type === 'land') { G.audio.play('land'); player.model.land(e.speed); world.effects.snowSpray(player.pos, 0, 0, 2); }
         else if (e.type === 'splash') { G.audio.play('splash'); world.effects.splash(player.pos, Math.min(1.5, 0.5 + e.speed * 0.05)); }
         else if (e.type === 'stroke') G.audio.play('stroke');
         else if (e.type === 'slide') G.audio.play('whoosh');
@@ -428,8 +495,10 @@ function startLoop() {
         scarfColor: scarf?.css?.startsWith('#') ? scarf.css : '#ff5a4e', hat: d.equipped.hat,
       });
       const obj = G.quests.objective();
+      player.objective = obj?.target ?? null;
       const dist = obj?.target ? Math.hypot(obj.target.x - player.pos.x, obj.target.z - player.pos.z) : null;
       G.hud.setObjective(obj?.text ?? '', dist);
+      G.hud.setQuiet(Math.abs(player.speed) > 1.5 && performance.now() - (G.hud.lastChange ?? 0) > 4000);
       const tKey = obj?.target ? `${Math.round(obj.target.x)},${Math.round(obj.target.z)}` : null;
       if (tKey !== lastTarget) { world.roads.setTarget(obj?.target ?? null); lastTarget = tKey; }
       miniT -= dt;
@@ -454,7 +523,7 @@ function startLoop() {
     input.endFrame();
     if (!draw) return;
     G.labels.update(camera, window.innerWidth, window.innerHeight);
-    G.quality.sample(raw);
+    G.quality.sample(performance.now() - t0, raw);
     G.quality.render();
   }
   requestAnimationFrame(frame);

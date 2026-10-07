@@ -26,6 +26,7 @@ const font = (file) => fs.readFileSync(path.join('assets/fonts', file)).toString
 const fontCss = `
 @font-face{font-family:'Fredoka';src:url(data:font/woff2;base64,${font('fredoka-latin.woff2')}) format('woff2');font-weight:300 700;font-display:block}
 @font-face{font-family:'Lilita One';src:url(data:font/woff2;base64,${font('lilita-latin.woff2')}) format('woff2');font-weight:400;font-display:block}
+@font-face{font-family:'Atkinson Hyperlegible Next';src:url(data:font/woff2;base64,${font('atkinson-next-latin.woff2')}) format('woff2');font-weight:200 800;font-display:block}
 `;
 const css = fontCss + fs.readFileSync('src/styles.css', 'utf8');
 const body = fs.readFileSync('src/body.html', 'utf8');

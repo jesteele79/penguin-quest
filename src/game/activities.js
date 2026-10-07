@@ -6,6 +6,8 @@ import { WATER_Y } from '../world/layout.js';
 
 // ---------------------------------------------------------------- Explore
 export class ExploreActivity {
+  constructor() { this.isExplore = true; }
+
   enter() {
     G.hud.setVisible(true);
     G.audio.setMood(G.save.data.finale ? 'finale' : 'explore');
@@ -21,14 +23,17 @@ export class ExploreActivity {
     if (!isTop) { G.hud.setPrompt(null); return; }
     const p = G.player.pos;
     const near = G.interactions.nearest(p.x, p.z, G.player.yaw);
-    G.hud.setPrompt(near ? near.label : null);
+    G.hud.setPrompt(near ? near.label : null, near ? promptPos(near.item) : null);
+    this.near = near;
     const inp = G.input;
-    if (near && inp.pressed('KeyE', 'Enter', 'NumpadEnter')) {
+    if (near && (inp.pressed('KeyE', 'Enter', 'NumpadEnter') || G.tappedPrompt)) {
+      G.tappedPrompt = false;
       inp.consume('KeyE', 'Enter', 'NumpadEnter');
       G.audio.play('click');
       near.item.action();
       return;
     }
+    G.tappedPrompt = false;
     if (inp.pressed('KeyM')) { G.screens.map(); return; }
     if (inp.pressed('KeyJ')) { G.screens.journal(); return; }
     if (inp.pressed('Escape', 'KeyP')) { G.screens.pause(); return; }
@@ -39,6 +44,17 @@ export class ExploreActivity {
     }
     if (inp.pressed('KeyC')) G.hud.showControls(G.hud.controls.classList.contains('hidden'));
   }
+}
+
+// Where the floating prompt sits: above a friend's "!" mark, or a little above an object.
+const _prompt = new THREE.Vector3();
+function promptPos(item) {
+  const q = typeof item.pos === 'function' ? item.pos() : item.pos;
+  if (!q) return null;
+  const ground = G.terrain.heightAt(q.x, q.z);
+  const npc = item.id?.startsWith('npc-') ? G.npcs.get(item.id.slice(4)) : null;
+  const lift = npc ? 4.5 * (npc.def.look.scale ?? 1) : 2.6;
+  return _prompt.set(q.x, Math.max(ground, q.y ?? ground) + lift, q.z);
 }
 
 // ---------------------------------------------------------------- Dialog
@@ -58,9 +74,27 @@ function stepBack(npcPos, dir) {
 }
 
 // lines: [{ who, text, portrait, pitch, accent }] ; npc: NPC record from NPCManager to face/animate.
+// One idea per page: lines longer than about three rows are split at sentence breaks.
+const PAGE_CHARS = 150;
+function paginate(lines) {
+  const out = [];
+  for (const l of lines) {
+    const line = typeof l === 'string' ? { who: '', text: l, portrait: false } : l;
+    if (line.text.length <= PAGE_CHARS) { out.push(line); continue; }
+    const sentences = line.text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) ?? [line.text];
+    let page = '';
+    for (const sentence of sentences) {
+      if (page && (page + sentence).length > PAGE_CHARS) { out.push({ ...line, text: page.trim() }); page = ''; }
+      page += sentence;
+    }
+    if (page.trim()) out.push({ ...line, text: page.trim() });
+  }
+  return out;
+}
+
 export class DialogActivity {
   constructor(lines, { onDone, npc = null, shot = true } = {}) {
-    this.lines = lines;
+    this.lines = paginate(lines);
     this.onDone = onDone;
     this.npc = npc;
     this.useShot = shot && npc;
@@ -128,6 +162,7 @@ export function say(lines, opts) {
 // }
 export class QuizActivity {
   constructor(opts) {
+    this.isQuiz = true;
     this.o = { layout: 'side', closable: true, format: 'any', done: 0, music: 'quiz', ...opts };
     this.done = this.o.done;
     this.streak = 0;
@@ -194,7 +229,9 @@ export class QuizActivity {
     this.streak = firstTry ? this.streak + 1 : 0;
     const coins = firstTry ? (this.hintUsed ? 3 : 4) : 2;
     G.addCoins(coins, false);
-    G.audio.play('correct');
+    G.audio.play('correct', { streak: this.streak });
+    G.hitStop(0.1);
+    G.input.rumble(0.25, 0.5, 80);
     let extra = `<span class="coin-pop">+${coins}</span>`;
     if (this.streak > 0 && this.streak % 5 === 0) {
       G.addCoins(5, false);

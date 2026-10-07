@@ -86,7 +86,17 @@ export class HUD {
     }
   }
 
+  // While the penguin is on the move the corner widgets fade back; they return when it stops or a
+  // number changes (the "only essential UI" approach).
+  setQuiet(quiet) {
+    if (quiet === this.quiet) return;
+    this.quiet = quiet;
+    this.root.classList.toggle('quiet', quiet);
+  }
+
   bump(node) {
+    this.lastChange = performance.now();
+    this.setQuiet(false);
     node.classList.remove('bump');
     void node.offsetWidth;
     node.classList.add('bump');
@@ -103,11 +113,28 @@ export class HUD {
     if (d !== this.last.dist) { this.objDist.textContent = d; this.last.dist = d; }
   }
 
-  setPrompt(text) {
+  // The use prompt floats above the thing it belongs to; tapping it does the same as pressing E.
+  attachWorldPrompt(labels, onTap) {
+    this.bubble = labels.add('', { cls: 'prompt-bubble interactive', maxDist: 45 });
+    this.bubble.visible = false;
+    this.bubble.node.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); onTap?.(); });
+  }
+
+  setPromptKey(key) { if (key !== this.promptKey) { this.promptKey = key; this.last.prompt = undefined; } }
+
+  setPrompt(text, pos = null) {
+    if (this.bubble && pos && text) {
+      this.bubble.setPos(pos);
+      this.bubble.visible = true;
+      if (this.prompt.classList.contains('show')) this.prompt.classList.remove('show');
+      if (text !== this.last.prompt) { this.bubble.set(`<kbd>${this.promptKey ?? 'E'}</kbd> ${text}`); this.last.prompt = text; }
+      return;
+    }
+    if (this.bubble) this.bubble.visible = false;
     if (text === this.last.prompt) return;
     this.last.prompt = text;
     if (!text) { this.prompt.classList.remove('show'); return; }
-    this.prompt.innerHTML = `<kbd>E</kbd> ${text}`;
+    this.prompt.innerHTML = `<kbd>${this.promptKey ?? 'E'}</kbd> ${text}`;
     this.prompt.classList.add('show');
   }
 

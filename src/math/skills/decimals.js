@@ -476,4 +476,43 @@ const percent = {
   },
 };
 
-export const HUTS_SKILLS = [decFrac, decCompare, shop, place, pow10, decRound, addSub, ratio, unitRate, percent];
+// Tenths as hundredths, then adding tenths and hundredths (the bridge from fractions to decimals).
+const tenthsHundredths = {
+  id: 'dec_hundredths', domain: D, grade: 4, cc: '4.NF.5', name: 'Tenths and hundredths', short: 'tenths + hundredths',
+  gen(rng, tier) {
+    const t = rng.int(1, 9);
+    if (tier === 1) {
+      return P({
+        skill: this.id, tier,
+        text: `{${t}/10} is the same as how many hundredths? {${t}/10} = {?/100}`,
+        answer: num(t * 10),
+        choices: makeChoices(rng, t * 10, [{ value: t, why: `Each tenth is 10 hundredths, so ${t} tenths is ${t} × 10 hundredths.` }, t * 100, t + 10, t * 10 + 1], labelNum),
+        hint: 'One column of the hundred grid is a tenth. It has 10 little squares.',
+        hintVisual: { kind: 'hundred', tenths: t, hundredths: 0 },
+        steps: [`1 tenth = 10 hundredths.`, `${t} tenths = ${t} × 10 = ${t * 10} hundredths, so {${t}/10} = {${t * 10}/100}.`],
+        meta: { value: t * 10 },
+      });
+    }
+    const h = rng.int(1, 9);
+    const ans = F(t * 10 + h, 100);
+    const story = tier === 3
+      ? `Mama Mittens sold {${t}/10} of her cocoa in the morning and {${h}/100} of it at lunch. What fraction of the cocoa has she sold?`
+      : `What is {${t}/10} + {${h}/100}?`;
+    return P({
+      skill: this.id, tier,
+      text: story,
+      answer: frac(ans),
+      choices: makeChoices(rng, ans, [
+        { value: F(t + h, 100), why: `Change {${t}/10} into hundredths first: {${t}/10} = {${t * 10}/100}.` },
+        { value: F(t + h, 110), why: 'Add pieces of the same size. Make both fractions hundredths, then add the tops.' },
+        F(t * 10 + h, 10), F(h * 10 + t, 100),
+      ], labelFrac()),
+      hint: `Tenths and hundredths are different sizes. Write {${t}/10} as hundredths first.`,
+      hintVisual: { kind: 'hundred', tenths: t, hundredths: h },
+      steps: [`{${t}/10} = {${t * 10}/100}.`, `{${t * 10}/100} + {${h}/100} = {${t * 10 + h}/100}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const HUTS_SKILLS = [decFrac, tenthsHundredths, decCompare, shop, place, pow10, decRound, addSub, ratio, unitRate, percent];

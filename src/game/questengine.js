@@ -544,6 +544,7 @@ export class QuestEngine {
     ], () => {
       this.s.crystals[region] = true;
       G.hud.setCrystals(this.s.crystals);
+      G.audio.setLayers(1 + REGIONS.filter((r) => this.s.crystals[r]).length);
       G.addCoins(50);
       this.advance(questId);
     }));
