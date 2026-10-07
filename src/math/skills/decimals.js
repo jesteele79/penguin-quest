@@ -269,6 +269,42 @@ const shop = {
   },
 };
 
+// Story version of the money skill for the cocoa deliveries: the friend in front of you is the one paying.
+export function cocoaOrder(rng, tier, who) {
+  const cup = rng.int(5, 12) * 25;
+  if (tier === 1) {
+    const pay = cup < 200 ? 200 : 500;
+    const change = cents(pay - cup);
+    return P({
+      skill: 'money', tier,
+      text: `A cup of Mama Mittens' cocoa costs ${fmtMoney(cup / 100)}. ${who} pays with ${fmtMoney(pay / 100)}. How much change should you give back?`,
+      answer: money(change),
+      choices: makeChoices(rng, change, [cents(pay - cup + 100), cents(cup), cents(pay - cup + 25), cents(Math.max(5, pay - cup - 25))], labelMoney),
+      hint: `Count up from ${fmtMoney(cup / 100)} to ${fmtMoney(pay / 100)}.`,
+      steps: [`${fmtMoney(pay / 100)} − ${fmtMoney(cup / 100)} = ${fmtMoney((pay - cup) / 100)}.`],
+      meta: { value: change },
+    });
+  }
+  const k = tier === 2 ? 2 : rng.int(3, 4);
+  const extra = tier === 3 ? rng.int(2, 6) * 15 : 0;
+  const total = cup * k + extra;
+  const pay = [500, 1000, 2000].find((v) => v > total);
+  const change = cents(pay - total);
+  const extraText = extra ? ` plus a bag of marshmallows for ${fmtMoney(extra / 100)}` : '';
+  const steps = [`${k} × ${fmtMoney(cup / 100)} = ${fmtMoney((cup * k) / 100)}.`];
+  if (extra) steps.push(`Add the marshmallows: ${fmtMoney((cup * k) / 100)} + ${fmtMoney(extra / 100)} = ${fmtMoney(total / 100)}.`);
+  steps.push(`Change: ${fmtMoney(pay / 100)} − ${fmtMoney(total / 100)} = ${fmtMoney((pay - total) / 100)}.`);
+  return P({
+    skill: 'money', tier,
+    text: `${who} wants ${k} cups of cocoa at ${fmtMoney(cup / 100)} each${extraText}, and pays with ${fmtMoney(pay / 100)}. How much change should you give back?`,
+    answer: money(change),
+    choices: makeChoices(rng, change, [{ value: cents(pay - cup - extra), why: `${who} wants ${k} cups, not just one.` }, cents(total), cents(pay - total + 100), cents(Math.max(5, pay - total - 25))], labelMoney),
+    hint: 'First find the total cost, then subtract it from what was paid.',
+    steps,
+    meta: { value: change },
+  });
+}
+
 const pow10 = {
   id: 'pow10', domain: D, grade: 5, cc: '5.NBT.2', name: 'Multiply and divide by 10, 100, 1000', short: '× ÷ 10, 100, 1000',
   gen(rng, tier) {

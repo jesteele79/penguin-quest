@@ -11,7 +11,7 @@ export const SITE_SETS = {
   pillars: { kind: 'pillar', label: 'Fill the Fraction Lock', title: 'Fraction Lock', picks: [{ skills: ['frac_fill'] }, { domain: 'grove' }] },
   beds: { kind: 'bed', points: BEDS, label: 'Plant a crystal seed', title: 'Crystal Garden', domain: 'grove', count: 1 },
   cocoa: {
-    kind: 'npc', npcs: ['professor', 'captain', 'fern', 'pebble'], label: 'Deliver cocoa', title: 'Cocoa Delivery',
+    kind: 'npc', npcs: ['professor', 'captain', 'fern', 'pebble'], label: 'Deliver cocoa', title: 'Cocoa Delivery', story: 'cocoa',
     domain: 'huts', skills: ['money', 'dec_addsub', 'unit_rate', 'percent'], count: 1,
     greet: {
       professor: 'Hot cocoa from Mama Mittens? How thoughtful! Now, let me count my coins...',
@@ -125,6 +125,10 @@ export const MAIN = [
       ['professor', 'Good morning, {name}! Last night I saw a teal glimmer over Crystal Grove, west of the lake.'],
       ['professor', 'Fern the gardener lives there. I think she needs you!'],
     ],
+    briefingNow: [
+      ['professor', '{name}, can you hear me on the radio? I did not even need to wait for nightfall!'],
+      ['professor', 'A teal glimmer just flashed over Crystal Grove, west of the lake. Fern the gardener lives there. I think she needs you!'],
+    ],
     steps: [
       {
         type: 'talk', npc: 'fern', text: 'Meet Fern in Crystal Grove',
@@ -163,6 +167,10 @@ export const MAIN = [
     blurb: 'Run the Snack Shack, deliver cocoa and knit with Granny Purl.',
     briefing: [
       ['professor', 'Good morning, {name}! Pink light was flickering over the Heart Huts last night, east of the lake.'],
+      ['professor', 'Mama Mittens runs the Snack Shack there. Go say hello, and bring your counting flippers!'],
+    ],
+    briefingNow: [
+      ['professor', 'You are on a roll, {name}! Pink light is flickering over the Heart Huts, east of the lake, right now.'],
       ['professor', 'Mama Mittens runs the Snack Shack there. Go say hello, and bring your counting flippers!'],
     ],
     steps: [
@@ -217,6 +225,10 @@ export const MAIN = [
       ['professor', 'Good morning, {name}! A blue light is glowing inside the Glacier Cave, south of the Heart Huts.'],
       ['professor', 'Pebble the explorer is there. Watch your step!'],
     ],
+    briefingNow: [
+      ['professor', 'Still going strong, {name}? A blue light just lit up inside the Glacier Cave, south of the Heart Huts.'],
+      ['professor', 'Pebble the explorer is there. Watch your step!'],
+    ],
     steps: [
       {
         type: 'talk', npc: 'pebble', text: 'Meet Pebble outside the Glacier Cave',
@@ -242,7 +254,10 @@ export const MAIN = [
       },
       {
         type: 'sites', set: 'mirrors', text: (d, t) => `Turn the ice mirrors in the cave (${d}/${t})`, shard: true,
-        after: [['pebble', 'LOOK! The light is hitting the crystal! Now charge it up!']],
+        after: [
+          ['pebble', 'LOOK! The light is hitting the crystal! Now charge it up!'],
+          ['pebble', 'Hey, see that scratchy drawing on the cave wall? A big Gloom wearing a crown, sitting all alone on a mountain. Weird, right?'],
+        ],
       },
       { type: 'crystal', region: 'cave' },
     ],
@@ -254,6 +269,10 @@ export const MAIN = [
     blurb: 'Light the signal beacons and cheer up the Glooms.',
     briefing: [
       ['professor', 'Good morning, {name}. This is the big one: Gloom Ridge, north of the lake.'],
+      ['professor', 'Scout Skipper is waiting at the bottom of the ramp. Be brave, and be kind.'],
+    ],
+    briefingNow: [
+      ['professor', '{name}, this is the big one: Gloom Ridge, north of the lake. Only one crystal left!'],
       ['professor', 'Scout Skipper is waiting at the bottom of the ramp. Be brave, and be kind.'],
     ],
     steps: [
@@ -275,7 +294,8 @@ export const MAIN = [
       {
         type: 'game', game: 'battle', at: 'arena', label: 'Face the Glooms', text: 'Cheer up the Glooms in the stone circle', shard: true,
         after: [
-          ['skipper', 'Amazing! But a few Glooms ran off and are wandering around the bay.'],
+          ['skipper', 'Amazing! Did you hear the last one whisper as it floated up? "The King will be so cold without us..."'],
+          ['skipper', 'A Gloom King? I have never heard of one. But a few Glooms ran off and are wandering around the bay.'],
           ['skipper', 'Find four of them and cheer them up too. Look for purple glows on your map!'],
         ],
       },
@@ -293,6 +313,10 @@ export const MAIN = [
     blurb: 'The shield is down. Something waits at the top.',
     briefing: [
       ['professor', 'Good morning, {name}! All five crystals shone together last night, and the shield around the Aurora Spire vanished!'],
+      ['professor', 'The last of the aurora light is trapped at the very top. Climb the spire mountain... and be kind to whoever you find up there.'],
+    ],
+    briefingNow: [
+      ['professor', '{name}! Look east! The five crystals are shining together, and the shield around the Aurora Spire is flickering away!'],
       ['professor', 'The last of the aurora light is trapped at the very top. Climb the spire mountain... and be kind to whoever you find up there.'],
     ],
     steps: [
@@ -316,6 +340,10 @@ export const MAIN = [
     blurb: 'Light the five Festival Lanterns and throw the party of the century.',
     briefing: [
       ['professor', 'Good morning, {name}! The Glimmer King waddled all the way to my igloo last night.'],
+      ['professor', 'He wants to throw the Great Aurora Festival, and he needs a true Aurora Legend to help. He is waiting at the spire!'],
+    ],
+    briefingNow: [
+      ['professor', '{name}, the Glimmer King could not wait until tomorrow! He has his wonderful, sparkly idea ready.'],
       ['professor', 'He wants to throw the Great Aurora Festival, and he needs a true Aurora Legend to help. He is waiting at the spire!'],
     ],
     steps: [

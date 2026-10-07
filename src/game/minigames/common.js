@@ -78,7 +78,7 @@ export function lookShot(fromPos, targetPos, { back = 6, up = 3, side = 0, lookU
 // Side-on shot of two subjects (usually the player and a friend or object), pushed into the
 // left half of the screen because the quiz panel covers the right half. Tries both sides and a
 // few distances so the camera does not end up inside a hill or an igloo.
-export function twoShot(a, b, { dist = 8, up = 2.6, lookUp = 1.4, shift = 2.3, fov = 50 } = {}) {
+export function twoShot(a, b, { dist = 8, up = 2.6, lookUp = 1.4, shift = 2.3, fov = 50, turn = 0.55 } = {}) {
   const d = b.clone().sub(a).setY(0);
   if (d.lengthSq() < 0.001) d.set(0, 0, 1);
   d.normalize();
@@ -87,17 +87,20 @@ export function twoShot(a, b, { dist = 8, up = 2.6, lookUp = 1.4, shift = 2.3, f
   const col = G.world.ctx.collision;
   let best = null;
   for (const k of [1, -1]) {
-    const s = V(-d.z * k, 0, d.x * k);
+    // Swung from pure side-on toward the player's back, so the friend's face (not their flank) is on screen.
+    const s = V(-d.z * k, 0, d.x * k).multiplyScalar(Math.cos(turn)).addScaledVector(d, -Math.sin(turn));
     for (const f of [1, 0.8, 0.6]) {
       const pos = mid.clone().addScaledVector(s, dist * f);
       const ground = G.terrain.heightAt(pos.x, pos.z);
       const blocked = col.nearby(pos.x, pos.z, 4).some((c) => c.r !== undefined && Math.hypot(pos.x - c.x, pos.z - c.z) < c.r + 0.9);
       const score = (blocked ? 10 : 0) + Math.max(0, ground + 1.3 - (baseY + up)) * 2 + (1 - f);
-      if (!best || score < best.score) best = { score, pos, ground, right: d.clone().multiplyScalar(k) };
+      if (!best || score < best.score) best = { score, pos, ground };
     }
   }
   const pos = best.pos.setY(Math.max(baseY + up, best.ground + 1.3));
-  const look = mid.clone().setY(baseY + lookUp).addScaledVector(best.right, shift);
+  const fwd = mid.clone().sub(pos).setY(0).normalize();
+  const right = V(-fwd.z, 0, fwd.x);
+  const look = mid.clone().setY(baseY + lookUp).addScaledVector(right, shift);
   return { pos, look, fov };
 }
 

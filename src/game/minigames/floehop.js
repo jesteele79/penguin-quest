@@ -81,7 +81,7 @@ class FloeHopActivity {
       const px = x + vx * 0.35, pz = z + vz * 0.35;
       let best = null, bd = 4.2;
       for (const f of this.floes) {
-        if (f.sinking) continue;
+        if (f.sinking || f.row !== this.row) continue;
         const d = Math.hypot(f.x - px, f.z - pz);
         if (d < bd) { bd = d; best = f; }
       }
@@ -101,7 +101,8 @@ class FloeHopActivity {
     const cx = Math.max(-limit, Math.min(limit, this.pathX));
     const z = LOC.floeRows[this.row];
     idx.forEach((ci, k) => {
-      const x = cx + (k - 1) * 4.4;
+      // Wider than a floe (2R) so neighbours never touch and a landing is never ambiguous.
+      const x = cx + (k - 1) * 5.2;
       const f = makeFloe(x, z, WATER_Y - 1.4);
       f.platform.active = false;
       const label = G.labels.add(`<span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'floe-label', pos: V(x, WATER_Y, z), offsetY: 1.6, maxDist: 70 });
@@ -128,7 +129,8 @@ class FloeHopActivity {
       this.xs[this.row] = f.x;
       for (const o of this.floes) if (o !== f && o.row === this.row) this.sink(o, 0.4);
       this.kept.push(f);
-      this.floes = this.floes.filter((o) => o.row !== this.row);
+      // The others stay in the list until they finish sinking, or they would hang in the air with no collision.
+      this.floes = this.floes.filter((o) => o !== f);
       this.row += 1;
       G.quiz.setProgress(this.row, LOC.floeRows.length);
       if (this.row < LOC.floeRows.length) setTimeout(() => { if (G.top === this) this.spawnRow(); }, 700);

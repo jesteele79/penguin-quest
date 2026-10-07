@@ -4,8 +4,9 @@
     {
       "name": "penguin-quest",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5188", "--directory", "dist"],
-      "port": 5188
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "dist"],
+      "port": 8765
     }
   ]
 }
+

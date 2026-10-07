@@ -6,7 +6,8 @@ import { MAIN, SIDE, SITE_SETS, CHATTER, RESONANCE_NEED, CRYSTAL_GOAL, SPIRE_TOP
 import { REGION_COLORS } from '../core/materials.js';
 import { CRYSTALS, LOC, SNOWFLAKES, PATROL_BOARD, CAULDRON, SLALOM, GLOOM_SPOTS } from '../world/layout.js';
 import { GAMES } from './games.js';
-import { DOMAINS } from '../math/skills.js';
+import { DOMAINS, SKILLS } from '../math/skills.js';
+import { cocoaOrder } from '../math/skills/decimals.js';
 import { ShopScreen } from './screens.js';
 import { orbitShot, angleToPlayer } from './minigames/common.js';
 
@@ -129,6 +130,10 @@ export class QuestEngine {
     q.doneAt = Date.now();
     if (def.reward) this.giveReward(def.reward);
     if (def.type === 'main') {
+      if (def.chapter === 0 && !G.hud.controls.classList.contains('hidden')) {
+        G.hud.showControls(false);
+        G.toasts.toast('Press <b>C</b> any time to see the controls again.', { ms: 4200 });
+      }
       if (def.chapter > 0) G.toasts.showBanner(`${def.title.split(':')[0]} complete!`, def.title.split(': ')[1] ?? '', '#ffd166', 3600);
       if (this.s.tracked && !this.active(this.s.tracked)) this.s.tracked = null;
     } else {
@@ -428,12 +433,21 @@ export class QuestEngine {
       title: set.title,
       subtitle: set.hard ? `${REGION_INFO[domain].subject} · Legend mode: extra hard` : `${count} puzzle${count > 1 ? 's' : ''}`,
       color, count, closable: true,
-      pick: (i) => (set.picks ? set.picks[i] : { domain, skills: hardSkills ?? set.skills, minTier: set.hard ? 3 : undefined }),
+      pick: (i) => (set.story === 'cocoa' ? { problem: this.cocoaProblem(set.npcs[index]) }
+        : set.picks ? set.picks[i] : { domain, skills: hardSkills ?? set.skills, minTier: set.hard ? 3 : undefined }),
       shot: hooks.shot?.(),
       onProblem: (p, n) => hooks.onProblem?.(p, n),
       onCorrect: (p, n) => hooks.onCorrect?.(p, n / count),
       onFinish: () => { hooks.onDone?.(); onFinish(); },
     }));
+  }
+
+  // The friend being served pays for the cocoa, so the money problem is about them.
+  cocoaProblem(npcId) {
+    const p = cocoaOrder(G.tutor.rng, G.tutor.tierFor('money'), NPCS[npcId].name);
+    p.domain = 'huts';
+    p.skillName = SKILLS.money.name;
+    return p;
   }
 
   // ------------------------------------------------------------ crystals
@@ -575,7 +589,10 @@ export class QuestEngine {
       if (next.chapter >= 1) G.toasts.showBanner(next.title.split(':')[0], next.title.split(': ')[1] ?? '', '#ffd166', 3400);
       if (next.briefing && !this.s.briefed[next.id]) {
         this.s.briefed[next.id] = true;
-        this.say(next.briefing, null, { shot: false });
+        // "Good morning" only makes sense if the last chapter ended on an earlier day (free pacing can chain them).
+        const prev = MAIN[next.chapter - 1];
+        const sameDay = prev && this.s.q[prev.id]?.doneDay === todayStr();
+        this.say(sameDay && next.briefingNow ? next.briefingNow : next.briefing, null, { shot: false });
       }
       return;
     }

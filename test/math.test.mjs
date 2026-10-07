@@ -7,6 +7,7 @@ import { SKILL_LIST, DOMAIN_ORDER } from '../src/math/skills.js';
 import { Tutor, emptyTutorState } from '../src/math/tutor.js';
 import { Rng } from '../src/core/rng.js';
 import { fracTyped, toHTML } from '../src/math/fmt.js';
+import { cocoaOrder } from '../src/math/skills/decimals.js';
 
 const SEEDS = 300;
 
@@ -184,6 +185,40 @@ test('tutor honors format constraints', () => {
       assert.ok(c && c.choices.length >= 3, `${d} choice`);
       const n = tutor.next(d, { format: 'input' });
       assert.ok(n && n.format === 'input' && n.answer.kind !== 'choice', `${d} input`);
+    }
+  }
+});
+
+test('a skill missed twice in a row rests while other skills fill in', () => {
+  const state = emptyTutorState();
+  const tutor = new Tutor(state, 5, 11);
+  const first = tutor.next('grove');
+  const miss = { solved: false, firstTry: false, hintUsed: false, given: 'x' };
+  tutor.record(first, miss);
+  tutor.record({ ...first }, miss);
+  state.retry.length = 0;
+  for (let i = 0; i < 3; i++) {
+    const p = tutor.next('grove');
+    assert.notEqual(p.skill, first.skill, 'resting skill came straight back');
+    tutor.record(p, { solved: true, firstTry: true, hintUsed: false });
+  }
+});
+
+test('tutor reports a skill the moment it becomes mastered', () => {
+  const tutor = new Tutor(emptyTutorState(), 4, 5);
+  const p = tutor.next('lake', { skills: ['mul_3x2'] });
+  let hits = 0;
+  for (let i = 0; i < 12; i++) if (tutor.record(p, { solved: true, firstTry: true, hintUsed: false }).newlyMastered) hits += 1;
+  assert.equal(hits, 1);
+});
+
+test('cocoa orders: the typed answer is correct and choices are sound', () => {
+  for (let tier = 1; tier <= 3; tier++) {
+    for (let seed = 1; seed <= 300; seed++) {
+      const p = cocoaOrder(new Rng(seed * 7 + tier), tier, 'Captain Flipper');
+      assert.ok(checkAnswer(p, { text: typedValue(p.answer) }).correct, p.text);
+      assert.equal(p.choices.filter((c) => c.correct).length, 1);
+      assert.ok(p.answer.value.value > 0, p.text);
     }
   }
 });

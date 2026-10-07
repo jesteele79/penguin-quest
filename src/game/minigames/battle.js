@@ -142,6 +142,8 @@ class BattleActivity {
   }
 
   hit(t) {
+    // Two Glooms can arrive in the same frame; only the first may end the wave.
+    if (this.state !== 'fight') return;
     this.hearts -= 1;
     G.hearts = { now: this.hearts, max: this.maxHearts };
     G.audio.play('hurt');

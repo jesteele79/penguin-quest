@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../core/state.js';
 import { checkAnswer } from '../math/check.js';
 import { twoShot } from './minigames/common.js';
+import { WATER_Y } from '../world/layout.js';
 
 // ---------------------------------------------------------------- Explore
 export class ExploreActivity {
@@ -41,6 +42,21 @@ export class ExploreActivity {
 }
 
 // ---------------------------------------------------------------- Dialog
+// Penguins are round: closer than about three units apart they hide each other's faces from every
+// camera angle. Step the player back (if the ground there is open and level) before framing them.
+const TALK_GAP = 3.2;
+function stepBack(npcPos, dir) {
+  const p = G.player;
+  if (!p.grounded || p.platform || p.swimming) return;
+  const gap = Math.hypot(npcPos.x - p.pos.x, npcPos.z - p.pos.z);
+  if (gap >= TALK_GAP - 0.2) return;
+  const x = npcPos.x - dir.x * TALK_GAP, z = npcPos.z - dir.z * TALK_GAP;
+  const h = G.terrain.heightAt(x, z);
+  const blocked = G.world.ctx.collision.nearby(x, z, 3).some((c) => c.r !== undefined && c.active !== false && Math.hypot(x - c.x, z - c.z) < c.r + 0.6);
+  if (blocked || Math.abs(h - p.pos.y) > 0.8 || h < WATER_Y + 0.2) return;
+  p.teleport(x, z, Math.atan2(dir.x, dir.z));
+}
+
 // lines: [{ who, text, portrait, pitch, accent }] ; npc: NPC record from NPCManager to face/animate.
 export class DialogActivity {
   constructor(lines, { onDone, npc = null, shot = true } = {}) {
@@ -56,8 +72,10 @@ export class DialogActivity {
     G.hud.setPrompt(null);
     if (this.npc) this.npc.talking = true;
     if (this.useShot) {
-      const pp = G.player.pos.clone(), np = this.npc.pos.clone();
-      const dir = np.clone().sub(pp).setY(0).normalize();
+      const np = this.npc.pos.clone();
+      const dir = np.clone().sub(G.player.pos).setY(0).normalize();
+      stepBack(np, dir);
+      const pp = G.player.pos.clone();
       // Side-on, so neither penguin hides the other; framed high because the dialog box sits low.
       G.cam.setShot(twoShot(pp, np, { dist: 7.5, up: 2.2, lookUp: 0.8, shift: 0, fov: 50 }), 0.8);
       G.player.yaw = Math.atan2(dir.x, dir.z);

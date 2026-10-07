@@ -69,7 +69,7 @@ export class Quality {
   buildComposer() {
     const c = new EffectComposer(this.renderer);
     c.addPass(new RenderPass(this.scene, this.camera));
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(this.w / 2, this.h / 2), 0.55, 0.45, 0.82);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(this.w / 2, this.h / 2), 0.45, 0.4, 0.9);
     c.addPass(this.bloom);
     c.addPass(new OutputPass());
     this.composer = c;

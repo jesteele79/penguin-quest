@@ -123,6 +123,7 @@ class BossActivity {
           'What... what is this feeling? It is so... warm.',
           'No one ever shared their light with me before. I was so cold and so lonely up here, all by myself.',
           "I'm sorry for all the gloom, {name}. Thank you for being kind to me.",
+          'Look at me... I am not gloomy anymore. I am glimmering! I suppose that makes me... the Glimmer King?',
         ]),
       },
       {
@@ -183,12 +184,15 @@ export function startBoss(params, onDone, opts = {}) {
   const top = V(S.x, G.world.ctx.spire.base.y, S.z);
   const preview = new Gloom(G.scene, { scale: 3.2, king: true });
   preview.position.copy(top.clone().add(V(0, 1.5, 5.5)));
-  G.world.animated.push((dt) => { if (preview.root.parent) preview.update(dt, G.player.pos); });
+  const animate = (dt) => { if (preview.root.parent) preview.update(dt, G.player.pos); };
+  G.world.animated.push(animate);
   pushActivity(new Cutscene([
     { shot: { pos: top.clone().add(V(-8, 5, 20)), look: top.clone().add(V(0, 4, 5)), fov: 55 }, blend: 1.4, wait: 0.8, call: () => { G.audio.play('whoosh'); G.world.effects.burst(preview.position.clone().add(V(0, 2, 0)), { count: 80, color: [0x3a2a6a, 0x6a4ab8], speed: 7, up: 4, life: 1.6, gravity: 1, size: 1.2 }); } },
     { say: intro },
   ], () => {
     preview.dispose();
+    const k = G.world.animated.indexOf(animate);
+    if (k >= 0) G.world.animated.splice(k, 1);
     pushActivity(new BossActivity(onDone, opts.onAbort));
   }));
 }

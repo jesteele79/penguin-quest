@@ -74,7 +74,11 @@ export class Tutor {
       this.state.retry.splice(this.state.retry.indexOf(due), 1);
       return SKILLS[due.skill];
     }
-    const frontier = pool.filter((s) => !this.isMastered(s.id));
+    // A skill missed twice in a row rests for a few problems (the retry queue still brings it back),
+    // so a struggling player gets variety instead of the same wall again and again.
+    const open = pool.filter((s) => !this.isMastered(s.id));
+    const fresh = open.filter((s) => !(this.entry(s.id).rest > qn));
+    const frontier = fresh.length ? fresh : open;
     const mastered = pool.filter((s) => this.isMastered(s.id));
     if (frontier.length && (this.rng.next() < 0.78 || !mastered.length)) {
       return frontier.length > 1 && this.rng.next() < 0.3 ? frontier[1] : frontier[0];
@@ -129,6 +133,7 @@ export class Tutor {
   // result: { solved, firstTry, hintUsed, attempts, given, ms }
   record(problem, result) {
     const e = this.entry(problem.skill);
+    const wasMastered = this.isMastered(problem.skill);
     const score = result.firstTry ? (result.hintUsed ? 0.6 : 1) : result.solved ? 0.3 : 0;
     if (e.assumed && e.n === 0) {
       e.m = score >= 1 ? Math.max(e.m, 0.9) : score > 0.5 ? 0.8 : 0.5;
@@ -139,6 +144,7 @@ export class Tutor {
     e.n += 1;
     e.c += result.firstTry && !result.hintUsed ? 1 : 0;
     e.s = result.firstTry ? e.s + 1 : 0;
+    e.miss = result.firstTry ? 0 : (e.miss ?? 0) + 1;
     e.t = Date.now();
     e.assumed = false;
     const st = this.state;
@@ -146,11 +152,13 @@ export class Tutor {
     st.totals.problems += 1;
     if (result.firstTry && !result.hintUsed) st.totals.firstTry += 1;
     if (result.hintUsed) st.totals.hints += 1;
-    const day = new Date().toISOString().slice(0, 10);
+    // Local date, matching the chapter and patrol calendar (UTC would split an evening session across two days).
+    const day = new Date().toLocaleDateString('en-CA');
     const d = (st.days[day] ||= { problems: 0, firstTry: 0 });
     d.problems += 1;
     if (result.firstTry && !result.hintUsed) d.firstTry += 1;
     if (!result.firstTry) {
+      if (e.miss >= 2) e.rest = st.qn + 3;
       st.retry.push({ skill: problem.skill, due: st.qn + 2 + this.rng.int(0, 2) });
       if (st.retry.length > 12) st.retry.shift();
       st.mistakes.push({
@@ -159,7 +167,7 @@ export class Tutor {
       });
       if (st.mistakes.length > 40) st.mistakes.shift();
     }
-    return { mastered: this.isMastered(problem.skill), m: e.m };
+    return { mastered: this.isMastered(problem.skill), newlyMastered: !wasMastered && this.isMastered(problem.skill), m: e.m };
   }
 
   // Warm-up placement: a miss at grade level means the easier skills in that domain need review.

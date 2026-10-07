@@ -288,6 +288,12 @@ function enterGame(isNew) {
     const out = record(p, r);
     G.quests.onSolve(p, r);
     G.patrol.onSolve(p, r);
+    if (out.newlyMastered) {
+      // Naming the skill tells the child what they got better at, not just that they earned something.
+      G.addCoins(15, false);
+      G.audio.play('chime');
+      G.toasts.showBanner('Skill mastered!', `${p.skillName ?? 'A new math skill'} · +15 fish coins`, '#ffd166', 3200);
+    }
     return out;
   };
   G.inGame = true;
