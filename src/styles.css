@@ -213,7 +213,7 @@ kbd {
 .quiz-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 18px 22px 8px; }
 .quiz-title { font-family: var(--display); font-size: 1.45em; color: var(--accent); text-shadow: 0 2px 0 rgba(0,0,0,0.3); }
 .quiz-sub { color: var(--frost); font-size: 1em; margin-top: 2px; }
-.quiz-pips { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; max-width: 45%; padding-top: 6px; }
+.quiz-pips { display: flex; flex-wrap: wrap; flex-shrink: 0; gap: 5px; justify-content: flex-end; max-width: 45%; padding-top: 6px; }
 .pip { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); transition: background 0.3s, transform 0.3s; }
 .pip.on { background: var(--accent); border-color: #fff; box-shadow: 0 0 10px var(--accent); transform: scale(1.1); }
 .quiz-body { padding: 6px 22px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
@@ -363,6 +363,7 @@ sup { font-size: 0.62em; }
 .fish-label.right, .floe-label.right { border-color: var(--good); box-shadow: 0 0 22px rgba(77, 255, 160, 0.9); }
 .floe-label { font-size: 24px; }
 .stone-label { border-color: rgba(255, 176, 120, 0.6); }
+.ring-label { border-color: rgba(127, 224, 208, 0.7); }
 .speech { padding: 8px 14px; border-radius: 16px 16px 16px 4px; background: #fff; color: #1b2466; font-size: 17px; box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
 .gloom-label { padding: 5px 10px; border-radius: 12px; background: rgba(40, 24, 80, 0.85); border: 1.5px solid rgba(180, 131, 255, 0.6); font-size: 16px; opacity: 0.8; }
 .gloom-label.target { font-size: 20px; opacity: 1; border-color: var(--lantern); box-shadow: 0 0 20px rgba(255, 209, 102, 0.8); }

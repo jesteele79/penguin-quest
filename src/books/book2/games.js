@@ -99,14 +99,3 @@ export function startTideCharts() {
   }));
 }
 
-// A first version of the snorkel trail, as a framed puzzle set.
-export function startSnorkel(params, onDone) {
-  const start = at(LOC.snorkelStart, 0.5);
-  pushActivity(new QuizActivity({
-    title: 'Snorkel Trail', subtitle: 'Swim through the right gates · 6 fraction puzzles', color: '#2ec4b6', count: 6,
-    pick: () => ({ domain: 'grove' }),
-    shot: twoShot(G.player.pos, start, { dist: 9, up: 3.5, lookUp: 0.3 }),
-    onCorrect: () => G.world.effects.burst(start.clone().add(V(-6, 0.3, 0)), { count: 20, color: [0xff8a3d, 0xffd23d, 0x4fe0c4], speed: 3, up: 3, life: 1.2, gravity: 2, size: 0.4 }),
-    onFinish: () => onDone(),
-  }));
-}

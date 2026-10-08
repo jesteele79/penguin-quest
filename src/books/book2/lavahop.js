@@ -15,7 +15,10 @@ const DEPTH = 5;
 const TOP = P.rim - 0.3;
 const SUNK = P.lavaY - 0.6;
 const LANE = 4.6;
+// How far each row's middle stone may drift from the pool's centre line, following the path so far.
+const DRIFT = [0, 2.5, 2, 1.5, 1];
 const EAST = Math.PI / 2;
+export const HOP = { R, LANE, DRIFT };
 const COOL = 0x0e4a44;
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -135,7 +138,7 @@ class LavaHopActivity {
     idx = idx.sort(() => Math.random() - 0.5);
     this.round = new Round(p);
     // The path wanders a little but closes in on the island's middle row by row.
-    const limit = [3, 2.5, 2, 1.5, 1][this.row] ?? 1;
+    const limit = DRIFT[this.row] ?? 1;
     const cz = P.z + Math.max(-limit, Math.min(limit, this.pathZ - P.z));
     const x = P.rows[this.row];
     idx.forEach((ci, k) => {

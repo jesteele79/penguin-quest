@@ -22,7 +22,9 @@ export const LOC = {
     isle: { x: 0, z: -42, r: 5 }, rows: [-30, -24.6, -19.2, -13.8, -8.4],
   },
   lavaStart: { x: -37.5, z: -42 },
-  snorkelStart: { x: -104, z: 14 },
+  snorkelStart: { x: -115, z: 35 },
+  // The snorkel trail loops clockwise through the lagoon from its south-east sand to the vent on the reef.
+  snorkelTrail: [[-118.9, 37.1], [-130.5, 31], [-140.6, 32.8], [-149.5, 27.6], [-153, 18], [-149.5, 8.4], [-140.6, 3.2], [-130.5, 5], [-126, -2], [-124.5, -5]],
   arrival: { x: 0, z1: 122, w: 4, top: 1.1 },
   launch: { x0: 0, z1: 122, w: 4, top: 1.1 },
   floeRows: [],
@@ -121,7 +123,7 @@ export const VALVES = [[-60, -44], [-58, -70], [-30, -66], [-44, -34]];
 export const CORALS = [[-146, 12], [-132, 28], [-150, 30], [-136, 6], [-126, 14]];
 export const CRATES = [[106, 36], [124, 50], [134, 28], [110, 14]];
 export const LAMPS = [[94, -108], [104, -94], [116, -110], [108, -120]];
-export const TIDE_POOLS = [[-36, 116], [24, 120], [-46, 98]];
+export const TIDE_POOLS = [[-36, 116], [24, 120], [-42, 94]];
 
 export const CHICK_SPOTS = [[-32, 104], [30, 58], [-106, 28], [122, 54], [60, -40], [-70, -36], [101, -79], [-88, 140]];
 export const NURSERY = { x: 26, z: 114 };

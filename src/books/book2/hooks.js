@@ -8,6 +8,7 @@ import { startArrival } from './scenes.js';
 import { Turtle } from '../../actors/critters.js';
 import { sandcastle } from './props.js';
 import { buildLavaBridge, lavaFrame } from './lavahop.js';
+import { buildReefSchool } from './snorkel.js';
 
 // Sea glass: smooth, frosted pebbles in five old-bottle colours.
 const GLASS = [0x7fe0d0, 0x8fd88a, 0x7ab8f0, 0xf0c070, 0xe8f4f0];
@@ -41,6 +42,7 @@ export const HOOKS = {
     ctx.crater.setHeat(d.finale ? 1 : lit * 0.06);
     ctx.lighthouse.setOn(!!d.crystals.ridge);
     if (d.flags.lavaBridge) buildLavaBridge(d.flags.lavaBridge);
+    if (d.flags.reefFish) buildReefSchool();
   },
 
   // Soot on Mount Ember's upper slopes lifts once the Heart-Ember is rekindled.
