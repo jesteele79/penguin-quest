@@ -158,6 +158,30 @@ const R = {
     return svg(x0 + L + dx + 80, y0 + Hh + 36, b, `box ${l} by ${w} by ${h} ${unit}`);
   },
 
+  // Two boxes joined side by side with the same depth. a, b: { l, h, label? } (label replaces b's height).
+  boxes({ a, b: bx, w, unit }) {
+    const tall = Math.max(a.h, bx.h);
+    const s = Math.min(24, 250 / (a.l + bx.l + w * 0.55), 150 / (tall + w * 0.4));
+    const dx = w * s * 0.55, dy = w * s * 0.4;
+    const x0 = 46, base = 22 + dy + tall * s;
+    const poly = (p, cls) => `<polygon points="${p.map((q) => q.join(',')).join(' ')}" class="${cls}"/>`;
+    // Painted left to right: the right box hides the left box's side face where they touch.
+    const box = (x, l, h, cls) => {
+      const L = l * s, y = base - h * s;
+      return poly([[x, y], [x + L, y], [x + L, base], [x, base]], `${cls} v-edge`)
+        + poly([[x, y], [x + dx, y - dy], [x + L + dx, y - dy], [x + L, y]], 'v-top v-edge')
+        + poly([[x + L, y], [x + L + dx, y - dy], [x + L + dx, base - dy], [x + L, base]], 'v-side v-edge');
+    };
+    const La = a.l * s, Lb = bx.l * s;
+    let out = box(x0, a.l, a.h, 'v-fill v-soft') + box(x0 + La, bx.l, bx.h, 'v-fill2 v-soft');
+    out += t(x0 + La / 2, base - (a.h * s) / 2, 'A', 'v-t v-strong', 'middle', 15) + t(x0 + La + Lb / 2, base - (bx.h * s) / 2, 'B', 'v-t v-strong', 'middle', 15);
+    out += t(x0 + La / 2, base + 16, `${a.l} ${unit}`, 'v-t v-strong') + t(x0 + La + Lb / 2, base + 16, `${bx.l} ${unit}`, 'v-t v-strong');
+    out += t(x0 - 8, base - (a.h * s) / 2, `${a.h} ${unit}`, 'v-t v-strong', 'end');
+    out += t(x0 + La + Lb + dx + 8, base - dy - (bx.h * s) / 2, bx.label ?? `${bx.h} ${unit}`, 'v-t v-strong', 'start');
+    out += t(x0 + La + Lb + dx / 2 + 10, base - dy / 2 + 12, `${w} ${unit}`, 'v-t v-strong', 'start');
+    return svg(x0 + La + Lb + dx + 64, base + 32, out, `two boxes joined: ${a.l} by ${w} by ${a.h} and ${bx.l} by ${w} by ${bx.label ?? bx.h} ${unit}`);
+  },
+
   grid({ lo, hi, points }) {
     const n = hi - lo, s = Math.min(30, 300 / n), pad = 30;
     const W = pad * 2 + n * s, H = W;

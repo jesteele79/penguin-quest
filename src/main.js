@@ -12,6 +12,7 @@ import { Buddy } from './actors/buddy.js';
 import { LOC, WORLD_HALF, WATER_Y, PATROL_BOARD, CRYSTALS } from './world/layout.js';
 import { SaveStore } from './game/save.js';
 import { Tutor } from './math/tutor.js';
+import { bookScope } from './books/books.js';
 import { typedValue } from './math/build.js';
 import { installHarness } from './dev/harness.js';
 import { GAMES } from './game/games.js';
@@ -72,7 +73,7 @@ function installHelpers() {
     for (const r of REGIONS) if (r !== 'lake' && G.quests.started(CHAPTER_OF[r])) out.push(r);
     return out;
   };
-  G.makeTutor = (data) => new Tutor(data.tutor, data.profile.grade);
+  G.makeTutor = (data) => new Tutor(data.tutor, data.profile.grade, undefined, bookScope(data.active));
   G.applyLook = (look = G.save.data.equipped) => {
     const m = G.player.model;
     const scarf = findItem('scarf', look.scarf) ?? SHOP.scarf[0];
@@ -332,7 +333,7 @@ function syncWorld() {
 
 function enterGame(isNew) {
   const d = G.save.data;
-  G.tutor = new Tutor(d.tutor, d.profile.grade);
+  G.tutor = new Tutor(d.tutor, d.profile.grade, undefined, bookScope(d.active));
   G.tutor.lessonGate = (id) => lessonDue(id, 'new');
   G.lesson = (id) => pushActivity(new LessonActivity(id, { replay: true }));
   const record = G.tutor.record.bind(G.tutor);

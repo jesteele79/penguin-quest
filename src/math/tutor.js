@@ -13,11 +13,16 @@ export function emptyTutorState() {
 const plain = (markup) => toSpeech(markup).replace(/ what\?/g, '?');
 
 export class Tutor {
-  constructor(state, grade = 4, seed) {
+  // grade: the child's school grade (what counts as review, and what needs a lesson).
+  // book: { grade, has(skill) } from the book being played; without one every skill is in play.
+  constructor(state, grade = 4, seed, book = null) {
     this.state = state;
     this.grade = grade;
+    this.book = book;
     this.rng = new Rng(seed);
   }
+
+  inBook(skill) { return !this.book || this.book.has(skill); }
 
   setGrade(grade) {
     this.grade = grade;
@@ -42,10 +47,12 @@ export class Tutor {
     return e.m >= MASTERED && (e.n >= 4 || e.assumed);
   }
 
-  // Skills above the chosen grade open once everything at or below it in the domain is mastered.
+  // A book's own grade is open from the start. Skills above it (and above the child's grade) open once
+  // everything easier in the domain that the book teaches is mastered.
   isUnlocked(skill) {
-    if (skill.grade <= this.grade) return true;
-    return DOMAINS[skill.domain].skills.every((s) => s.grade >= skill.grade || this.isMastered(s.id));
+    if (!this.inBook(skill)) return false;
+    if (skill.grade <= Math.max(this.grade, this.book?.grade ?? 0)) return true;
+    return DOMAINS[skill.domain].skills.every((s) => !this.inBook(s) || s.grade >= skill.grade || this.isMastered(s.id));
   }
 
   tierFor(id) {
@@ -129,6 +136,7 @@ export class Tutor {
     let best = domains[0], score = Infinity;
     for (const d of domains) {
       const skills = this.domainSkills(d);
+      if (!skills.length) continue;
       const avg = skills.reduce((a, s) => a + this.entry(s.id).m, 0) / Math.max(1, skills.length);
       const v = avg + this.rng.next() * 0.25;
       if (v < score) { score = v; best = d; }
@@ -191,7 +199,7 @@ export class Tutor {
       const e = this.entry(s.id);
       return {
         id: s.id, name: s.name, cc: s.cc, grade: s.grade, attempts: e.n, firstTry: e.c, m: e.m,
-        mastered: this.isMastered(s.id), unlocked: this.isUnlocked(s), assumed: e.assumed && e.n === 0,
+        mastered: this.isMastered(s.id), unlocked: this.isUnlocked(s), assumed: e.assumed && e.n === 0, inBook: this.inBook(s),
       };
     });
     const practiced = rows.filter((r) => r.unlocked);

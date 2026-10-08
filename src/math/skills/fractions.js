@@ -2,6 +2,7 @@
 import { P, frac, num, pick, makeChoices, labelFrac, labelNum, nearInts } from '../build.js';
 import { Frac, gcd, lcm } from '../frac.js';
 import { fracMarkup as fm, fmtInt } from '../fmt.js';
+import { friend } from '../theme.js';
 
 const D = 'grove';
 const F = (n, d) => new Frac(n, d);
@@ -532,4 +533,176 @@ const fracWord = {
   },
 };
 
-export const GROVE_SKILLS = [identify, equiv, compare, addLike, fill, simplify, mixed, timesWhole, fracWord, addUnlike, ofWhole, mult, divUnit, divFrac];
+const asDiv = {
+  id: 'frac_as_div', domain: D, grade: 5, cc: '5.NF.3', name: 'Fractions as division', short: 'fraction = division',
+  gen(rng, tier) {
+    if (tier === 1) {
+      const [a, b] = coprimePair(rng, 3, 9);
+      const ans = F(a, b);
+      return P({
+        skill: this.id, tier,
+        text: `What is ${a} ÷ ${b} written as a fraction?`,
+        answer: frac(ans),
+        choices: makeChoices(rng, ans, [
+          { value: F(b, a), why: `The number being shared goes on top: ${a} ÷ ${b} = {${a}/${b}}.` },
+          { value: F(1, b), why: `That is 1 ÷ ${b}. Here ${a} wholes are shared, so each share is ${a} times as big.` },
+          F(a, b + 1), F(a + 1, b),
+        ], lab),
+        hint: `A fraction is a division: the top number is shared into the bottom number of equal parts.`,
+        steps: [`Sharing ${a} wholes into ${b} equal parts gives each part {${a}/${b}} of a whole.`, `So ${a} ÷ ${b} = {${a}/${b}}.`],
+        meta: { value: ans },
+      });
+    }
+    const b = rng.int(2, tier === 2 ? 5 : 8);
+    let a = rng.int(b + 1, b * (tier === 2 ? 3 : 4));
+    if (a % b === 0) a += 1;
+    const ans = F(a, b);
+    const who = friend(rng);
+    const story = tier === 2
+      ? rng.pick([
+        `${who} shares ${a} pizzas equally among ${b} friends. How much pizza does each friend get?`,
+        `${a} pies are cut up and shared equally by ${b} penguins. How much pie does each penguin get?`,
+      ])
+      : rng.pick([
+        `${who} pours ${a} liters of juice equally into ${b} jugs. How many liters go in each jug?`,
+        `A rope ${a} meters long is cut into ${b} equal pieces. How long is each piece, in meters?`,
+      ]);
+    const w = Math.floor(a / b), r = a % b;
+    return P({
+      skill: this.id, tier,
+      text: story,
+      answer: frac(ans),
+      choices: makeChoices(rng, ans, [
+        { value: F(b, a), why: `Each share is (amount) ÷ (number of shares) = ${a} ÷ ${b}, and ${a} is more than ${b}, so each share is more than 1.` },
+        { value: F(r, b), why: `Each share also gets ${w} whole${w > 1 ? 's' : ''}: the answer is ${fm(ans, { mixed: true })}.` },
+        F(a, b + 1), F(w + 1, 1),
+      ], labMixed),
+      hint: `Each share is ${a} ÷ ${b}. Write that as a fraction, then see how many wholes fit.`,
+      steps: [`Each share is ${a} ÷ ${b} = {${a}/${b}}.`, `${b} goes into ${a} ${w} time${w > 1 ? 's' : ''} with ${r} left, so {${a}/${b}} = ${fm(ans, { mixed: true })}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+const SCALE_THINGS = ['shells', 'fish', 'coins', 'beads', 'stones'];
+
+const scale = {
+  id: 'frac_scale', domain: D, grade: 5, cc: '5.NF.5', name: 'Does it grow or shrink?', short: 'scaling',
+  gen(rng, tier) {
+    const n = rng.int(2, 12) * rng.pick([2, 3, 4]);
+    if (tier === 2) {
+      const d = rng.int(3, 8);
+      const small = F(rng.int(1, d - 1), d), big = F(d + rng.int(1, d - 1), d);
+      const first = rng.chance(0.5);
+      const [x, y] = first ? [small, big] : [big, small];
+      const lx = `${fm(x)} × ${n}`, ly = `${fm(y)} × ${n}`;
+      const bigLabel = first ? ly : lx;
+      return P({
+        skill: this.id, tier,
+        text: `Without multiplying: which product is greater?`,
+        answer: pick(),
+        choices: [
+          { label: lx, value: 'x', correct: !first, why: first ? `${fm(x)} is less than 1, so ${lx} is less than ${n}. ${fm(y)} is more than 1.` : undefined },
+          { label: ly, value: 'y', correct: first, why: first ? undefined : `${fm(y)} is less than 1, so ${ly} is less than ${n}. ${fm(x)} is more than 1.` },
+          { label: 'They are equal', value: '=', correct: false, why: 'The two fractions are different, so the products are different.' },
+        ],
+        hint: `Compare each fraction to 1. Multiplying by more than 1 makes ${n} bigger; less than 1 makes it smaller.`,
+        steps: [`${fm(big)} is more than 1, so ${fm(big)} × ${n} is more than ${n}.`, `${fm(small)} is less than 1, so ${fm(small)} × ${n} is less than ${n}.`, `So ${bigLabel} is greater.`],
+        answerText: bigLabel,
+      });
+    }
+    const d = rng.int(2, 9);
+    const kind = rng.pick(tier === 1 ? ['less', 'less', 'more', 'equal'] : ['less', 'more', 'more', 'mixed']);
+    let f, label;
+    if (kind === 'less') f = F(rng.int(1, d - 1), d);
+    else if (kind === 'more') f = F(d + rng.int(1, d - 1), d);
+    else if (kind === 'equal') f = F(d, d);
+    else f = F(d * rng.int(1, 2) + rng.int(1, d - 1), d);
+    if (kind === 'mixed') label = fm(f, { mixed: true }); else label = fm(f);
+    const cmp = f.cmp(1);
+    const right = cmp < 0 ? 'less' : cmp > 0 ? 'more' : 'equal';
+    const thing = rng.pick(SCALE_THINGS);
+    const text = tier === 3 && rng.chance(0.5)
+      ? `A crate holds ${n} ${thing}. A second crate holds ${label} times as many. Without multiplying: does the second crate hold more than, less than, or the same as ${n}?`
+      : `Without multiplying: is ${label} × ${n} more than, less than, or equal to ${n}?`;
+    const reason = { less: `${label} is less than 1, so the product is only part of ${n}.`, more: `${label} is more than 1, so the product is more than ${n}.`, equal: `${label} is the same as 1, and 1 × ${n} = ${n}.` };
+    const lbl = { more: `More than ${n}`, less: `Less than ${n}`, equal: `Equal to ${n}` };
+    return P({
+      skill: this.id, tier,
+      text,
+      answer: pick(),
+      choices: ['more', 'less', 'equal'].map((k) => ({ label: lbl[k], value: k, correct: k === right, why: k === right ? undefined : reason[right] })),
+      hint: `Is ${label} more than 1, less than 1, or exactly 1?`,
+      steps: [reason[right], `So the answer is ${lbl[right].toLowerCase()}.`],
+      answerText: lbl[right],
+    });
+  },
+};
+
+const word5 = {
+  id: 'frac_word5', domain: D, grade: 5, cc: '5.NF.2', name: 'Fraction word problems', short: 'fraction stories',
+  gen(rng, tier) {
+    const who = friend(rng);
+    if (tier === 3) {
+      const [a, b] = coprimePair(rng, 2, 6);
+      const [c, d] = coprimePair(rng, 2, 6);
+      const x = F(a, b), y = F(c, d);
+      const ans = x.mul(y);
+      const story = rng.pick([
+        { text: `A garden bed is {${a}/${b}} meter long and {${c}/${d}} meter wide. What is its area in square meters?`, step: `Area = length × width = {${a}/${b}} × {${c}/${d}}.` },
+        { text: `A trail is {${c}/${d}} mile long. ${who} has walked {${a}/${b}} of it. How far has ${who} walked, in miles?`, step: `{${a}/${b}} of {${c}/${d}} means {${a}/${b}} × {${c}/${d}}.` },
+        { text: `{${c}/${d}} of a pan of fruit bars is left. ${who} eats {${a}/${b}} of what is left. What fraction of the whole pan is that?`, step: `{${a}/${b}} of {${c}/${d}} means {${a}/${b}} × {${c}/${d}}.` },
+      ]);
+      return P({
+        skill: this.id, tier,
+        text: story.text,
+        answer: frac(ans),
+        choices: makeChoices(rng, ans, [
+          { value: x.add(y), why: 'This story is multiplying ("of", or length × width), not adding.' },
+          { value: F(a * c, b + d), why: 'Multiply the bottom numbers too, don\'t add them.' },
+          F(a * d, b * c), ans.add(F(1, b * d)),
+        ], lab),
+        hint: '"Of" a fraction, or length × width, means multiply. Multiply the tops, then the bottoms.',
+        steps: [story.step, `Tops: ${a} × ${c} = ${a * c}. Bottoms: ${b} × ${d} = ${b * d}.`, `The answer is {${a * c}/${b * d}}${ans.d !== b * d ? ` = ${fm(ans)}` : ''}.`],
+        meta: { value: ans },
+      });
+    }
+    let a, b, c, d;
+    if (tier === 1) { b = rng.pick([2, 3, 4]); d = b * rng.int(2, 3); a = rng.int(1, b - 1); c = rng.int(1, d - 1); if (gcd(c, d) !== 1) c = 1; }
+    else { [a, b] = coprimePair(rng, 2, 6); [c, d] = coprimePair(rng, 3, 8); if (b === d) d += 1; if (gcd(c, d) !== 1) c = 1; }
+    let x = F(a, b), y = F(c, d);
+    const add = tier === 1 || rng.chance(0.5);
+    if (!add && x.cmp(y) <= 0) { [x, y] = [y, x]; [a, b, c, d] = [c, d, a, b]; }
+    if (!add && x.eq(y)) return word5.gen(rng, 1);
+    const ans = add ? x.add(y) : x.sub(y);
+    const L = lcm(b, d), A = a * (L / b), C = c * (L / d);
+    const text = add
+      ? rng.pick([
+        `${who} swims {${a}/${b}} mile in the morning and {${c}/${d}} mile in the afternoon. How far does ${who} swim in all?`,
+        `A bucket has {${a}/${b}} gallon of water. ${who} adds {${c}/${d}} gallon more. How much water is in the bucket now?`,
+      ])
+      : rng.pick([
+        `A jug holds {${a}/${b}} liter of juice. ${who} pours out {${c}/${d}} liter. How much juice is left?`,
+        `${who} has a ribbon {${a}/${b}} yard long and cuts off {${c}/${d}} yard. How long is the ribbon now?`,
+      ]);
+    return P({
+      skill: this.id, tier,
+      text,
+      answer: frac(ans),
+      choices: makeChoices(rng, ans, [
+        add ? { value: F(a + c, b + d), why: 'You can\'t add the bottom numbers. Rename both fractions with the same bottom number first.' }
+          : { value: F(Math.abs(a - c) || 1, Math.abs(b - d) || 1), why: 'You can\'t subtract the bottom numbers. Rename both fractions with the same bottom number first.' },
+        { value: add ? x.sub(y).value > 0 ? x.sub(y) : x.add(y).add(F(1, L)) : x.add(y), why: add ? 'The story puts the amounts together: add.' : 'The story takes some away: subtract.' },
+        ans.add(F(1, L)), F(Math.abs(add ? A + C : A - C) + 1, L),
+      ], labMixed),
+      hint: `Find a common bottom number: ${L} works for both ${b} and ${d}. Then ${add ? 'add' : 'subtract'}.`,
+      steps: [
+        `{${a}/${b}} = {${A}/${L}} and {${c}/${d}} = {${C}/${L}}.`,
+        `{${A}/${L}} ${add ? '+' : '−'} {${C}/${L}} = {${add ? A + C : A - C}/${L}}${ans.d !== L || ans.n > ans.d ? ` = ${fm(ans, { mixed: true })}` : ''}.`,
+      ],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const GROVE_SKILLS = [identify, equiv, compare, addLike, fill, simplify, mixed, timesWhole, fracWord, addUnlike, asDiv, ofWhole, scale, mult, word5, divUnit, divFrac];

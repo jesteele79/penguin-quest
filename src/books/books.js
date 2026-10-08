@@ -21,6 +21,20 @@ export const BOOKS = [
 
 export const bookById = (id) => BOOKS.find((b) => b.id === id) ?? BOOKS[0];
 
+// What each book teaches: the year before as review, its own grade as the core, and a few previews of the
+// next grade for players who race ahead (they open once the domain's easier skills are mastered).
+const SCOPE = {
+  book1: { grade: 4, review: 3, preview: ['mul_3x2', 'frac_add_unlike', 'dec_place', 'volume', 'order_ops'] },
+  book2: { grade: 5, review: 4, preview: ['long_div', 'frac_div', 'dec_ops', 'area_tri', 'exponents', 'mean'] },
+  book3: { grade: 6, review: 5, preview: [] },
+};
+
+export function bookScope(id) {
+  const s = SCOPE[id] ?? SCOPE.book1;
+  const preview = new Set(s.preview);
+  return { id, grade: s.grade, has: (skill) => skill.grade === s.grade || skill.grade === s.review || preview.has(skill.id) };
+}
+
 export const gradeSkills = (grade) => SKILL_LIST.filter((s) => s.grade === grade);
 
 // The saved state for a book: the active book lives at the top level of the save, others in data.books.

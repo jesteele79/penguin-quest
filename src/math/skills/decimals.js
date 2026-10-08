@@ -5,7 +5,7 @@ import { fmtNum, fmtInt, fmtMoney } from '../fmt.js';
 
 const D = 'huts';
 const F = (n, d) => new Frac(n, d);
-const PLACE_NAMES = { 1: 'ones', 10: 'tens', 100: 'hundreds', '0.1': 'tenths', '0.01': 'hundredths', '0.001': 'thousandths' };
+const PLACE_NAMES = { 1: 'ones', 10: 'tens', 100: 'hundreds', 1000: 'thousands', '0.1': 'tenths', '0.01': 'hundredths', '0.001': 'thousandths' };
 const ITEMS = [
   ['fish taco', 'fish tacos'], ['snow cone', 'snow cones'], ['kelp cookie', 'kelp cookies'], ['cocoa', 'cocoas'],
   ['shrimp roll', 'shrimp rolls'], ['ice pop', 'ice pops'], ['mitten', 'mittens'], ['scarf', 'scarves'],
@@ -515,4 +515,188 @@ const tenthsHundredths = {
   },
 };
 
-export const HUTS_SKILLS = [decFrac, tenthsHundredths, decCompare, shop, place, pow10, decRound, addSub, ratio, unitRate, percent];
+const labelAny = (v) => (v instanceof Frac && !v.toDecimal() ? labelFrac(false)(v) : labelNum(v));
+
+const placeTen = {
+  id: 'place_ten', domain: D, grade: 5, cc: '5.NBT.1', name: 'Each place is 10 times the next', short: 'place-value patterns',
+  gen(rng, tier) {
+    if (tier === 2) {
+      const n = rng.int(1, 9), places = rng.int(1, 2);
+      const x = F(n, 10 ** places);
+      const xs = fmtNum(x.value, places);
+      const mode = rng.pick(['tenth', 'times', 'what']);
+      if (mode === 'tenth') {
+        const ans = x.div(10);
+        return P({
+          skill: this.id, tier,
+          text: `What is {1/10} of ${xs}?`,
+          answer: num(ans),
+          choices: makeChoices(rng, ans, [{ value: x.mul(10), why: `{1/10} of a number is smaller: each digit moves one place to the RIGHT.` }, x.div(100), x, F(n, 1)], labelNum),
+          hint: 'Taking {1/10} of a number moves every digit one place to the right.',
+          steps: [`The ${n} is in the ${PLACE_NAMES[String(1 / 10 ** places)]} place.`, `{1/10} of it moves the ${n} one place right: ${fmtNum(ans.value)}.`],
+          meta: { value: ans },
+        });
+      }
+      if (mode === 'times') {
+        const ans = x.mul(10);
+        return P({
+          skill: this.id, tier,
+          text: `What is 10 × ${xs}?`,
+          answer: num(ans),
+          choices: makeChoices(rng, ans, [{ value: x.div(10), why: `10 times a number is bigger: each digit moves one place to the LEFT.` }, x.mul(100), F(n * 10, 1), x], labelNum),
+          hint: 'Multiplying by 10 moves every digit one place to the left.',
+          steps: [`The ${n} is in the ${PLACE_NAMES[String(1 / 10 ** places)]} place.`, `10 times as much moves it one place left: ${fmtNum(ans.value)}.`],
+          meta: { value: ans },
+        });
+      }
+      const ans = x.div(10);
+      return P({
+        skill: this.id, tier,
+        text: `${xs} is 10 times as much as what number?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: x.mul(10), why: `${xs} is 10 times the answer, so the answer is smaller: divide by 10.` }, x.div(100), x], labelNum),
+        hint: `Which number, times 10, makes ${xs}? Move the digit one place right.`,
+        steps: [`10 × ? = ${xs}.`, `? = ${xs} ÷ 10 = ${fmtNum(ans.value)}.`],
+        meta: { value: ans },
+      });
+    }
+    // Same digit in two places: how many times as much is the left one worth?
+    const digit = rng.int(1, 9);
+    const gap = tier === 3 ? 2 : 1;
+    const decimal = tier === 3 && rng.chance(0.5);
+    const len = decimal ? 3 : 4;
+    const hi = rng.int(gap, len - 1);
+    const lo = hi - gap;
+    const digits = Array.from({ length: len }, (_, i) => (i === len - 1 - hi || i === len - 1 - lo ? digit : rng.int(0, 9)));
+    if (digits[0] === 0) digits[0] = digit === 1 ? 2 : 1;
+    for (let i = 0; i < len; i++) if (i !== len - 1 - hi && i !== len - 1 - lo && digits[i] === digit) digits[i] = (digit % 9) + 1;
+    // Place k (counting from the right, starting at 0) is worth 10^k, or 10^(k-2) once two decimal places are added.
+    const shift = decimal ? 2 : 0;
+    const str = decimal ? `${digits[0]}.${digits.slice(1).join('')}` : fmtInt(Number(digits.join('')));
+    const placeName = (k) => PLACE_NAMES[String(k - shift >= 0 ? 10 ** (k - shift) : 1 / 10 ** (shift - k))];
+    const worth = (k) => (k - shift >= 0 ? F(digit * 10 ** (k - shift), 1) : F(digit, 10 ** (shift - k)));
+    const ans = 10 ** gap;
+    return P({
+      skill: this.id, tier,
+      text: `In ${str}, the ${digit} in the ${placeName(hi)} place is how many times as much as the ${digit} in the ${placeName(lo)} place?`,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [
+        { value: gap === 1 ? 100 : 10, why: gap === 1 ? 'The two places are next to each other, so it is 10 times as much.' : 'The places are two apart: 10 × 10 = 100 times as much.' },
+        { value: F(1, 10 ** gap), why: `The ${placeName(hi)} place is further LEFT, so its digit is worth more, not less.` },
+        { value: digit, why: `Compare what the digits are worth (${fmtNum(worth(hi).value)} and ${fmtNum(worth(lo).value)}), not the digits themselves.` },
+        1000,
+      ], labelAny),
+      hint: 'Each place is worth 10 times the place to its right.',
+      steps: [`The ${digit} in the ${placeName(hi)} place is worth ${fmtNum(worth(hi).value)}.`, `The ${digit} in the ${placeName(lo)} place is worth ${fmtNum(worth(lo).value)}.`, `${fmtNum(worth(hi).value)} is ${ans} times ${fmtNum(worth(lo).value)}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+// Four decimals built from the same two digits in different places: the classic "longer is bigger" trap.
+function trapSet(rng, whole) {
+  const a = rng.int(1, 9);
+  let b = rng.int(1, 9);
+  if (b === a) b = (a % 9) + 1;
+  const w = whole ? rng.int(1, 9) : 0;
+  const base = w * 1000;
+  return [
+    F(base + a * 100, 1000), F(base + a * 100 + b * 10, 1000), F(base + a * 100 + b, 1000), F(base + a * 10 + b, 1000),
+  ];
+}
+const showDec = (f) => fmtNum(f.value);
+
+const decCompare3 = {
+  id: 'dec_compare3', domain: D, grade: 5, cc: '5.NBT.3b', name: 'Compare to thousandths', short: 'compare thousandths',
+  gen(rng, tier) {
+    const set = trapSet(rng, tier >= 2);
+    const sorted = [...set].sort((x, y) => x.cmp(y));
+    const why = 'Line up the decimal points and compare place by place, starting with the biggest place. More digits does not mean bigger.';
+    if (tier === 3) {
+      const three = rng.shuffle(set).slice(0, 3).sort((x, y) => x.cmp(y));
+      const fmt = (list) => list.map(showDec).join(', ');
+      const right = fmt(three);
+      const bySize = [...three].sort((x, y) => showDec(x).length - showDec(y).length || x.cmp(y));
+      const options = [right, fmt([...three].reverse()), fmt(bySize), fmt([three[1], three[0], three[2]]), fmt([three[0], three[2], three[1]])];
+      const seen = new Set();
+      const choices = [];
+      for (const o of options) {
+        if (seen.has(o) || choices.length >= 4) continue;
+        seen.add(o);
+        choices.push({ label: o, value: o, correct: o === right, why: o === right ? undefined : why });
+      }
+      return P({
+        skill: this.id, tier,
+        text: 'Which list goes from least to greatest?',
+        answer: pick(),
+        choices: rng.shuffle(choices),
+        hint: 'Write each number with three decimal places, then compare them like whole numbers.',
+        steps: [three.map((f) => `${showDec(f)} = ${f.value.toFixed(3)}`).join(', ') + '.', `From least to greatest: ${right}.`],
+        answerText: right,
+      });
+    }
+    const greatest = rng.chance(0.5);
+    const target = greatest ? sorted[3] : sorted[0];
+    return P({
+      skill: this.id, tier,
+      text: `Which number is the ${greatest ? 'greatest' : 'least'}?`,
+      answer: pick(),
+      choices: rng.shuffle(set).map((f) => ({ label: showDec(f), value: showDec(f), correct: f.eq(target), why: f.eq(target) ? undefined : why })),
+      hint: 'Write each number with three decimal places (add zeros), then compare them like whole numbers.',
+      steps: [set.map((f) => `${showDec(f)} = ${f.value.toFixed(3)}`).join(', ') + '.', `The ${greatest ? 'greatest' : 'least'} is ${showDec(target)}.`],
+      answerText: showDec(target),
+    });
+  },
+};
+
+const decOps = {
+  id: 'dec_ops', domain: D, grade: 6, cc: '6.NS.3', name: 'Decimal fluency', short: 'decimal + − × ÷',
+  gen(rng, tier) {
+    if (tier === 1) {
+      const add = rng.chance(0.5);
+      const A = rng.int(101, 999), B = rng.int(101, 999);
+      const x = F(A, 10), y = F(B, 100);
+      const [p, q] = add || x.cmp(y) > 0 ? [x, y] : [y, x];
+      const ans = add ? p.add(q) : p.sub(q);
+      const naive = F(add ? A + B : Math.abs(A - B), 100);
+      return P({
+        skill: this.id, tier,
+        text: `What is ${showDec(p)} ${add ? '+' : '−'} ${showDec(q)}?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: naive, why: `Line up the decimal points first: write ${showDec(x)} as ${x.value.toFixed(2)}.` }, ans.add(F(1, 10)), ans.add(F(1, 1)), ans.sub(F(1, 100))], labelNum),
+        hint: 'Line up the decimal points. Add a zero so both numbers have two decimal places.',
+        steps: [`${p.value.toFixed(2)} ${add ? '+' : '−'} ${q.value.toFixed(2)}.`, `= ${fmtNum(ans.value)}.`],
+        meta: { value: ans },
+      });
+    }
+    if (tier === 2) {
+      const A = rng.int(11, 99), B = rng.int(2, 9);
+      const x = F(A, 10), y = F(B, 10);
+      const ans = x.mul(y);
+      return P({
+        skill: this.id, tier,
+        text: `What is ${showDec(x)} × ${showDec(y)}?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: ans.mul(10), why: 'Count the decimal places: 1 + 1 = 2 places in the answer.' }, ans.div(10), F(A * B, 1), ans.add(F(1, 10))], labelNum),
+        hint: `Multiply ${A} × ${B} like whole numbers, then put back 2 decimal places.`,
+        steps: [`${A} × ${B} = ${A * B}.`, `${showDec(x)} has 1 decimal place and ${showDec(y)} has 1, so the answer has 2: ${fmtNum(ans.value)}.`],
+        meta: { value: ans },
+      });
+    }
+    const dv = rng.pick([2, 4, 5, 8]);
+    const qv = rng.int(12, 60);
+    const divisor = F(dv, 10), dividend = F(dv * qv, 10);
+    const ans = dividend.div(divisor);
+    return P({
+      skill: this.id, tier,
+      text: `What is ${showDec(dividend)} ÷ ${showDec(divisor)}?`,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [{ value: ans.div(10), why: `Move both decimal points one place right: ${dv * qv} ÷ ${dv}. The answer does not shrink.` }, ans.mul(10), ans.add(1), ans.sub(1)], labelNum),
+      hint: `Multiply both numbers by 10 so you divide by a whole number: ${dv * qv} ÷ ${dv}.`,
+      steps: [`${showDec(dividend)} ÷ ${showDec(divisor)} = ${dv * qv} ÷ ${dv} (both × 10).`, `${dv * qv} ÷ ${dv} = ${qv}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const HUTS_SKILLS = [decFrac, tenthsHundredths, decCompare, shop, place, placeTen, decCompare3, pow10, decRound, addSub, decOps, ratio, unitRate, percent];

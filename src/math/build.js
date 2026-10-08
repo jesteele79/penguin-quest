@@ -1,6 +1,7 @@
 // Helpers shared by the skill generators.
 import { Frac } from './frac.js';
 import { fmtNum, fracMarkup, fracTyped } from './fmt.js';
+import { flavor } from './theme.js';
 
 // A problem's answer:
 //   { kind: 'num', value: Frac }                      whole numbers and decimals
@@ -82,11 +83,17 @@ export function P(def) {
   if (!def.hint) throw new Error('problem without hint: ' + def.text);
   if (!def.steps || !def.steps.length) throw new Error('problem without steps: ' + def.text);
   if (def.answer.kind === 'choice' && !(def.choices && def.choices.some((c) => c.correct))) throw new Error('choice problem without correct choice');
+  const choices = def.choices?.map((c) => ({ ...c, label: flavor(c.label), why: flavor(c.why) }));
   return {
     visual: null,
     format: def.answer.kind === 'choice' ? 'choice' : 'input',
     ...def,
-    answerText: def.answerText ?? (def.answer.kind === 'choice' ? def.choices.find((c) => c.correct).label : showValue(def.answer)),
+    text: flavor(def.text),
+    ...(def.visual?.title ? { visual: { ...def.visual, title: flavor(def.visual.title) } } : {}),
+    hint: flavor(def.hint),
+    steps: def.steps.map(flavor),
+    ...(choices ? { choices } : {}),
+    answerText: flavor(def.answerText ?? (def.answer.kind === 'choice' ? def.choices.find((c) => c.correct).label : showValue(def.answer))),
   };
 }
 

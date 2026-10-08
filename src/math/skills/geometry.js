@@ -2,8 +2,10 @@
 import { P, num, pick, makeChoices, labelNum, nearInts } from '../build.js';
 import { Frac } from '../frac.js';
 import { fmtInt, fmtNum } from '../fmt.js';
+import { friend } from '../theme.js';
 
 const D = 'cave';
+const F = (n, d) => new Frac(n, d);
 const UNITS = ['ft', 'm', 'in', 'cm', 'yd'];
 
 const perimeter = {
@@ -530,4 +532,219 @@ const classify = {
   },
 };
 
-export const CAVE_SKILLS = [perimeter, areaRect, angleType, protractor, convert, areaMissing, angleAdd, classify, symmetry, volume, coord, areaTri, surface];
+const volumeComposite = {
+  id: 'volume_composite', domain: D, grade: 5, cc: '5.MD.5c', name: 'Volume of joined boxes', short: 'composite volume',
+  gen(rng, tier) {
+    const u = rng.pick(['ft', 'm', 'cm', 'in']);
+    const big = tier === 1 ? 4 : 7;
+    const w = rng.int(2, tier === 1 ? 3 : 5);
+    const a = { l: rng.int(2, big), h: rng.int(1, big) };
+    const b = { l: rng.int(2, big), h: rng.int(1, big) };
+    if (a.h === b.h) b.h = a.h === 1 ? 3 : a.h - 1;
+    const Va = a.l * w * a.h, Vb = b.l * w * b.h, V = Va + Vb;
+    const steps = [`Box A: ${a.l} × ${w} × ${a.h} = ${Va} cubic ${u}.`, `Box B: ${b.l} × ${w} × ${b.h} = ${Vb} cubic ${u}.`];
+    if (tier === 3) {
+      return P({
+        skill: this.id, tier,
+        text: `These two boxes are joined together. Their total volume is ${V} cubic ${u}. How tall is box B?`,
+        visual: { kind: 'boxes', a, b: { ...b, label: '?' }, w, unit: u },
+        answer: num(b.h),
+        choices: makeChoices(rng, b.h, [
+          { value: Math.max(1, Math.round(V / (b.l * w))), why: `First take away box A's volume: ${V} − ${Va} = ${Vb}. Then divide by ${b.l} × ${w}.` },
+          b.h + 1, b.h + 2, Math.max(1, b.h - 1), a.h,
+        ], labelNum),
+        hint: `Find box A's volume and subtract it from ${V}. What is left is box B. Then divide by its bottom (${b.l} × ${w}).`,
+        steps: [steps[0], `Box B: ${V} − ${Va} = ${Vb} cubic ${u}.`, `Height: ${Vb} ÷ (${b.l} × ${w}) = ${Vb} ÷ ${b.l * w} = ${b.h} ${u}.`],
+        meta: { value: b.h },
+      });
+    }
+    const story = tier === 2 && rng.chance(0.5)
+      ? `A stone step is made of two boxes joined together. How much space does it take up, in cubic ${u}?`
+      : `These two boxes are joined together. What is the total volume in cubic ${u}?`;
+    return P({
+      skill: this.id, tier,
+      text: story,
+      visual: { kind: 'boxes', a, b, w, unit: u },
+      answer: num(V),
+      choices: makeChoices(rng, V, [
+        { value: (a.l + b.l) * w * Math.max(a.h, b.h), why: 'The boxes have different heights. Find the volume of each box, then add.' },
+        { value: Va, why: 'That is only box A. Add box B too.' },
+        { value: Vb, why: 'That is only box B. Add box A too.' },
+        V + w, (a.l + b.l) * w * Math.min(a.h, b.h),
+      ], labelNum),
+      hint: 'Split the shape into its two boxes. Find each volume (length × width × height), then add them.',
+      steps: [...steps, `Total: ${Va} + ${Vb} = ${V} cubic ${u}.`],
+      meta: { value: V },
+    });
+  },
+};
+
+const METRIC = [['meters', 'centimeters', 100], ['kilometers', 'meters', 1000], ['kilograms', 'grams', 1000], ['liters', 'milliliters', 1000]];
+
+const convert5 = {
+  id: 'convert5', domain: D, grade: 5, cc: '5.MD.1', name: 'Metric conversions with decimals', short: 'metric decimals',
+  gen(rng, tier) {
+    if (tier === 3) {
+      const who = friend(rng);
+      const kind = rng.pick(['juice', 'ribbon', 'walk']);
+      if (kind === 'juice') {
+        const cup = rng.pick([200, 250, 500]);
+        const cups = rng.int(3, 16);
+        const total = cup * cups;
+        const L = F(total, 1000);
+        return P({
+          skill: this.id, tier,
+          text: `${who} has ${fmtNum(L.value)} liters of juice and pours it into cups that hold ${cup} milliliters each. How many cups can ${who} fill?`,
+          answer: num(cups),
+          choices: makeChoices(rng, cups, [{ value: Math.max(1, Math.round((L.value * 100) / cup)), why: '1 liter is 1,000 milliliters, not 100.' }, cups + 1, cups * 10, Math.max(1, cups - 2)], labelNum),
+          hint: 'Change liters to milliliters first (1 liter = 1,000 milliliters), then divide by the size of one cup.',
+          steps: [`${fmtNum(L.value)} liters = ${fmtInt(total)} milliliters.`, `${fmtInt(total)} ÷ ${cup} = ${cups} cups.`],
+          meta: { value: cups },
+        });
+      }
+      if (kind === 'ribbon') {
+        const piece = rng.pick([20, 25, 50]);
+        const pieces = rng.int(3, 18);
+        const cm = piece * pieces;
+        const m = F(cm, 100);
+        return P({
+          skill: this.id, tier,
+          text: `A ribbon is ${fmtNum(m.value)} meters long. ${who} cuts it into pieces that are ${piece} centimeters long. How many pieces does ${who} get?`,
+          answer: num(pieces),
+          choices: makeChoices(rng, pieces, [{ value: Math.max(1, Math.round((m.value * 1000) / piece)), why: '1 meter is 100 centimeters.' }, pieces + 1, pieces * 2, Math.max(1, pieces - 1)], labelNum),
+          hint: 'Change meters to centimeters first (1 meter = 100 centimeters), then divide by the length of one piece.',
+          steps: [`${fmtNum(m.value)} meters = ${fmtInt(cm)} centimeters.`, `${fmtInt(cm)} ÷ ${piece} = ${pieces} pieces.`],
+          meta: { value: pieces },
+        });
+      }
+      const km = F(rng.int(11, 39), 10), back = rng.int(2, 9) * 100;
+      const ans = km.value * 1000 + back;
+      return P({
+        skill: this.id, tier,
+        text: `${who} walks ${fmtNum(km.value)} kilometers to the market and ${back} meters more to the dock. How many meters is that in all?`,
+        answer: num(Math.round(ans)),
+        choices: makeChoices(rng, Math.round(ans), [{ value: Math.round(km.value * 100 + back), why: '1 kilometer is 1,000 meters.' }, Math.round(km.value * 1000), Math.round(ans) + 100, Math.round(ans) - 100], labelNum),
+        hint: 'Change kilometers to meters (1 kilometer = 1,000 meters), then add.',
+        steps: [`${fmtNum(km.value)} kilometers = ${fmtInt(Math.round(km.value * 1000))} meters.`, `${fmtInt(Math.round(km.value * 1000))} + ${back} = ${fmtInt(Math.round(ans))} meters.`],
+        meta: { value: Math.round(ans) },
+      });
+    }
+    const [big, small, k] = rng.pick(METRIC);
+    const places = k === 100 ? rng.int(1, 2) : rng.int(1, 3);
+    let n = rng.int(1, 10 ** places * 9);
+    if (n % 10 === 0) n += 1;
+    if (tier === 1) {
+      const x = F(n + 10 ** places * rng.int(1, 5), 10 ** places);
+      const ans = x.mul(k);
+      return P({
+        skill: this.id, tier,
+        text: `${fmtNum(x.value)} ${big} = how many ${small}?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [
+          { value: x.mul(k / 10), why: `1 ${one(big)} = ${fmtInt(k)} ${small}. Multiply by ${fmtInt(k)}: move the point ${String(k).length - 1} places right.` },
+          { value: x.div(k), why: `Big units to small units means MORE of them: multiply by ${fmtInt(k)}.` },
+          x.mul(k * 10), ans.add(1),
+        ], labelNum),
+        hint: `1 ${one(big)} = ${fmtInt(k)} ${small}. Multiply ${fmtNum(x.value)} by ${fmtInt(k)}.`,
+        steps: [`1 ${one(big)} = ${fmtInt(k)} ${small}.`, `${fmtNum(x.value)} × ${fmtInt(k)} = ${fmtNum(ans.value)} ${small}.`],
+        meta: { value: ans },
+      });
+    }
+    const whole = rng.int(1, 9) * (k === 100 ? 1 : 10) + (k === 100 ? 0 : rng.int(1, 9));
+    const amount = rng.chance(0.3) ? rng.int(1, 9) : whole;
+    const ans = F(amount, k);
+    return P({
+      skill: this.id, tier,
+      text: `${fmtInt(amount)} ${small} = how many ${big}?`,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [
+        { value: F(amount * k, 1), why: `Small units to big units means FEWER of them: divide by ${fmtInt(k)}.` },
+        { value: ans.mul(10), why: `Divide by ${fmtInt(k)}: move the point ${String(k).length - 1} places left.` },
+        ans.div(10), ans.mul(100),
+      ], labelNum),
+      hint: `${fmtInt(k)} ${small} make 1 ${one(big)}. Divide ${fmtInt(amount)} by ${fmtInt(k)}.`,
+      steps: [`1 ${one(big)} = ${fmtInt(k)} ${small}.`, `${fmtInt(amount)} ÷ ${fmtInt(k)} = ${fmtNum(ans.value)} ${big}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+const HIER = [
+  { s: 'A square is ___ a rectangle.', a: 'always', why: 'A square has 4 right angles, so it is always a rectangle.' },
+  { s: 'A square is ___ a rhombus.', a: 'always', why: 'A square has 4 equal sides, so it is always a rhombus.' },
+  { s: 'A rectangle is ___ a square.', a: 'sometimes', why: 'Only a rectangle with 4 equal sides is a square.' },
+  { s: 'A rhombus is ___ a square.', a: 'sometimes', why: 'Only a rhombus with 4 right angles is a square.' },
+  { s: 'A rectangle is ___ a parallelogram.', a: 'always', why: 'A rectangle has 2 pairs of parallel sides, so it is always a parallelogram.' },
+  { s: 'A rhombus is ___ a parallelogram.', a: 'always', why: 'Opposite sides of a rhombus are parallel, so it is always a parallelogram.' },
+  { s: 'A parallelogram is ___ a rectangle.', a: 'sometimes', why: 'Only a parallelogram with right angles is a rectangle.' },
+  { s: 'A parallelogram is ___ a quadrilateral.', a: 'always', why: 'A parallelogram has 4 sides, so it is always a quadrilateral.' },
+  { s: 'A quadrilateral is ___ a rectangle.', a: 'sometimes', why: 'Some quadrilaterals have 4 right angles, but many do not.' },
+  { s: 'A triangle is ___ a quadrilateral.', a: 'never', why: 'A triangle has 3 sides. A quadrilateral has 4.' },
+  { s: 'A pentagon is ___ a parallelogram.', a: 'never', why: 'A parallelogram has 4 sides. A pentagon has 5.' },
+];
+
+const hierarchy = {
+  id: 'shape_hierarchy', domain: D, grade: 5, cc: '5.G.4', name: 'Shape families', short: 'shape families',
+  gen(rng, tier) {
+    if (tier === 2) {
+      const q = rng.pick(HIER);
+      return P({
+        skill: this.id, tier,
+        text: `Fill in the blank: ${q.s}`,
+        answer: pick(),
+        choices: ['always', 'sometimes', 'never'].map((k) => ({ label: k, value: k, correct: k === q.a, why: k === q.a ? undefined : q.why })),
+        hint: 'Think of the rules each shape must follow. Does the first shape always follow the second shape\'s rules?',
+        steps: [q.why, `So: ${q.s.replace('___', q.a)}`],
+        answerText: q.a,
+      });
+    }
+    if (tier === 1) {
+      const q = rng.pick([
+        { text: 'Which shape is ALWAYS a rectangle?', a: 'square', wrong: { rhombus: 'A rhombus does not need right angles.', parallelogram: 'A parallelogram does not need right angles.', trapezoid: 'A trapezoid has only one pair of parallel sides.' } },
+        { text: 'Which shape is ALWAYS a rhombus?', a: 'square', wrong: { rectangle: 'A rectangle\'s sides do not all have to be equal.', parallelogram: 'A parallelogram\'s sides do not all have to be equal.', trapezoid: 'A trapezoid does not have 4 equal sides.' } },
+        { text: 'Which shape is ALWAYS a parallelogram?', a: 'rectangle', wrong: { trapezoid: 'A trapezoid has only one pair of parallel sides.', triangle: 'A triangle has only 3 sides.', pentagon: 'A pentagon has 5 sides.' } },
+        { text: 'Which shape is ALWAYS a parallelogram?', a: 'rhombus', wrong: { trapezoid: 'A trapezoid has only one pair of parallel sides.', triangle: 'A triangle has only 3 sides.', hexagon: 'A hexagon has 6 sides.' } },
+      ]);
+      return P({
+        skill: this.id, tier,
+        text: q.text,
+        answer: pick(),
+        choices: rng.shuffle([q.a, ...Object.keys(q.wrong)]).map((k) => ({ label: k, value: k, correct: k === q.a, why: q.wrong[k] })),
+        hint: 'Check the rules: a rectangle needs 4 right angles, a rhombus 4 equal sides, a parallelogram 2 pairs of parallel sides.',
+        steps: [`A ${q.a} always follows those rules.`, `So the answer is ${q.a}.`],
+        answerText: q.a,
+      });
+    }
+    const q = rng.pick([
+      {
+        text: 'Every square is a rhombus. Is every rhombus a square?',
+        a: 'No: a rhombus does not need right angles',
+        wrong: ['Yes: they both have 4 equal sides', 'Yes: they are both parallelograms', 'No: a rhombus does not have 4 equal sides'],
+        why: 'A rhombus has 4 equal sides, but its corners do not have to be right angles. A square needs both.',
+      },
+      {
+        text: 'Every rectangle is a parallelogram. Is every parallelogram a rectangle?',
+        a: 'No: a parallelogram does not need right angles',
+        wrong: ['Yes: they both have 2 pairs of parallel sides', 'Yes: they both have 4 sides', 'No: a parallelogram has no parallel sides'],
+        why: 'A parallelogram has 2 pairs of parallel sides, but its corners can be slanted. A rectangle needs 4 right angles.',
+      },
+      {
+        text: 'Which shape belongs to ALL of these families: rectangles, rhombuses and parallelograms?',
+        a: 'square',
+        wrong: ['rectangle', 'rhombus', 'trapezoid'],
+        why: 'A square has 4 right angles (a rectangle), 4 equal sides (a rhombus) and 2 pairs of parallel sides (a parallelogram).',
+      },
+    ]);
+    return P({
+      skill: this.id, tier,
+      text: q.text,
+      answer: pick(),
+      choices: rng.shuffle([q.a, ...q.wrong]).map((k) => ({ label: k, value: k, correct: k === q.a, why: k === q.a ? undefined : q.why })),
+      hint: 'A shape belongs to a family when it follows ALL of that family\'s rules.',
+      steps: [q.why],
+      answerText: q.a,
+    });
+  },
+};
+
+export const CAVE_SKILLS = [perimeter, areaRect, angleType, protractor, convert, areaMissing, angleAdd, classify, symmetry, volume, volumeComposite, convert5, hierarchy, coord, areaTri, surface];

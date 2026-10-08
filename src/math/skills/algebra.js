@@ -538,4 +538,124 @@ const writeExpr = {
   },
 };
 
-export const RIDGE_SKILLS = [placeValue, rounding, addSub, factors, patterns, orderOps, exponents, gcfLcm, integers, evalExpr, oneStep, writeExpr];
+// "Do this, then that" phrases whose order matters, with the expression that keeps it.
+const PHRASES = [
+  { say: (a, b, c) => `add ${a} and ${b}, then multiply by ${c}`, right: (a, b, c) => `(${a} + ${b}) × ${c}`, trap: (a, b, c) => `${a} + ${b} × ${c}`, val: (a, b, c) => (a + b) * c },
+  { say: (a, b, c) => `subtract ${b} from ${a}, then multiply by ${c}`, right: (a, b, c) => `(${a} − ${b}) × ${c}`, trap: (a, b, c) => `${a} − ${b} × ${c}`, val: (a, b, c) => (a - b) * c },
+  { say: (a, b, c) => `multiply ${c} by the sum of ${a} and ${b}`, right: (a, b, c) => `${c} × (${a} + ${b})`, trap: (a, b, c) => `${c} × ${a} + ${b}`, val: (a, b, c) => c * (a + b) },
+];
+
+const exprRead = {
+  id: 'expr_read', domain: D, grade: 5, cc: '5.OA.2', name: 'Write and read expressions', short: 'expressions',
+  gen(rng, tier) {
+    if (tier === 2) {
+      const k = rng.int(2, 9);
+      const A = rng.int(1200, 29999), B = rng.int(101, 999);
+      const plus = rng.chance(0.6);
+      const inner = plus ? `${fmtInt(A)} + ${fmtInt(B)}` : `${fmtInt(A)} − ${fmtInt(B)}`;
+      return P({
+        skill: this.id, tier,
+        text: `Without working it out: ${k} × (${inner}) is how many times as large as ${inner}?`,
+        answer: num(k),
+        choices: makeChoices(rng, k, [{ value: k + 1, why: `${k} × (something) is ${k} times as large as that something.` }, k * 10, Math.max(2, k - 1), 1], labelNum),
+        hint: 'The part in parentheses is one number. What is it multiplied by?',
+        steps: [`(${inner}) is one amount.`, `${k} × that amount is ${k} times as large.`],
+        meta: { value: k },
+      });
+    }
+    const ph = rng.pick(PHRASES);
+    let a = rng.int(3, 20), b = rng.int(2, 9);
+    const c = rng.int(2, 6);
+    if (ph.val(a, b, c) <= 0 || a <= b) a = b + rng.int(2, 12);
+    const words = ph.say(a, b, c);
+    const right = ph.right(a, b, c);
+    if (tier === 3) {
+      const v = ph.val(a, b, c);
+      const trapVal = ph === PHRASES[0] ? a + b * c : ph === PHRASES[1] ? a - b * c : c * a + b;
+      return P({
+        skill: this.id, tier,
+        text: `Write an expression for "${words}". What is its value?`,
+        answer: num(v),
+        choices: makeChoices(rng, v, [
+          { value: trapVal, why: `Keep the first step together with parentheses: ${right}.` },
+          v + c, v - 1, a + b + c,
+        ], labelNum),
+        hint: 'Write the first step in parentheses so it is done first.',
+        steps: [`The expression is ${right}.`, `Work out the parentheses first, then the rest: ${right} = ${fmtInt(v)}.`],
+        meta: { value: v },
+      });
+    }
+    const options = [
+      { label: right, correct: true },
+      { label: ph.trap(a, b, c), why: 'Without parentheses, the multiplication would happen first.' },
+      { label: `${a} + ${b} + ${c}`, why: 'The phrase asks you to multiply, not add three numbers.' },
+      { label: ph === PHRASES[1] ? `(${b} − ${a}) × ${c}` : `(${a} × ${b}) + ${c}`, why: ph === PHRASES[1] ? `"Subtract ${b} from ${a}" means start with ${a}: ${a} − ${b}.` : 'Check which numbers are added and which multiply.' },
+    ];
+    return P({
+      skill: this.id, tier,
+      text: `Which expression means "${words}"?`,
+      answer: pick(),
+      choices: rng.shuffle(options).map((o) => ({ label: o.label, value: o.label, correct: !!o.correct, why: o.why })),
+      hint: 'Parentheses show what to do first. Which step comes first in the words?',
+      steps: [`The words do one step first, so it goes in parentheses: ${right}.`],
+      answerText: right,
+    });
+  },
+};
+
+const patterns2 = {
+  id: 'patterns2', domain: D, grade: 5, cc: '5.OA.3', name: 'Two patterns side by side', short: 'two patterns',
+  gen(rng, tier) {
+    const a = rng.int(2, tier === 1 ? 5 : 9);
+    const m = rng.int(2, tier === 1 ? 3 : 4);
+    const b = a * m;
+    const steps = rng.int(4, tier === 1 ? 6 : 9);
+    const listA = Array.from({ length: 4 }, (_, i) => a * i), listB = Array.from({ length: 4 }, (_, i) => b * i);
+    const intro = `Pattern A starts at 0 and adds ${a} each time. Pattern B starts at 0 and adds ${b} each time.`;
+    const table = { kind: 'ratioTable', a, b, k: 3, A: 'Pattern A', B: 'Pattern B' };
+    if (tier === 2) {
+      return P({
+        skill: this.id, tier,
+        text: `${intro} Each number in pattern B is how many times the matching number in pattern A?`,
+        visual: table,
+        answer: num(m),
+        choices: makeChoices(rng, m, [{ value: b - a, why: `Compare matching terms by dividing, not subtracting: ${b} ÷ ${a} = ${m}.` }, m + 1, b, a], labelNum),
+        hint: 'Line the patterns up. Divide a number in B by the number above it in A.',
+        steps: [`A: ${listA.join(', ')}, …`, `B: ${listB.join(', ')}, …`, `${b} ÷ ${a} = ${m}, ${b * 2} ÷ ${a * 2} = ${m}: each B number is ${m} times its A number.`],
+        meta: { value: m },
+      });
+    }
+    if (tier === 3) {
+      const nx = a * 4, ny = b * 4;
+      const right = `(${nx}, ${ny})`;
+      const options = [
+        { label: right, correct: true },
+        { label: `(${ny}, ${nx})`, why: 'The pattern A number comes first in the pair.' },
+        { label: `(${nx}, ${ny + a})`, why: `Pattern B adds ${b} each time, not ${a}.` },
+        { label: `(${nx + a}, ${ny})`, why: `Each pair uses matching steps: after 4 steps A is at ${nx}.` },
+      ];
+      return P({
+        skill: this.id, tier,
+        text: `${intro} The first pairs (A, B) are ${listA.map((x, i) => `(${x}, ${listB[i]})`).join(', ')}. Which pair comes next?`,
+        answer: pick(),
+        choices: rng.shuffle(options).map((o) => ({ label: o.label, value: o.label, correct: !!o.correct, why: o.why })),
+        hint: 'Find the next number in each pattern, then put A first and B second.',
+        steps: [`Next in A: ${a * 3} + ${a} = ${nx}.`, `Next in B: ${b * 3} + ${b} = ${ny}.`, `The pair is ${right}.`],
+        answerText: right,
+      });
+    }
+    const ans = b * steps;
+    return P({
+      skill: this.id, tier,
+      text: `${intro} When pattern A reaches ${a * steps}, what number is pattern B at?`,
+      visual: table,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [{ value: a * steps + b, why: `Count the steps: A takes ${steps} steps of ${a} to reach ${a * steps}. B takes ${steps} steps of ${b}.` }, ans + b, ans - b, a * steps * 2 === ans ? ans + a : a * steps * 2], labelNum),
+      hint: `How many steps does A take to reach ${a * steps}? B takes the same number of steps.`,
+      steps: [`${a * steps} ÷ ${a} = ${steps} steps.`, `B after ${steps} steps: ${steps} × ${b} = ${ans}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const RIDGE_SKILLS = [placeValue, rounding, addSub, factors, patterns, orderOps, exprRead, patterns2, exponents, gcfLcm, integers, evalExpr, oneStep, writeExpr];

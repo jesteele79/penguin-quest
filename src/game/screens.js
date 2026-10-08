@@ -739,7 +739,7 @@ export class GrownupsScreen extends Screen {
       return `<div class="gu-bar"><div class="gu-bar-label"><span>${DOMAINS[dom].name}</span><span class="num">${pct}%</span></div><div class="gu-track"><div class="gu-fill" style="width:${pct}%;background:${REGION_COLORS[dom]?.css ?? '#ffd166'}"></div></div></div>`;
     }).join('');
     const skillRows = DOMAIN_ORDER.flatMap((dom) => tut.domainSummary(dom).rows.map((r) => {
-      const status = r.mastered ? (r.assumed ? 'Assumed known' : 'Mastered') : !r.unlocked ? 'Locked (above grade)' : r.attempts ? 'Practicing' : 'Not started';
+      const status = r.mastered ? (r.assumed ? 'Assumed known' : 'Mastered') : !r.inBook ? `In Book ${Math.max(1, r.grade - 3)}` : !r.unlocked ? 'Locked (above grade)' : r.attempts ? 'Practicing' : 'Not started';
       const cls = r.mastered ? 'ok' : !r.unlocked ? 'dim' : r.attempts ? 'warn' : '';
       return `<tr class="${cls}"><td>${r.name}</td><td>${r.cc}</td><td class="num">${r.grade}</td><td class="num">${r.attempts}</td><td class="num">${r.attempts ? Math.round((100 * r.firstTry) / r.attempts) + '%' : '–'}</td><td><div class="mini-track"><div style="width:${Math.round(r.m * 100)}%"></div></div></td><td><span class="pill ${cls}">${status}</span></td></tr>`;
     })).join('');

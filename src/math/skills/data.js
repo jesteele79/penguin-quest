@@ -164,4 +164,70 @@ const mmr = {
   },
 };
 
-export const STAR_SKILLS = [readBar, linePlot, mean, mmr];
+const linePlotFrac = {
+  id: 'line_plot_frac', domain: D, grade: 5, cc: '5.MD.2', name: 'Line plots: share it out', short: 'fraction line plots',
+  gen(rng, tier) {
+    const den = tier === 1 ? 4 : 8;
+    const ticks = [];
+    for (let k = 1; k <= den; k++) ticks.push(new Frac(k, den));
+    const counts = ticks.map(() => 0);
+    const n = tier === 3 ? rng.pick([4, 5, 6, 8]) : rng.int(5, 8);
+    const lo = rng.int(0, Math.max(0, den - 4));
+    for (let i = 0; i < n; i++) counts[rng.int(lo, Math.min(den - 1, lo + 3))] += 1;
+    const values = [];
+    counts.forEach((c, k) => { for (let t = 0; t < c; t++) values.push(ticks[k]); });
+    const total = values.reduce((a, b) => a.add(b), new Frac(0, 1));
+    const visual = { kind: 'lineplot', den, min: 0, max: 1, counts: ticks.map((t, k) => ({ v: t.value, n: counts[k] })), title: 'Juice in each cup (liter)' };
+    const show = labelFrac(true);
+    if (tier === 3) {
+      const each = total.div(n);
+      return P({
+        skill: this.id, tier,
+        text: `There are ${n} cups. If all the juice were poured together and shared equally among the ${n} cups, how much juice would each cup hold, in liters?`,
+        visual,
+        answer: frac(each),
+        choices: makeChoices(rng, each, [
+          { value: total, why: `That is all the juice together. Share it among ${n} cups: divide by ${n}.` },
+          { value: ticks[Math.min(den - 1, lo + 1)], why: 'Add up all the juice first, then divide it equally.' },
+          each.add(new Frac(1, den * n)), total.div(n + 1),
+        ], show),
+        hint: 'First add up the juice in all the cups. Then divide the total equally among the cups.',
+        steps: [`Total: ${values.map(show).join(' + ')} = ${show(total)} liters.`, `${show(total)} ÷ ${n} = ${show(each)} liter in each cup.`],
+        meta: { value: each },
+      });
+    }
+    if (tier === 2) {
+      return P({
+        skill: this.id, tier,
+        text: 'How much juice is there in all the cups together, in liters?',
+        visual,
+        answer: frac(total),
+        choices: makeChoices(rng, total, [
+          { value: new Frac(n, 1), why: 'Each X is a cup with less than 1 liter. Add the amounts, not the number of cups.' },
+          total.add(new Frac(1, den)), total.sub(new Frac(1, den)), total.add(new Frac(1, 2)),
+        ], show),
+        hint: 'Each X is one cup. Add the amount for every X.',
+        steps: [`${values.map(show).join(' + ')} = ${show(total)} liters.`],
+        meta: { value: total },
+      });
+    }
+    const k = counts.findIndex((c, i) => c >= 2 && i >= lo);
+    const pickK = k >= 0 ? k : counts.findIndex((c) => c > 0);
+    const amount = ticks[pickK].mul(counts[pickK]);
+    return P({
+      skill: this.id, tier,
+      text: `How much juice is in all the cups that hold ${show(ticks[pickK])} liter, together?`,
+      visual,
+      answer: frac(amount),
+      choices: makeChoices(rng, amount, [
+        { value: new Frac(counts[pickK], 1), why: `That counts the cups. Each one holds ${show(ticks[pickK])} liter: multiply.` },
+        ticks[pickK], amount.add(ticks[pickK]), amount.add(new Frac(1, den)),
+      ], show),
+      hint: `Count the X marks above ${show(ticks[pickK])}. Each one is a cup holding ${show(ticks[pickK])} liter.`,
+      steps: [`There are ${counts[pickK]} cups at ${show(ticks[pickK])} liter.`, `${counts[pickK]} × ${show(ticks[pickK])} = ${show(amount)} liter${amount.value > 1 ? 's' : ''}.`],
+      meta: { value: amount },
+    });
+  },
+};
+
+export const STAR_SKILLS = [readBar, linePlot, linePlotFrac, mean, mmr];

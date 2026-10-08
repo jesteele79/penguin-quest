@@ -2,9 +2,9 @@
 import { P, num, rem, makeChoices, nearInts, labelNum } from '../build.js';
 import { fmtInt, fmtNum } from '../fmt.js';
 import { Frac } from '../frac.js';
+import { friend, friendList } from '../theme.js';
 
 const D = 'lake';
-const FRIENDS = ['Mo', 'Lulu', 'Sunny', 'Fern', 'Pebble', 'Skipper'];
 
 function factStrategy(a, b) {
   const p = a * b;
@@ -62,7 +62,7 @@ const divFacts = {
     const q = rng.int(2, tier === 3 ? 12 : 9);
     const n = d * q;
     const word = rng.chance(0.35);
-    const who = rng.pick(FRIENDS);
+    const who = friend(rng);
     const text = word
       ? `${who} has ${n} fish to share equally among ${d} penguins. How many fish does each penguin get?`
       : `What is ${n} ÷ ${d}?`;
@@ -212,7 +212,7 @@ const divRem = {
       const lab = label(w.value);
       if (choices.length < 4 && w.value.q > 0 && !choices.some((c) => c.label === lab)) choices.push({ label: lab, value: `${w.value.q}R${w.value.r}`, why: w.why });
     }
-    const who = rng.pick(FRIENDS);
+    const who = friend(rng);
     return P({
       skill: this.id, tier,
       text: word
@@ -396,7 +396,7 @@ const divDec = {
 const mulWord = {
   id: 'mul_word', domain: D, grade: 4, cc: '4.OA.2', name: 'Multiplication word problems', short: 'word problems',
   gen(rng, tier) {
-    const [p1, p2] = rng.shuffle(FRIENDS);
+    const [p1, p2] = rng.shuffle(friendList());
     const kind = tier === 1 ? rng.int(0, 1) : tier === 2 ? rng.int(1, 2) : rng.int(2, 3);
     if (kind === 0) {
       const a = rng.int(3, 12), k = rng.int(2, 6);
@@ -460,7 +460,7 @@ const RIDES = [['sled', 'sleds'], ['boat', 'boats'], ['ice raft', 'ice rafts'], 
 const multiStep = {
   id: 'multistep', domain: D, grade: 4, cc: '4.OA.3', name: 'Multi-step word problems', short: 'multi-step problems',
   gen(rng, tier) {
-    const [p1, p2] = rng.shuffle(FRIENDS);
+    const [p1, p2] = rng.shuffle(friendList());
     if (tier === 1) {
       const a = rng.int(3, 8), b = rng.int(4, 12), c = rng.int(3, 15);
       const ans = a * b + c;
@@ -521,4 +521,77 @@ const multiStep = {
   },
 };
 
-export const LAKE_SKILLS = [mulFacts, divFacts, mul2x1, mulWord, mulMulti1, mul2x2, divRem, divMulti, multiStep, mul3x2, div2digit, mulDec, divDec];
+// Standard long division, one place at a time: each step brings down a digit, divides, multiplies and subtracts.
+function longDivSteps(n, d) {
+  const digits = String(n).split('').map(Number);
+  const out = [];
+  let cur = 0, started = false, qStr = '';
+  for (let i = 0; i < digits.length; i++) {
+    cur = cur * 10 + digits[i];
+    if (!started && cur < d) continue;
+    started = true;
+    const k = Math.floor(cur / d);
+    qStr += k;
+    if (out.length < 4) out.push(`How many ${d}s fit in ${fmtInt(cur)}? ${k}. ${d} × ${k} = ${fmtInt(d * k)}, and ${fmtInt(cur)} − ${fmtInt(d * k)} = ${fmtInt(cur - d * k)}.`);
+    cur -= d * k;
+  }
+  return { steps: out, q: Number(qStr), r: cur };
+}
+
+const longDiv = {
+  id: 'long_div', domain: D, grade: 6, cc: '6.NS.2', name: 'Long division', short: 'long division',
+  gen(rng, tier) {
+    const d = tier === 1 ? rng.int(11, 19) : tier === 2 ? rng.int(12, 39) : rng.int(14, 79);
+    const q = tier === 1 ? rng.int(12, 49) : tier === 2 ? rng.int(104, 299) : rng.int(121, 399);
+    const r = tier === 3 ? rng.int(1, d - 1) : 0;
+    const n = d * q + r;
+    const work = longDivSteps(n, d);
+    const steps = [
+      `Estimate: ${d} is close to ${Math.round(d / 10) * 10}, so the answer is about ${fmtInt(Math.round(n / (Math.round(d / 10) * 10)))}.`,
+      ...work.steps,
+      r ? `${fmtInt(n)} ÷ ${d} = ${work.q} R${r}. Check: ${d} × ${work.q} + ${r} = ${fmtInt(n)}.` : `${fmtInt(n)} ÷ ${d} = ${work.q}. Check: ${d} × ${work.q} = ${fmtInt(n)}.`,
+    ];
+    const hint = `Divide one place at a time: how many ${d}s fit in the first part of ${fmtInt(n)}? Multiply, subtract, then bring down the next digit.`;
+    if (r) {
+      const word = rng.chance(0.5);
+      const label = (v) => (v.r ? `${fmtInt(v.q)} R${v.r}` : fmtInt(v.q));
+      const wrong = [
+        { value: { q: q + 1, r: Math.max(0, r - 1) } },
+        { value: { q: q - 1, r: r + d }, why: `A remainder must be smaller than ${d}. If ${r + d} are left, one more ${d} fits.` },
+        { value: { q: q + 10, r }, why: `Check by multiplying: ${d} × ${q + 10} is more than ${fmtInt(n)}.` },
+        { value: { q, r: r + 1 < d ? r + 1 : r - 1 } },
+      ];
+      const choices = [{ label: label({ q, r }), value: `${q}R${r}`, correct: true }];
+      for (const w of wrong) {
+        const lab = label(w.value);
+        if (choices.length < 4 && w.value.q > 0 && !choices.some((c) => c.label === lab)) choices.push({ label: lab, value: `${w.value.q}R${w.value.r}`, why: w.why });
+      }
+      return P({
+        skill: this.id, tier,
+        text: word
+          ? `${fmtInt(n)} bolts are packed into crates of ${d}. How many crates are filled, and how many bolts are left over? (Type it like 7 R2)`
+          : `What is ${fmtInt(n)} ÷ ${d}? (Type the remainder like 7 R2)`,
+        answer: rem(q, r),
+        choices: rng.shuffle(choices),
+        hint,
+        steps,
+        meta: { op: '/r', a: n, b: d },
+      });
+    }
+    return P({
+      skill: this.id, tier,
+      text: `What is ${fmtInt(n)} ÷ ${d}?`,
+      answer: num(q),
+      choices: makeChoices(rng, q, [
+        { value: q * 10, why: `Too big: ${d} × ${fmtInt(q * 10)} is far more than ${fmtInt(n)}. Check how many digits the answer needs.` },
+        { value: Math.floor(q / 10), why: `Too small: ${d} × ${Math.floor(q / 10)} is far less than ${fmtInt(n)}. Every place needs a digit.` },
+        q + 1, q - 1, q + 10, ...nearInts(rng, q, 5),
+      ], labelNum),
+      hint,
+      steps,
+      meta: { op: '/', a: n, b: d },
+    });
+  },
+};
+
+export const LAKE_SKILLS = [mulFacts, divFacts, mul2x1, mulWord, mulMulti1, mul2x2, divRem, divMulti, multiStep, mul3x2, div2digit, mulDec, divDec, longDiv];
