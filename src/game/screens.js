@@ -3,7 +3,7 @@ import { G, pushActivity, popActivity } from '../core/state.js';
 import { el, $$, arrowNav, escapeHTML, readable } from '../ui/dom.js';
 import { ICON, portraitSVG } from '../ui/icons.js';
 import { drawMarker } from '../ui/hud.js';
-import { SHOP, findItem, SLOT_NAMES, inWardrobe } from './content.js';
+import { SHOP, findItem, SLOT_NAMES, inWardrobe, REGION_INFO } from './content.js';
 import { MAIN, SIDE, RESONANCE_NEED } from './questdata.js';
 import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
@@ -768,6 +768,8 @@ export class SkillBookScreen extends Screen {
     const cards = el('div', { class: 'book-grid' });
     for (const dom of DOMAIN_ORDER) {
       const sum = G.tutor.domainSummary(dom);
+      // Subjects this book does not teach at all (ratios before grade 6) stay off the page.
+      if (!sum.rows.some((r) => r.inBook)) continue;
       const color = REGION_COLORS[dom]?.css ?? '#ffd166';
       const rows = sum.rows.filter((r) => r.unlocked);
       const next = rows.find((r) => !r.mastered);
@@ -777,7 +779,7 @@ export class SkillBookScreen extends Screen {
       }).join('');
       cards.append(el('section', { class: 'book-card', style: { '--c': color } },
         el('h3', { text: DOMAINS[dom].name }),
-        el('div', { class: 'place', text: DOMAINS[dom].place }),
+        el('div', { class: 'place', text: REGION_INFO[dom]?.name ?? (dom === 'stars' ? T.dataPlace : DOMAINS[dom].place) }),
         el('ul', { html: list }),
         el('div', { class: 'next', text: next ? `Next up: ${next.name}` : 'Everything here is mastered!' })));
     }

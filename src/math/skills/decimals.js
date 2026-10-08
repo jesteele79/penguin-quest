@@ -1,4 +1,4 @@
-// Heart Huts: decimals, money, ratios and percents (grades 4-6).
+// Heart Huts: decimals and money (grades 4-6). Ratios and percents live in ratios.js.
 import { P, num, frac, pick, makeChoices, labelNum, labelFrac, nearInts } from '../build.js';
 import { Frac, gcd } from '../frac.js';
 import { fmtNum, fmtInt, fmtMoney } from '../fmt.js';
@@ -6,13 +6,13 @@ import { fmtNum, fmtInt, fmtMoney } from '../fmt.js';
 const D = 'huts';
 const F = (n, d) => new Frac(n, d);
 const PLACE_NAMES = { 1: 'ones', 10: 'tens', 100: 'hundreds', 1000: 'thousands', '0.1': 'tenths', '0.01': 'hundredths', '0.001': 'thousandths' };
-const ITEMS = [
+export const ITEMS = [
   ['fish taco', 'fish tacos'], ['snow cone', 'snow cones'], ['kelp cookie', 'kelp cookies'], ['cocoa', 'cocoas'],
   ['shrimp roll', 'shrimp rolls'], ['ice pop', 'ice pops'], ['mitten', 'mittens'], ['scarf', 'scarves'],
 ];
-const money = (v) => ({ ...num(v), money: true });
-const labelMoney = (v) => fmtMoney(v instanceof Frac ? v.value : v);
-const cents = (c) => F(c, 100);
+export const money = (v) => ({ ...num(v), money: true });
+export const labelMoney = (v) => fmtMoney(v instanceof Frac ? v.value : v);
+export const cents = (c) => F(c, 100);
 
 // Number with distinct digits, `w` whole digits and `p` decimal places.
 function distinctDecimal(rng, w, p) {
@@ -329,153 +329,6 @@ const pow10 = {
   },
 };
 
-const ratio = {
-  id: 'ratio', domain: D, grade: 6, cc: '6.RP.3a', name: 'Ratios', short: 'ratios',
-  gen(rng, tier) {
-    const pairs = [['fish', 'crabs'], ['red scarves', 'blue scarves'], ['snowballs', 'icicles'], ['cocoas', 'cookies']];
-    const [A, B] = rng.pick(pairs);
-    let a = rng.int(1, 5), b = rng.int(2, 7);
-    if (a === b) b += 1;
-    const g = gcd(a, b); a /= g; b /= g;
-    if (tier === 3 && rng.chance(0.5)) {
-      const k = rng.int(2, 6);
-      const label = (v) => v;
-      const correct = `${a} : ${b}`;
-      const choices = [{ label: correct, value: correct, correct: true },
-        { label: `${a * k} : ${b * k + 1}`, value: 'x1' },
-        { label: `${b} : ${a}`, value: 'x2', why: `The order matters: ${A} come first.` },
-        { label: `${a * k} : ${b}`, value: 'x3', why: 'Divide both numbers by the same amount.' }];
-      return P({
-        skill: this.id, tier,
-        text: `There are ${a * k} ${A} and ${b * k} ${B}. What is the ratio of ${A} to ${B} in simplest form?`,
-        answer: pick(), choices: rng.shuffle(choices).filter((c, i, arr) => arr.findIndex((q) => q.label === c.label) === i),
-        hint: `Divide both numbers by the biggest number that goes into both.`,
-        steps: [`${a * k} : ${b * k}.`, `Both divide by ${k}: ${a * k} ÷ ${k} = ${a} and ${b * k} ÷ ${k} = ${b}.`, `So the ratio is ${correct}.`],
-        answerText: correct,
-        meta: { label },
-      });
-    }
-    const k = rng.int(2, tier === 1 ? 5 : 9);
-    const askB = rng.chance(0.5);
-    const given = askB ? a * k : b * k;
-    const ans = askB ? b * k : a * k;
-    return P({
-      skill: this.id, tier,
-      text: `For every ${a} ${A} there ${b === 1 ? 'is' : 'are'} ${b} ${B}. If there are ${given} ${askB ? A : B}, how many ${askB ? B : A} are there?`,
-      visual: { kind: 'ratioTable', a, b, k, A, B, hideA: !askB, hideB: askB },
-      answer: num(ans),
-      choices: makeChoices(rng, ans, [{ value: given + (askB ? b - a : a - b), why: 'A ratio grows by multiplying, not by adding.' }, ans + (askB ? b : a), given, ans - 1], labelNum),
-      hint: `How many groups of ${askB ? a : b} are in ${given}?`,
-      steps: [`${given} ÷ ${askB ? a : b} = ${k} groups.`, `Each group has ${askB ? b : a} ${askB ? B : A}: ${k} × ${askB ? b : a} = ${ans}.`],
-      meta: { value: ans },
-    });
-  },
-};
-
-const unitRate = {
-  id: 'unit_rate', domain: D, grade: 6, cc: '6.RP.2', name: 'Unit rates', short: 'unit rates',
-  gen(rng, tier) {
-    if (tier === 3 && rng.chance(0.5)) {
-      const [one, many] = rng.pick(ITEMS);
-      const u1 = rng.int(4, 16) * 25, u2 = u1 + rng.pick([-25, 25, 50]);
-      const n1 = rng.int(2, 5), n2 = rng.int(2, 6);
-      const t1 = u1 * n1, t2 = u2 * n2;
-      if (u1 === u2) return unitRate.gen(rng, 2);
-      const better = u1 < u2 ? 1 : 2;
-      const lA = `${n1} for ${fmtMoney(t1 / 100)}`, lB = `${n2} for ${fmtMoney(t2 / 100)}`;
-      return P({
-        skill: this.id, tier,
-        text: `Which is the better deal on ${many}?`,
-        answer: pick(),
-        choices: [
-          { label: lA, value: 'a', correct: better === 1, why: better === 1 ? undefined : `Find the price of one: ${fmtMoney(t1 / 100)} ÷ ${n1} = ${fmtMoney(u1 / 100)} and ${fmtMoney(t2 / 100)} ÷ ${n2} = ${fmtMoney(u2 / 100)}.` },
-          { label: lB, value: 'b', correct: better === 2, why: better === 2 ? undefined : `Find the price of one: ${fmtMoney(t1 / 100)} ÷ ${n1} = ${fmtMoney(u1 / 100)} and ${fmtMoney(t2 / 100)} ÷ ${n2} = ${fmtMoney(u2 / 100)}.` },
-        ],
-        hint: 'Find the price of ONE in each deal. The lower unit price is the better deal.',
-        steps: [`${fmtMoney(t1 / 100)} ÷ ${n1} = ${fmtMoney(u1 / 100)} each.`, `${fmtMoney(t2 / 100)} ÷ ${n2} = ${fmtMoney(u2 / 100)} each.`, `${better === 1 ? lA : lB} costs less per ${one}.`],
-        answerText: better === 1 ? lA : lB,
-        meta: {},
-      });
-    }
-    if (rng.chance(0.5)) {
-      const [, many] = rng.pick(ITEMS);
-      const unit = rng.int(tier === 1 ? 4 : 5, 20) * (tier === 1 ? 25 : 5), n = rng.int(2, 6);
-      const ans = cents(unit);
-      return P({
-        skill: this.id, tier,
-        text: `${n} ${many} cost ${fmtMoney((unit * n) / 100)}. How much does one cost?`,
-        answer: money(ans),
-        choices: makeChoices(rng, ans, [cents(unit * n - unit), cents(unit + 5), cents(unit - 25 > 0 ? unit - 25 : unit + 50), cents(unit * 2)], labelMoney),
-        hint: `Share the total cost equally among the ${n} ${many}.`,
-        steps: [`${fmtMoney((unit * n) / 100)} ÷ ${n} = ${fmtMoney(unit / 100)}.`],
-        meta: { value: ans },
-      });
-    }
-    const rate = rng.int(3, tier === 1 ? 9 : 15), t = rng.int(2, 9);
-    return P({
-      skill: this.id, tier,
-      text: `A penguin slides ${rate * t} meters in ${t} seconds at a steady speed. How many meters does it slide each second?`,
-      answer: num(rate),
-      choices: makeChoices(rng, rate, [{ value: rate * t * t, why: 'Divide the distance by the time to get meters per second.' }, rate * t - t, rate + 1, rate - 1], labelNum),
-      hint: `Meters per second means meters ÷ seconds.`,
-      steps: [`${rate * t} ÷ ${t} = ${rate}.`, `So it slides ${rate} meters per second.`],
-      meta: { value: rate },
-    });
-  },
-};
-
-const percent = {
-  id: 'percent', domain: D, grade: 6, cc: '6.RP.3c', name: 'Percents', short: 'percents',
-  gen(rng, tier) {
-    if (tier === 3 && rng.chance(0.5)) {
-      if (rng.chance(0.5)) {
-        const [whole, pct] = rng.pick([[20, 10], [20, 25], [20, 50], [40, 25], [40, 75], [50, 10], [50, 20], [80, 25], [80, 75], [200, 10], [200, 25], [200, 75], [40, 20]]);
-        const part = (whole * pct) / 100;
-        return P({
-          skill: this.id, tier,
-          text: `What percent of ${whole} is ${part}?`,
-          answer: num(pct),
-          choices: makeChoices(rng, pct, [part, pct + 5, pct * 2, 100 - pct], (v) => `${fmtNum(Frac.of(v).value)}%`),
-          hint: `Write ${part} out of ${whole} as a fraction, then rename it out of 100.`,
-          steps: [`{${part}/${whole}} = {${pct}/100}.`, `That is ${pct}%.`],
-          meta: { value: pct },
-        });
-      }
-      const price = rng.int(4, 30) * 5, off = rng.pick([10, 20, 25, 50]);
-      const sale = F(price * (100 - off), 100);
-      return P({
-        skill: this.id, tier,
-        text: `A scarf costs ${fmtMoney(price)}. It is ${off}% off today. What is the sale price?`,
-        answer: money(sale),
-        choices: makeChoices(rng, sale, [{ value: F(price * off, 100), why: `That is the discount. Subtract it from ${fmtMoney(price)}.` }, F(price - off, 1), sale.add(5), F(price, 1)], labelMoney),
-        hint: `Find ${off}% of ${fmtMoney(price)}, then take it off the price.`,
-        steps: [`${off}% of ${fmtMoney(price)} = ${fmtMoney((price * off) / 100)}.`, `${fmtMoney(price)} − ${fmtMoney((price * off) / 100)} = ${fmtMoney(sale.value)}.`],
-        meta: { value: sale },
-      });
-    }
-    const pct = tier === 1 ? rng.pick([10, 25, 50]) : rng.pick([5, 10, 15, 20, 30, 40, 60, 75]);
-    const whole = rng.int(2, 12) * (tier === 1 ? 20 : 20);
-    const ans = F(whole * pct, 100);
-    const friendly = pct === 50 ? 'half' : pct === 25 ? 'a quarter' : pct === 10 ? 'one tenth' : null;
-    return P({
-      skill: this.id, tier,
-      text: `What is ${pct}% of ${whole}?`,
-      answer: num(ans),
-      choices: makeChoices(rng, ans, [{ value: F(whole - pct, 1), why: 'Percent means "out of 100", so find that many hundredths of the number.' }, ans.add(whole / 10), F(pct, 1), ans.mul(2)], labelNum),
-      hint: friendly ? `${pct}% is ${friendly}.` : `Find 10% first (divide by 10), then build up to ${pct}%.`,
-      steps: friendly
-        ? [`${pct}% is ${friendly} of the number.`, `${friendly[0].toUpperCase() + friendly.slice(1)} of ${whole} is ${fmtNum(ans.value)}.`]
-        : [
-          `10% of ${whole} is ${whole / 10}.`,
-          ...(Math.floor(pct / 10) > 1 ? [`${Math.floor(pct / 10) * 10}% is ${Math.floor(pct / 10)} × ${whole / 10} = ${(Math.floor(pct / 10) * whole) / 10}.`] : []),
-          ...(pct % 10 === 5 ? [`5% is half of 10%: ${whole / 20}.`] : []),
-          `So ${pct}% of ${whole} = ${fmtNum(ans.value)}.`,
-        ],
-      meta: { value: ans },
-    });
-  },
-};
-
 // Tenths as hundredths, then adding tenths and hundredths (the bridge from fractions to decimals).
 const tenthsHundredths = {
   id: 'dec_hundredths', domain: D, grade: 4, cc: '4.NF.5', name: 'Tenths and hundredths', short: 'tenths + hundredths',
@@ -699,4 +552,4 @@ const decOps = {
   },
 };
 
-export const HUTS_SKILLS = [decFrac, tenthsHundredths, decCompare, shop, place, placeTen, decCompare3, pow10, decRound, addSub, decOps, ratio, unitRate, percent];
+export const HUTS_SKILLS = [decFrac, tenthsHundredths, decCompare, shop, place, placeTen, decCompare3, pow10, decRound, addSub, decOps];

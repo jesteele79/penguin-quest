@@ -134,7 +134,7 @@ const R = {
     return svg(W, H, b, `angle of ${deg} degrees`);
   },
 
-  box3d({ l, w, h, unit, cubes }) {
+  box3d({ l, w, h, unit, cubes, lLabel }) {
     const hv = typeof h === 'number' ? h : 3;
     const s = Math.min(26, 190 / (l + w * 0.5), 150 / (hv + w * 0.5));
     const dx = w * s * 0.55, dy = w * s * 0.4;
@@ -152,7 +152,7 @@ const R = {
         b += `<line x1="${x0 + fx}" y1="${y0 - fy}" x2="${x0 + L + fx}" y2="${y0 - fy}" class="v-gridline"/><line x1="${x0 + L + fx}" y1="${y0 - fy}" x2="${x0 + L + fx}" y2="${y0 - fy + Hh}" class="v-gridline"/>`;
       }
     }
-    b += t(x0 + L / 2, y0 + Hh + 18, `${l} ${unit}`, 'v-t v-strong');
+    b += t(x0 + L / 2, y0 + Hh + 18, `${lLabel ?? l} ${unit}`, 'v-t v-strong');
     b += t(x0 + L + dx / 2 + 16, y0 + Hh - dy / 2 + 12, `${w} ${unit}`, 'v-t v-strong', 'start');
     b += t(x0 + L + dx + 10, y0 - dy + Hh / 2, `${h} ${typeof h === 'number' ? unit : ''}`.trim(), 'v-t v-strong', 'start');
     return svg(x0 + L + dx + 80, y0 + Hh + 36, b, `box ${l} by ${w} by ${h} ${unit}`);
@@ -182,7 +182,7 @@ const R = {
     return svg(x0 + La + Lb + dx + 64, base + 32, out, `two boxes joined: ${a.l} by ${w} by ${a.h} and ${bx.l} by ${w} by ${bx.label ?? bx.h} ${unit}`);
   },
 
-  grid({ lo, hi, points }) {
+  grid({ lo, hi, points, poly, quadrants }) {
     const n = hi - lo, s = Math.min(30, 300 / n), pad = 30;
     const W = pad * 2 + n * s, H = W;
     const X = (v) => pad + (v - lo) * s, Y = (v) => pad + (hi - v) * s;
@@ -199,6 +199,11 @@ const R = {
       if (v !== ax) b += t(X(ax) - 8, Y(v), minus(v), 'v-t2', 'end', 11);
     }
     b += t(X(hi) + 12, Y(ax), 'x', 'v-t v-strong', 'middle', 14) + t(X(ax), Y(hi) - 14, 'y', 'v-t v-strong', 'middle', 14);
+    if (poly) b += `<polygon points="${poly.map(([x, y]) => `${X(x)},${Y(y)}`).join(' ')}" class="v-fill v-soft v-edge"/>`;
+    if (quadrants && lo < 0) {
+      const q = (hi - 0) / 2, r = (0 - lo) / 2;
+      b += t(X(q), Y(q), 'I', 'v-t v-quad', 'middle', 20) + t(X(-r), Y(q), 'II', 'v-t v-quad', 'middle', 20) + t(X(-r), Y(-r), 'III', 'v-t v-quad', 'middle', 20) + t(X(q), Y(-r), 'IV', 'v-t v-quad', 'middle', 20);
+    }
     for (const p of points) b += icon(p.icon, X(p.x), Y(p.y), s * 0.42);
     return svg(W + 16, H, b, 'coordinate grid');
   },
@@ -365,6 +370,148 @@ const R = {
   },
 
   // A protractor with both scales. The angle's first ray lies along the baseline on the `from` side.
+  // A table of values in matching columns, with '?' for the cell to find. rows: [{ name, cells: [string] }]
+  rtable({ rows }) {
+    const cols = Math.max(...rows.map((r) => r.cells.length));
+    const left = Math.min(130, 18 + Math.max(...rows.map((r) => r.name.length)) * 8.5);
+    const cw = Math.min(64, (380 - left) / cols);
+    let s = '';
+    rows.forEach((row, r) => {
+      const y = 8 + r * 44;
+      s += `<rect x="6" y="${y}" width="${left - 12}" height="38" class="v-head"/>`;
+      s += t(left / 2, y + 19, row.name, 'v-t2', 'middle', row.name.length > 12 ? 11 : 13);
+      row.cells.forEach((c, i) => {
+        const x = left + i * cw;
+        s += `<rect x="${x}" y="${y}" width="${cw - 6}" height="38" class="${c === '?' ? 'v-fill v-edge' : 'v-empty v-edge'}"/>`;
+        s += t(x + (cw - 6) / 2, y + 20, c, 'v-t v-strong', 'middle', c.length > 4 ? 13 : 17);
+      });
+    });
+    return svg(left + cols * cw + 6, 14 + rows.length * 44, s, 'table of values');
+  },
+
+  // Double number line: two scales that line up tick for tick. Empty labels leave a bare tick.
+  dnl({ names, top, bottom }) {
+    const n = Math.max(top.length, bottom.length);
+    const left = Math.min(120, 16 + Math.max(...names.map((x) => x.length)) * 8);
+    const x0 = left, x1 = 372, y1 = 40, y2 = 96;
+    // Ticks sit to scale along whichever line is fully numbered; otherwise they are evenly spaced.
+    const numeric = (row) => row.length === n && row.every((v) => v !== '' && v !== '?' && Number.isFinite(Number(v)));
+    const ref = numeric(bottom) ? bottom.map(Number) : numeric(top) ? top.map(Number) : null;
+    const X = ref ? (i) => x0 + ((ref[i] - ref[0]) / (ref[n - 1] - ref[0] || 1)) * (x1 - x0) : (i) => x0 + (i / (n - 1)) * (x1 - x0);
+    let b = `<line x1="${x0 - 6}" y1="${y1}" x2="${x1 + 8}" y2="${y1}" class="v-axis"/><line x1="${x0 - 6}" y1="${y2}" x2="${x1 + 8}" y2="${y2}" class="v-axis"/>`;
+    b += t(8, y1, names[0], 'v-t2', 'start', 12) + t(8, y2, names[1], 'v-t2', 'start', 12);
+    for (let i = 0; i < n; i++) {
+      b += `<line x1="${X(i)}" y1="${y1 - 7}" x2="${X(i)}" y2="${y1 + 7}" class="v-tick"/><line x1="${X(i)}" y1="${y2 - 7}" x2="${X(i)}" y2="${y2 + 7}" class="v-tick"/>`;
+      b += `<line x1="${X(i)}" y1="${y1 + 9}" x2="${X(i)}" y2="${y2 - 9}" class="v-dash"/>`;
+      if (top[i]) b += t(X(i), y1 - 18, top[i], top[i] === '?' ? 'v-t v-strong v-q' : 'v-t v-strong', 'middle', 15);
+      if (bottom[i]) b += t(X(i), y2 + 20, bottom[i], bottom[i] === '?' ? 'v-t v-strong v-q' : 'v-t v-strong', 'middle', 15);
+    }
+    return svg(384, 128, b, 'double number line');
+  },
+
+  // An inequality drawn on a number line: a circle (filled includes the number) and a ray.
+  ineq({ min, max, at, dir, closed }) {
+    const W = 380, x0 = 22, x1 = W - 22, y = 50;
+    const X = (v) => x0 + ((v - min) / (max - min)) * (x1 - x0);
+    let b = `<line x1="${x0 - 10}" y1="${y}" x2="${x1 + 10}" y2="${y}" class="v-axis"/>`;
+    for (let v = min; v <= max; v++) {
+      b += `<line x1="${X(v)}" y1="${y - 6}" x2="${X(v)}" y2="${y + 6}" class="v-tick"/>`;
+      b += t(X(v), y + 22, minus(v), 'v-t2', 'middle', 12);
+    }
+    const end = dir === 'right' ? x1 + 6 : x0 - 6;
+    b += `<line x1="${X(at)}" y1="${y}" x2="${end}" y2="${y}" class="v-ray v-ray2"/>`;
+    b += dir === 'right' ? `<polygon points="${end + 8},${y} ${end - 4},${y - 7} ${end - 4},${y + 7}" class="v-ray-head"/>` : `<polygon points="${end - 8},${y} ${end + 4},${y - 7} ${end + 4},${y + 7}" class="v-ray-head"/>`;
+    b += `<circle cx="${X(at)}" cy="${y}" r="7" class="${closed ? 'v-mark' : 'v-open'}"/>`;
+    return svg(W, 84, b, `number line: ${dir === 'right' ? 'greater' : 'less'} than ${at}${closed ? ' or equal' : ''}`);
+  },
+
+  // A polygon in its own units (y up) with side labels, an optional dashed split and a dashed height.
+  poly({ pts, labels = [], split = [], height }) {
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const s = Math.min(260 / (maxX - minX || 1), 170 / (maxY - minY || 1));
+    const pad = 34;
+    const X = (x) => pad + (x - minX) * s, Y = (y) => pad + (maxY - y) * s;
+    let b = `<polygon points="${pts.map(([x, y]) => `${X(x)},${Y(y)}`).join(' ')}" class="v-fill v-soft v-edge"/>`;
+    for (const [ax, ay, bx, by] of split) b += `<line x1="${X(ax)}" y1="${Y(ay)}" x2="${X(bx)}" y2="${Y(by)}" class="v-dash"/>`;
+    if (height) b += `<line x1="${X(height[0])}" y1="${Y(height[1])}" x2="${X(height[2])}" y2="${Y(height[3])}" class="v-dash"/>`;
+    for (const l of labels) b += t(X(l.at[0]), Y(l.at[1]), l.text, 'v-t v-strong', l.anchor ?? 'middle', 14);
+    return svg((maxX - minX) * s + pad * 2 + 60, (maxY - minY) * s + pad * 2, b, 'shape');
+  },
+
+  // Flat patterns that fold into solids.
+  net({ solid }) {
+    const sq = 46, g = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" class="v-fill v-soft v-edge"/>`;
+    const tri = (pts) => `<polygon points="${pts.map((p) => p.join(',')).join(' ')}" class="v-fill2 v-soft v-edge"/>`;
+    let b = '', W = 260, H = 200;
+    if (solid === 'cube' || solid === 'box') {
+      const w = sq, h = solid === 'box' ? 30 : sq, d = solid === 'box' ? 62 : sq;
+      const x0 = 12, y0 = 10;
+      b += g(x0 + h, y0, d, h) + g(x0, y0 + h, h, w) + g(x0 + h, y0 + h, d, w) + g(x0 + h + d, y0 + h, h, w) + g(x0 + 2 * h + d, y0 + h, d, w) + g(x0 + h, y0 + h + w, d, h);
+      W = x0 * 2 + 2 * h + 2 * d; H = y0 * 2 + 2 * h + w;
+    } else if (solid === 'sqpyr') {
+      const c = 120, s2 = 54, tH = 48;
+      b += g(c - s2 / 2, c - s2 / 2, s2, s2);
+      b += tri([[c - s2 / 2, c - s2 / 2], [c + s2 / 2, c - s2 / 2], [c, c - s2 / 2 - tH]]);
+      b += tri([[c - s2 / 2, c + s2 / 2], [c + s2 / 2, c + s2 / 2], [c, c + s2 / 2 + tH]]);
+      b += tri([[c - s2 / 2, c - s2 / 2], [c - s2 / 2, c + s2 / 2], [c - s2 / 2 - tH, c]]);
+      b += tri([[c + s2 / 2, c - s2 / 2], [c + s2 / 2, c + s2 / 2], [c + s2 / 2 + tH, c]]);
+      W = 240; H = 240;
+    } else if (solid === 'tripyr') {
+      const A = [20, 190], B = [220, 190], C = [120, 17];
+      const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+      const ab = mid(A, B), bc = mid(B, C), ca = mid(C, A);
+      b += tri([A, ab, ca]) + tri([ab, B, bc]) + tri([ca, bc, C]) + tri([ab, bc, ca]);
+      W = 240; H = 206;
+    } else {
+      const w = 52, h = 70, x0 = 14, y0 = 46;
+      b += g(x0, y0, w, h) + g(x0 + w, y0, w, h) + g(x0 + 2 * w, y0, w, h);
+      b += tri([[x0 + w, y0], [x0 + 2 * w, y0], [x0 + 1.5 * w, y0 - 40]]) + tri([[x0 + w, y0 + h], [x0 + 2 * w, y0 + h], [x0 + 1.5 * w, y0 + h + 40]]);
+      W = x0 * 2 + 3 * w; H = y0 * 2 + h;
+    }
+    return svg(W, H, b, 'net of a solid');
+  },
+
+  // Box plot over a number line: whiskers to the least and greatest values, the box from Q1 to Q3.
+  boxplot({ min, q1, med, q3, max, lo, hi, step = 1, title }) {
+    const W = 380, x0 = 24, x1 = W - 24, ya = 130, yb = 70;
+    const X = (v) => x0 + ((v - lo) / (hi - lo)) * (x1 - x0);
+    let b = t(W / 2, 14, title, 'v-t v-strong', 'middle', 14);
+    b += `<line x1="${x0 - 8}" y1="${ya}" x2="${x1 + 8}" y2="${ya}" class="v-axis"/>`;
+    const ticks = Math.round((hi - lo) / step);
+    const every = ticks > 16 ? 2 : 1;
+    for (let i = 0; i <= ticks; i++) {
+      const v = lo + i * step;
+      b += `<line x1="${X(v)}" y1="${ya - 5}" x2="${X(v)}" y2="${ya + 5}" class="v-tick"/>`;
+      if (i % every === 0) b += t(X(v), ya + 19, String(v), 'v-t2', 'middle', 11);
+    }
+    b += `<line x1="${X(min)}" y1="${yb}" x2="${X(q1)}" y2="${yb}" class="v-axis"/><line x1="${X(q3)}" y1="${yb}" x2="${X(max)}" y2="${yb}" class="v-axis"/>`;
+    b += `<line x1="${X(min)}" y1="${yb - 10}" x2="${X(min)}" y2="${yb + 10}" class="v-axis"/><line x1="${X(max)}" y1="${yb - 10}" x2="${X(max)}" y2="${yb + 10}" class="v-axis"/>`;
+    b += `<rect x="${X(q1)}" y="${yb - 22}" width="${X(q3) - X(q1)}" height="44" class="v-fill v-soft v-edge"/>`;
+    b += `<line x1="${X(med)}" y1="${yb - 22}" x2="${X(med)}" y2="${yb + 22}" class="v-med"/>`;
+    return svg(W, 156, b, title);
+  },
+
+  // Histogram: equal intervals whose bars touch.
+  histogram({ labels, values, title }) {
+    const W = 380, H = 230, left = 40, bottom = 36, top = 30;
+    const maxV = Math.max(...values) + 1;
+    const Y = (v) => H - bottom - ((H - bottom - top) * v) / maxV;
+    const bw = (W - left - 12) / labels.length;
+    let b = t(W / 2, 14, title, 'v-t v-strong', 'middle', 14);
+    for (let v = 0; v <= maxV; v++) {
+      b += `<line x1="${left}" y1="${Y(v)}" x2="${W - 8}" y2="${Y(v)}" class="v-gridline"/>`;
+      b += t(left - 8, Y(v), String(v), 'v-t2', 'end', 11);
+    }
+    labels.forEach((lab, i) => {
+      const x = left + i * bw;
+      b += `<rect x="${x}" y="${Y(values[i])}" width="${bw}" height="${Y(0) - Y(values[i])}" class="v-fill v-edge"/>`;
+      b += t(x + bw / 2, H - bottom + 16, lab, 'v-t2', 'middle', 11);
+    });
+    b += `<line x1="${left}" y1="${Y(0)}" x2="${W - 8}" y2="${Y(0)}" class="v-axis"/>`;
+    return svg(W, H, b, title);
+  },
+
   protractor({ deg, from = 'right' }) {
     const W = 360, cx = 180, cy = 176, r = 150;
     const P = (a, rr) => [cx + rr * Math.cos((a * Math.PI) / 180), cy - rr * Math.sin((a * Math.PI) / 180)];

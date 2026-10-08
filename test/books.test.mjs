@@ -50,8 +50,9 @@ test('each book teaches its own grade, with review below and a few previews abov
   const seen1 = new Set(), seen2 = new Set();
   for (const d of DOMAIN_ORDER) {
     for (let i = 0; i < 60; i++) {
-      const p1 = t1.next(d); seen1.add(p1.skill); t1.record(p1, { solved: true, firstTry: true, hintUsed: false });
-      const p2 = t2.next(d); seen2.add(p2.skill);
+      // A subject with nothing at a book's grades (ratios before grade 6) simply has no problems there.
+      const p1 = t1.next(d); if (p1) { seen1.add(p1.skill); t1.record(p1, { solved: true, firstTry: true, hintUsed: false }); }
+      const p2 = t2.next(d); if (p2) seen2.add(p2.skill);
     }
   }
   for (const id of seen1) assert.ok(SKILLS[id].grade <= 4 || ['mul_3x2', 'frac_add_unlike', 'dec_place', 'volume', 'order_ops'].includes(id), `book 1 served ${id}`);

@@ -1,5 +1,5 @@
 // Observatory star charts: data and statistics (grades 3-6).
-import { P, num, frac, makeChoices, labelNum, labelFrac, nearInts } from '../build.js';
+import { P, num, frac, pick, makeChoices, labelNum, labelFrac, nearInts } from '../build.js';
 import { Frac } from '../frac.js';
 
 const D = 'stars';
@@ -230,4 +230,199 @@ const linePlotFrac = {
   },
 };
 
-export const STAR_SKILLS = [readBar, linePlot, linePlotFrac, mean, mmr];
+// Statistical questions expect answers that vary; the others have just one answer.
+const STAT_Q = [
+  { yes: 'How many hours did each cadet sleep last night?', no: ['How many hours did Vela sleep last night?', 'How many hours are in a day?', 'What time does the guild hall open?'] },
+  { yes: 'How tall are the kites in the Glider Guild?', no: ['How tall is the tallest kite?', 'How many kites does the guild own?', 'What color is Captain Swoop\'s kite?'] },
+  { yes: 'How many stars did each cadet spot this week?', no: ['How many stars are on the guild flag?', 'How many days are in a week?', 'How many stars did Tock spot on Monday?'] },
+  { yes: 'How far can the gliders in the race fly?', no: ['How far is it to the Starwell?', 'How far did Rocco fly yesterday?', 'How many gliders are in the race?'] },
+  { yes: 'What are the ages of the penguins at the festival?', no: ['How old is the Professor?', 'In what year was the festival first held?', 'How many penguins are named Pip?'] },
+];
+const statQuestion = {
+  id: 'stat_question', domain: D, grade: 6, cc: '6.SP.1', name: 'Statistical questions', short: 'statistical questions',
+  gen(rng, tier) {
+    const q = rng.pick(STAT_Q);
+    const askNo = tier === 3 && rng.chance(0.5);
+    if (askNo) {
+      // Which is NOT statistical: one single-answer question among statistical ones from other sets.
+      const others = rng.shuffle(STAT_Q.filter((o) => o !== q)).slice(0, 3).map((o) => o.yes);
+      const odd = rng.pick(q.no);
+      return P({
+        skill: this.id, tier,
+        text: 'Which question is NOT a statistical question?',
+        answer: pick(),
+        choices: rng.shuffle([{ label: odd, value: 'c', correct: true }, ...others.map((o, i) => ({ label: o, value: 'w' + i, why: 'This one has many different answers, so it is statistical.' }))]),
+        hint: 'A statistical question has answers that vary. Which one has just one answer?',
+        steps: [`"${odd}" has only one answer.`, 'So it is not a statistical question.'],
+        answerText: odd,
+        meta: {},
+      });
+    }
+    const wrong = tier === 1 ? q.no.slice(0, 2) : q.no;
+    return P({
+      skill: this.id, tier,
+      text: 'Which is a statistical question?',
+      answer: pick(),
+      choices: rng.shuffle([{ label: q.yes, value: 'c', correct: true }, ...wrong.map((w, i) => ({ label: w, value: 'w' + i, why: 'This question has only one answer. A statistical question expects answers that vary.' }))]),
+      hint: 'A statistical question collects many answers that are not all the same.',
+      steps: [`"${q.yes}" gets a different answer from each one.`, 'Answers that vary make it a statistical question.'],
+      answerText: q.yes,
+      meta: {},
+    });
+  },
+};
+
+// Box plots: the five-number summary, with the middle half of the data inside the box.
+const boxPlot = {
+  id: 'box_plot', domain: D, grade: 6, cc: '6.SP.4', name: 'Box plots', short: 'box plots',
+  gen(rng, tier) {
+    const step = tier === 1 ? 1 : rng.pick([1, 2, 5]);
+    const base = rng.int(0, 10) * step;
+    const gaps = [rng.int(1, 4), rng.int(1, 4), rng.int(1, 4), rng.int(1, 4)].map((g) => g * step);
+    const min = base, q1 = min + gaps[0], med = q1 + gaps[1], q3 = med + gaps[2], max = q3 + gaps[3];
+    const title = rng.pick(['Kite flight times (seconds)', 'Stars spotted each night', 'Glider race distances (km)', 'Lanterns lit per evening']);
+    const vis = { kind: 'boxplot', min, q1, med, q3, max, lo: min - step, hi: max + step, step, title };
+    const kind = tier === 1 ? rng.pick(['median', 'max']) : tier === 2 ? rng.pick(['median', 'range', 'iqr']) : rng.pick(['iqr', 'quarter', 'half']);
+    if (kind === 'quarter' || kind === 'half') {
+      const ans = kind === 'quarter' ? 25 : 50;
+      const where = kind === 'quarter' ? `above ${q3}` : `between ${q1} and ${q3}`;
+      return P({
+        skill: this.id, tier,
+        text: `About what percent of the data is ${where}?`,
+        visual: vis,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [kind === 'quarter' ? 50 : 25, 75, 100, 10], (v) => `${v}%`),
+        hint: 'The box plot splits the data into four parts with about the same number of values: 25% each.',
+        steps: kind === 'quarter' ? [`From ${q3} up to ${max} is the top quarter of the data.`, 'That is about 25%.'] : [`The box, from ${q1} to ${q3}, holds the middle two quarters.`, 'That is about 50%.'],
+        meta: { value: ans },
+      });
+    }
+    const ans = kind === 'median' ? med : kind === 'max' ? max : kind === 'range' ? max - min : q3 - q1;
+    const name = { median: 'median', max: 'greatest value', range: 'range', iqr: 'interquartile range (IQR)' }[kind];
+    return P({
+      skill: this.id, tier,
+      text: `What is the ${name} of the data in this box plot?`,
+      visual: vis,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, kind === 'median'
+        ? [{ value: Math.round((min + max) / 2) === med ? med + step : Math.round((min + max) / 2), why: 'The median is the line inside the box, not the middle of the whole plot.' }, q1, q3]
+        : kind === 'iqr' ? [{ value: max - min, why: 'That is the range. The IQR is the length of the box: Q3 − Q1.' }, q3, med - q1]
+          : kind === 'range' ? [{ value: q3 - q1, why: 'That is the IQR. The range goes from the lowest whisker end to the highest.' }, max, max - med]
+            : [q3, med, max + step], labelNum),
+      hint: kind === 'median' ? 'The median is the line inside the box.' : kind === 'max' ? 'Follow the right whisker to its end.' : kind === 'range' ? 'Range = greatest − least: the two whisker ends.' : 'IQR = the right edge of the box (Q3) minus the left edge (Q1).',
+      steps: kind === 'median' ? [`The line inside the box is at ${med}.`] : kind === 'max' ? [`The right whisker ends at ${max}.`] : kind === 'range' ? [`${max} − ${min} = ${ans}.`] : [`Q3 = ${q3} and Q1 = ${q1}.`, `${q3} − ${q1} = ${ans}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+// Mean absolute deviation: how far the values sit from the mean, on average.
+const mad = {
+  id: 'mad', domain: D, grade: 6, cc: '6.SP.5c', name: 'Mean absolute deviation', short: 'mean absolute deviation',
+  gen(rng, tier) {
+    // Values in matched pairs around the mean keep both the mean and the MAD whole numbers.
+    const m = rng.int(6, 20);
+    const n = tier === 3 ? 6 : 4;
+    const ds = [];
+    for (let i = 0; i < n / 2; i++) ds.push(rng.int(1, 5));
+    const sumD = ds.reduce((a, b) => a + b, 0) * 2;
+    if (sumD % n) return mad.gen(rng, tier);
+    const vals = rng.shuffle(ds.flatMap((d) => [m - d, m + d]));
+    const madV = sumD / n;
+    const thing = rng.pick(['kites flown', 'stars spotted', 'feathers found', 'laps flown']);
+    if (tier === 1) {
+      const v = rng.pick(vals);
+      const ans = Math.abs(v - m);
+      return P({
+        skill: this.id, tier,
+        text: `The cadets' ${thing}: ${vals.join(', ')}. The mean is ${m}. How far is ${v} from the mean?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: v, why: 'Find the distance between the value and the mean.' }, ans + 1, m, ans + 2], labelNum),
+        hint: `Subtract: the bigger of ${v} and ${m} minus the smaller.`,
+        steps: [`${Math.max(v, m)} − ${Math.min(v, m)} = ${ans}.`],
+        meta: { value: ans },
+      });
+    }
+    return P({
+      skill: this.id, tier,
+      text: `The cadets' ${thing}: ${vals.join(', ')}. The mean is ${m}. What is the mean absolute deviation?`,
+      answer: num(madV),
+      choices: makeChoices(rng, madV, [{ value: sumD, why: `That is the total distance. Divide by ${n}, how many values there are.` }, m, madV + 1, Math.max(...vals) - Math.min(...vals)], labelNum),
+      hint: `Find how far each value is from ${m}, then find the mean of those distances.`,
+      steps: [`Distances from ${m}: ${vals.map((v) => Math.abs(v - m)).join(', ')}.`, `They add to ${sumD}.`, `${sumD} ÷ ${n} = ${madV}.`],
+      meta: { value: madV },
+    });
+  },
+};
+
+// Histograms: counts in equal intervals that touch each other.
+const histogram = {
+  id: 'histogram', domain: D, grade: 6, cc: '6.SP.4', name: 'Histograms', short: 'histograms',
+  gen(rng, tier) {
+    const width = rng.pick([5, 10]);
+    const bins = 5;
+    const start = rng.int(0, 3) * width;
+    const labels = Array.from({ length: bins }, (_, i) => `${start + i * width}–${start + (i + 1) * width - 1}`);
+    const counts = Array.from({ length: bins }, () => rng.int(1, 9));
+    const title = rng.pick(['Glider flight times (minutes)', 'Cadet heights (cm, last two digits)', 'Stars spotted per night']);
+    const vis = { kind: 'histogram', labels, values: counts, title };
+    const kind = tier === 1 ? 'one' : tier === 2 ? rng.pick(['one', 'total', 'atleast']) : rng.pick(['atleast', 'most', 'total']);
+    if (kind === 'most') {
+      const best = Math.max(...counts);
+      if (counts.filter((c) => c === best).length > 1) return histogram.gen(rng, 2);
+      const i = counts.indexOf(best);
+      return P({
+        skill: this.id, tier,
+        text: 'Which interval has the most data?',
+        visual: vis,
+        answer: pick(),
+        choices: rng.shuffle([i, ...rng.shuffle([0, 1, 2, 3, 4].filter((k) => k !== i)).slice(0, 3)]).map((k) => ({ label: labels[k], value: k, correct: k === i, why: k === i ? undefined : `That bar is only ${counts[k]} tall.` })),
+        hint: 'Find the tallest bar.',
+        steps: [`The tallest bar is ${labels[i]}, with ${best}.`],
+        answerText: labels[i],
+        meta: {},
+      });
+    }
+    if (kind === 'one') {
+      const i = rng.int(0, bins - 1);
+      return P({
+        skill: this.id, tier,
+        text: `How many values are in the ${labels[i]} interval?`,
+        visual: vis,
+        answer: num(counts[i]),
+        choices: makeChoices(rng, counts[i], [counts[(i + 1) % bins], counts[(i + bins - 1) % bins], counts[i] + 1, counts[i] + 2], labelNum),
+        hint: `Find the ${labels[i]} bar and read its height on the scale.`,
+        steps: [`The ${labels[i]} bar reaches ${counts[i]}.`],
+        meta: { value: counts[i] },
+      });
+    }
+    if (kind === 'total') {
+      const total = counts.reduce((a, b) => a + b, 0);
+      return P({
+        skill: this.id, tier,
+        text: 'How many values are shown in the histogram altogether?',
+        visual: vis,
+        answer: num(total),
+        choices: makeChoices(rng, total, [{ value: bins, why: 'That is the number of bars. Add up all their heights.' }, Math.max(...counts), total + 1, total - 2], labelNum),
+        hint: 'Add up the heights of all the bars.',
+        steps: [`${counts.join(' + ')} = ${total}.`],
+        meta: { value: total },
+      });
+    }
+    const from = rng.int(1, bins - 2);
+    const ans = counts.slice(from).reduce((a, b) => a + b, 0);
+    const lo = start + from * width;
+    return P({
+      skill: this.id, tier,
+      text: `How many values are ${lo} or more?`,
+      visual: vis,
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [{ value: counts[from], why: `Include every bar from ${labels[from]} to the end.` }, ans + counts[from - 1], ans - 1, ans + 1], labelNum),
+      hint: `Add the bars from ${labels[from]} to the right.`,
+      steps: [`${counts.slice(from).join(' + ')} = ${ans}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+export const STAR_SKILLS = [readBar, linePlot, linePlotFrac, statQuestion, mean, mmr, histogram, boxPlot, mad];

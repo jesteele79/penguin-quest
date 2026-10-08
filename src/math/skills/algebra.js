@@ -1,4 +1,5 @@
-// Gloom Ridge: number sense and early algebra (grades 4-6).
+// Number sense, expressions and equations (grades 4-6): Gloom Ridge in Book 1, the Clockwork Observatory
+// in Book 3.
 import { P, num, pick, makeChoices, labelNum, nearInts } from '../build.js';
 import { gcd, lcm } from '../frac.js';
 import { fmtInt } from '../fmt.js';
@@ -364,72 +365,6 @@ const gcfLcm = {
   },
 };
 
-const integers = {
-  id: 'integers', domain: D, grade: 6, cc: '6.NS.7', name: 'Negative numbers', short: 'negative numbers',
-  gen(rng, tier) {
-    const kind = tier === 1 ? rng.int(0, 1) : tier === 2 ? rng.int(1, 2) : rng.int(2, 3);
-    if (kind === 0) {
-      const a = -rng.int(1, 15);
-      let b = -rng.int(1, 15);
-      if (a === b) b -= 2;
-      const colder = Math.min(a, b);
-      return P({
-        skill: this.id, tier,
-        text: `Which temperature is colder: ${neg(a)}°C or ${neg(b)}°C?`,
-        visual: { kind: 'numline', min: -16, max: 2, marks: [{ v: a, label: neg(a) }, { v: b, label: neg(b) }], places: 0, step: 2 },
-        answer: pick(),
-        choices: [a, b].map((v) => ({ label: `${neg(v)}°C`, value: v, correct: v === colder, why: v === colder ? undefined : 'Below zero, the bigger the number after the minus sign, the colder it is. It is further left on the number line.' })),
-        hint: 'Colder means further left on the number line.',
-        steps: [`${neg(colder)} is further left on the number line than ${neg(colder === a ? b : a)}.`, `So ${neg(colder)}°C is colder.`],
-        answerText: `${neg(colder)}°C`,
-        meta: {},
-      });
-    }
-    if (kind === 1) {
-      const n = rng.int(2, 40) * (rng.chance(0.6) ? -1 : 1);
-      const abs = rng.chance(0.5);
-      const ans = abs ? Math.abs(n) : -n;
-      return P({
-        skill: this.id, tier,
-        text: abs ? `What is |${neg(n)}|? (the absolute value)` : `What is the opposite of ${neg(n)}?`,
-        answer: num(ans),
-        choices: makeChoices(rng, ans, abs
-          ? [{ value: -Math.abs(n), why: 'Absolute value is distance from 0, and distance is never negative.' }, Math.abs(n) + 1, Math.abs(n) - 1, Math.abs(n) * 2]
-          : [{ value: n, why: 'The opposite is on the other side of 0, the same distance away.' }, ans + 1, ans - 1, -n + (n > 0 ? -10 : 10)], (v) => neg(v), 4, { allowNeg: true }),
-        hint: abs ? 'Absolute value means: how far is it from 0?' : 'The opposite is the same distance from 0, on the other side.',
-        steps: abs ? [`${neg(n)} is ${Math.abs(n)} steps from 0.`, `|${neg(n)}| = ${Math.abs(n)}.`] : [`${neg(n)} is ${Math.abs(n)} steps ${n < 0 ? 'left' : 'right'} of 0.`, `The opposite is ${Math.abs(n)} steps ${n < 0 ? 'right' : 'left'}: ${neg(-n)}.`],
-        meta: { value: ans },
-      });
-    }
-    if (kind === 2) {
-      const a = -rng.int(1, 9), b = rng.int(1, 9);
-      const d = b - a;
-      return P({
-        skill: this.id, tier,
-        text: `How far apart are ${neg(a)} and ${b} on a number line?`,
-        visual: { kind: 'numline', min: -10, max: 10, marks: [{ v: a, label: neg(a) }, { v: b, label: String(b) }], places: 0, step: 2 },
-        answer: num(d),
-        choices: makeChoices(rng, d, [{ value: Math.abs(b + a), why: `Count the steps from ${neg(a)} up to 0 (${-a}), then from 0 to ${b} (${b}). Add them.` }, d + 1, d - 1], labelNum),
-        hint: `Count from ${neg(a)} to 0, then from 0 to ${b}.`,
-        steps: [`From ${neg(a)} to 0 is ${-a}.`, `From 0 to ${b} is ${b}.`, `${-a} + ${b} = ${d}.`],
-        meta: { value: d },
-      });
-    }
-    const start = -rng.int(2, 12), rise = rng.int(3, 18);
-    const ans = start + rise;
-    return P({
-      skill: this.id, tier,
-      text: `At midnight it was ${neg(start)}°C on Gloom Ridge. By noon it warmed up ${rise} degrees. What was the temperature at noon?`,
-      visual: { kind: 'numline', min: -14, max: 12, marks: [{ v: start, label: neg(start) }], places: 0, step: 2 },
-      answer: num(ans),
-      choices: makeChoices(rng, ans, [{ value: start - rise, why: 'Warming up means moving right (up) on the number line.' }, -ans === ans ? ans + 2 : -ans, ans + 1, ans - 1, rise], (v) => neg(v), 4, { allowNeg: true }),
-      hint: `Start at ${neg(start)} and move ${rise} steps to the right.`,
-      steps: [`Start at ${neg(start)}.`, ans >= 0 ? `${-start} steps gets you to 0, then ${rise + start} more.` : `Move ${rise} steps right.`, `You land on ${neg(ans)}°C.`],
-      meta: { value: ans },
-    });
-  },
-};
-
 const evalExpr = {
   id: 'eval_expr', domain: D, grade: 6, cc: '6.EE.2c', name: 'Evaluate expressions', short: 'evaluate expressions',
   gen(rng, tier) {
@@ -658,4 +593,218 @@ const patterns2 = {
   },
 };
 
-export const RIDGE_SKILLS = [placeValue, rounding, addSub, factors, patterns, orderOps, exprRead, patterns2, exponents, gcfLcm, integers, evalExpr, oneStep, writeExpr];
+// Equivalent expressions: the distributive property both ways, and combining like terms.
+const sgn = (n) => (n < 0 ? `− ${-n}` : `+ ${n}`);
+const equivExpr = {
+  id: 'equiv_expr', domain: D, grade: 6, cc: '6.EE.3', name: 'Equivalent expressions', short: 'equivalent expressions',
+  gen(rng, tier) {
+    const v = rng.pick(['x', 'n', 'y', 'a']);
+    const kind = tier === 1 ? rng.int(0, 1) : tier === 2 ? rng.int(0, 2) : rng.int(1, 3);
+    const uniqChoices = (list) => rng.shuffle(list.filter((c, i, arr) => arr.findIndex((q) => q.label === c.label) === i));
+    if (kind === 0) {
+      const k = rng.int(2, 9), c = rng.int(2, 9);
+      const correct = `${k}${v} + ${k * c}`;
+      return P({
+        skill: this.id, tier,
+        text: `Which expression is equal to ${k}(${v} + ${c})?`,
+        answer: pick(),
+        choices: uniqChoices([
+          { label: correct, value: 'c', correct: true },
+          { label: `${k}${v} + ${c}`, value: 'w1', why: `${k} multiplies everything in the parentheses, so the ${c} becomes ${k} × ${c}.` },
+          { label: `${v} + ${k * c}`, value: 'w2', why: `${k} multiplies the ${v} too.` },
+          { label: `${k + c}${v}`, value: 'w3', why: `${k}${v} and ${k * c} are not like terms, so they stay separate.` },
+        ]),
+        hint: `Multiply ${k} by each thing inside the parentheses.`,
+        steps: [`${k} × ${v} = ${k}${v}.`, `${k} × ${c} = ${k * c}.`, `So ${k}(${v} + ${c}) = ${correct}.`],
+        answerText: correct,
+        meta: {},
+      });
+    }
+    if (kind === 1) {
+      const p = rng.int(2, 9), q = rng.int(2, 9), r = rng.int(1, 9);
+      const correct = `${p + q}${v} + ${r}`;
+      return P({
+        skill: this.id, tier,
+        text: `Which is the simplest way to write ${p}${v} + ${r} + ${q}${v}?`,
+        answer: pick(),
+        choices: uniqChoices([
+          { label: correct, value: 'c', correct: true },
+          { label: `${p + q + r}${v}`, value: 'w1', why: `${r} has no ${v}, so it is not a like term. Only the ${v} terms combine.` },
+          { label: `${p * q}${v} + ${r}`, value: 'w2', why: `${p}${v} + ${q}${v} adds: ${p} + ${q} = ${p + q}.` },
+          { label: `${p + q}${v} + ${r}${v}`, value: 'w3', why: `${r} is just a number, without a ${v}.` },
+        ]),
+        hint: `Like terms have the same letter. Add the ${v} terms together, and keep the number on its own.`,
+        steps: [`${p}${v} + ${q}${v} = ${p + q}${v}.`, `The ${r} stays as it is.`, `So the expression is ${correct}.`],
+        answerText: correct,
+        meta: {},
+      });
+    }
+    if (kind === 2) {
+      // Evaluate both forms to see they match.
+      const k = rng.int(2, 6), c = rng.int(1, 8), x = rng.int(2, 9);
+      const ans = k * (x + c);
+      return P({
+        skill: this.id, tier,
+        text: `${k}(${v} + ${c}) and ${k}${v} + ${k * c} are equivalent. What do both equal when ${v} = ${x}?`,
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: k * x + c, why: `${k} multiplies the ${c} as well: ${k} × ${c} = ${k * c}.` }, ans + k, ans - 1, x + c], labelNum),
+        hint: `Put ${x} in for ${v} in either expression.`,
+        steps: [`${k}(${x} + ${c}) = ${k} × ${x + c} = ${ans}.`, `${k} × ${x} + ${k * c} = ${k * x} + ${k * c} = ${ans}. They match.`],
+        meta: { value: ans },
+      });
+    }
+    // Factor out the greatest common factor.
+    const g = rng.int(2, 6);
+    let m = rng.int(2, 7), c = rng.int(1, 7);
+    while (gcd(m, c) !== 1) c += 1;
+    const correct = `${g}(${m}${v} + ${c})`;
+    return P({
+      skill: this.id, tier,
+      text: `Which expression is equal to ${g * m}${v} + ${g * c}?`,
+      answer: pick(),
+      choices: uniqChoices([
+        { label: correct, value: 'c', correct: true },
+        { label: `${g}(${m}${v} + ${g * c})`, value: 'w1', why: `Divide both terms by ${g}: ${g * c} ÷ ${g} = ${c}.` },
+        { label: `${g * m}(${v} + ${g * c})`, value: 'w2', why: `Multiply it back out: that would give ${g * m * g * c}, not ${g * c}.` },
+        { label: `${g}(${m}${v} ${sgn(c + 1)})`, value: 'w3', why: `Check by multiplying out: ${g} × ${c + 1} is not ${g * c}.` },
+      ]),
+      hint: `What is the biggest number that divides both ${g * m} and ${g * c}?`,
+      steps: [`${g} divides both: ${g * m} = ${g} × ${m} and ${g * c} = ${g} × ${c}.`, `So ${g * m}${v} + ${g * c} = ${correct}.`],
+      answerText: correct,
+      meta: {},
+    });
+  },
+};
+
+// Inequalities: which values make one true, writing one from words, and reading one from a number line.
+const inequality = {
+  id: 'inequality', domain: D, grade: 6, cc: '6.EE.8', name: 'Inequalities', short: 'inequalities',
+  gen(rng, tier) {
+    const v = rng.pick(['x', 'n', 'h', 't']);
+    const kind = tier === 1 ? 0 : tier === 2 ? rng.int(0, 1) : rng.int(1, 2);
+    if (kind === 0) {
+      const c = rng.int(3, 15);
+      const gt = rng.chance(0.5);
+      const right = gt ? c + rng.int(1, 6) : c - rng.int(1, Math.min(6, c));
+      const vals = [right, c, gt ? c - rng.int(1, 3) : c + rng.int(1, 3), gt ? c - rng.int(4, 8) : c + rng.int(4, 8)];
+      const choices = vals.map((x, i) => ({ label: String(x), value: x, correct: i === 0, why: i === 0 ? undefined : x === c ? `${c} is not ${gt ? 'greater' : 'less'} than ${c}: they are equal.` : `${x} is ${x > c ? 'greater' : 'less'} than ${c}.` }));
+      return P({
+        skill: this.id, tier,
+        text: `Which value of ${v} makes ${v} ${gt ? '>' : '<'} ${c} true?`,
+        answer: pick(),
+        choices: rng.shuffle(choices.filter((q, i, arr) => arr.findIndex((z) => z.label === q.label) === i)),
+        hint: `${gt ? '>' : '<'} means "is ${gt ? 'greater' : 'less'} than". Equal does not count.`,
+        steps: [`${right} ${gt ? '>' : '<'} ${c} is true.`, `So ${v} = ${right} works.`],
+        answerText: String(right),
+        meta: {},
+      });
+    }
+    if (kind === 1) {
+      const c = rng.int(4, 60);
+      const o = rng.pick([
+        { words: `A rider must be at least ${c} inches tall. Let ${v} be a rider's height.`, sym: '≥' },
+        { words: `A glider can carry at most ${c} kilograms. Let ${v} be the load.`, sym: '≤' },
+        { words: `The cloud line is more than ${c} meters below the island. Let ${v} be its depth.`, sym: '>' },
+        { words: `Fewer than ${c} lanterns are left. Let ${v} be the number left.`, sym: '<' },
+      ]);
+      const all = ['≥', '≤', '>', '<'];
+      const why = { '≥': 'At least means that number or more.', '≤': 'At most means that number or less.', '>': 'More than does not include the number itself.', '<': 'Fewer than does not include the number itself.' };
+      return P({
+        skill: this.id, tier,
+        text: `${o.words} Which inequality fits?`,
+        answer: pick(),
+        choices: rng.shuffle(all.map((s) => ({ label: `${v} ${s} ${c}`, value: s, correct: s === o.sym, why: s === o.sym ? undefined : why[o.sym] }))),
+        hint: 'At least: ≥. At most: ≤. More than: >. Less or fewer than: <.',
+        steps: [why[o.sym], `So the inequality is ${v} ${o.sym} ${c}.`],
+        answerText: `${v} ${o.sym} ${c}`,
+        meta: {},
+      });
+    }
+    const c = rng.int(-4, 6);
+    const dir = rng.chance(0.5) ? 'right' : 'left';
+    const closed = rng.chance(0.5);
+    const sym = dir === 'right' ? (closed ? '≥' : '>') : (closed ? '≤' : '<');
+    const all = ['≥', '>', '≤', '<'];
+    const c0 = c < 0 ? `−${-c}` : String(c);
+    return P({
+      skill: this.id, tier,
+      text: 'Which inequality does the number line show?',
+      visual: { kind: 'ineq', min: -6, max: 8, at: c, dir, closed },
+      answer: pick(),
+      choices: rng.shuffle(all.map((s) => ({ label: `${v} ${s} ${c0}`, value: s, correct: s === sym, why: s === sym ? undefined : `The circle is ${closed ? 'filled in, so ' + c0 + ' is included' : 'open, so ' + c0 + ' is not included'}, and the arrow points ${dir}.` }))),
+      hint: 'An arrow to the right means greater; to the left means less. A filled circle includes the number.',
+      steps: [`The arrow points ${dir}: ${dir === 'right' ? 'greater' : 'less'} than ${c0}.`, `The circle is ${closed ? 'filled, so ' + c0 + ' counts too' : 'open, so ' + c0 + ' does not count'}: ${v} ${sym} ${c0}.`],
+      answerText: `${v} ${sym} ${c0}`,
+      meta: {},
+    });
+  },
+};
+
+// Two quantities that change together: a table, the rule behind it, and which one depends on which.
+const varTable = {
+  id: 'var_table', domain: D, grade: 6, cc: '6.EE.9', name: 'Variables that change together', short: 'input-output tables',
+  gen(rng, tier) {
+    const m = rng.int(2, 6), b = tier === 1 ? 0 : rng.int(1, 6);
+    const xs = [1, 2, 3, 4];
+    const ys = xs.map((x) => m * x + b);
+    const rule = b ? `y = ${m}x + ${b}` : `y = ${m}x`;
+    const kind = tier === 1 ? 0 : tier === 2 ? rng.int(0, 1) : rng.int(1, 2);
+    if (kind === 0) {
+      const x = rng.int(6, 12);
+      const ans = m * x + b;
+      return P({
+        skill: this.id, tier,
+        text: `The table follows the rule ${rule}. What is y when x is ${x}?`,
+        visual: { kind: 'rtable', rows: [{ name: 'x', cells: [...xs.map(String), String(x)] }, { name: 'y', cells: [...ys.map(String), '?'] }] },
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: ys[3] + (x - 4), why: `Each time x goes up by 1, y goes up by ${m}, not 1.` }, m * x, ans + m, m + x + b], labelNum),
+        hint: `Put ${x} in for x: ${m} × ${x}${b ? ` + ${b}` : ''}.`,
+        steps: [`${m} × ${x} = ${m * x}.`, ...(b ? [`${m * x} + ${b} = ${ans}.`] : []), `So y = ${ans}.`],
+        meta: { value: ans },
+      });
+    }
+    if (kind === 1) {
+      const wrongRules = [
+        [`y = x + ${ys[0] - 1}`, 'It fits the first column, but check the others too.'],
+        [`y = ${m + 1}x`, `Check x = 2: that gives ${2 * (m + 1)}, but the table says ${ys[1]}.`],
+        [b ? `y = ${m}x` : `y = ${m}x + 1`, b ? `Check x = 1: ${m} × 1 = ${m}, but the table says ${ys[0]}.` : `Check x = 1: ${m} + 1 is not ${ys[0]}.`],
+        [`y = ${b + 1}x + ${m}`, 'Try it on each column of the table.'],
+      ];
+      const choices = [{ label: rule, value: 'c', correct: true }, ...wrongRules.map(([l, why], i) => ({ label: l, value: 'w' + i, why }))];
+      return P({
+        skill: this.id, tier,
+        text: 'Which rule fits every column of the table?',
+        visual: { kind: 'rtable', rows: [{ name: 'x', cells: xs.map(String) }, { name: 'y', cells: ys.map(String) }] },
+        answer: pick(),
+        choices: (() => { const u = choices.filter((c, i, arr) => arr.findIndex((q) => q.label === c.label) === i); return rng.shuffle([u[0], ...rng.shuffle(u.slice(1)).slice(0, 3)]); })(),
+        hint: `When x goes up by 1, y goes up by ${m}. That number multiplies x.`,
+        steps: [`y goes up by ${m} each time, so the rule starts y = ${m}x.`, b ? `At x = 1, ${m} × 1 = ${m}, and y is ${ys[0]}, so add ${b}.` : `At x = 1, ${m} × 1 = ${m}, which is y. Nothing to add.`, `The rule is ${rule}.`],
+        answerText: rule,
+        meta: {},
+      });
+    }
+    const o = rng.pick([
+      { story: 'The more hours a lantern burns, the more oil it uses.', dep: 'the oil used', ind: 'the hours it burns' },
+      { story: 'A glider\'s height drops the further it flies.', dep: 'its height', ind: 'how far it flies' },
+      { story: 'Each cadet who joins the guild gets 3 feathers.', dep: 'the number of feathers', ind: 'the number of cadets' },
+      { story: 'The longer a kite string, the higher the kite can fly.', dep: 'how high the kite flies', ind: 'the length of the string' },
+    ]);
+    const askDep = rng.chance(0.5);
+    const right = askDep ? o.dep : o.ind;
+    return P({
+      skill: this.id, tier,
+      text: `${o.story} Which is the ${askDep ? 'dependent' : 'independent'} variable?`,
+      answer: pick(),
+      choices: rng.shuffle([
+        { label: right, value: 'c', correct: true },
+        { label: askDep ? o.ind : o.dep, value: 'w', why: askDep ? 'The dependent variable is the one that changes because of the other.' : 'The independent variable is the one that changes on its own and causes the other to change.' },
+      ]),
+      hint: 'Ask: which one depends on the other?',
+      steps: [`${o.dep[0].toUpperCase() + o.dep.slice(1)} depends on ${o.ind}.`, `So ${o.dep} is dependent and ${o.ind} is independent.`],
+      answerText: right,
+      meta: {},
+    });
+  },
+};
+
+export const RIDGE_SKILLS = [placeValue, rounding, addSub, factors, patterns, orderOps, exprRead, patterns2, exponents, gcfLcm, evalExpr, writeExpr, equivExpr, oneStep, inequality, varTable];

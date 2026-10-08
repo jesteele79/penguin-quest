@@ -1,5 +1,6 @@
-// Glacier Cave: geometry and measurement (grades 3-6).
-import { P, num, pick, makeChoices, labelNum, nearInts } from '../build.js';
+// Geometry and measurement (grades 3-6): Glacier Cave in Book 1, the Sunken Temple in Book 2 and the Crystal
+// Workshop in Book 3.
+import { P, num, frac, pick, makeChoices, labelNum, labelFrac, nearInts } from '../build.js';
 import { Frac } from '../frac.js';
 import { fmtInt, fmtNum } from '../fmt.js';
 import { friend } from '../theme.js';
@@ -747,4 +748,195 @@ const hierarchy = {
   },
 };
 
-export const CAVE_SKILLS = [perimeter, areaRect, angleType, protractor, convert, areaMissing, angleAdd, classify, symmetry, volume, volumeComposite, convert5, hierarchy, coord, areaTri, surface];
+// Area of trapezoids and of shapes made from a rectangle and a triangle: split, find each part, add.
+const areaPoly = {
+  id: 'area_poly', domain: D, grade: 6, cc: '6.G.1', name: 'Area of trapezoids and composite shapes', short: 'composite area',
+  gen(rng, tier) {
+    const u = rng.pick(['ft', 'm', 'cm', 'in']);
+    if (tier === 1 || (tier === 2 && rng.chance(0.5))) {
+      // A house shape: a rectangle with a triangle roof.
+      const w = 2 * rng.int(2, 6), h = rng.int(2, 7), t = rng.int(2, 6);
+      const rect = w * h, roof = (w * t) / 2, ans = rect + roof;
+      return P({
+        skill: this.id, tier,
+        text: `This shape is a rectangle with a triangle on top. What is its area in square ${u}?`,
+        visual: { kind: 'poly', pts: [[0, 0], [w, 0], [w, h], [w / 2, h + t], [0, h]], split: [[0, h, w, h]], labels: [{ at: [w / 2, -0.6], text: `${w} ${u}` }, { at: [w + 0.4, h / 2], text: `${h} ${u}`, anchor: 'start' }, { at: [w / 2 + 0.4, h + t / 2], text: `${t} ${u}`, anchor: 'start' }], height: [w / 2, h, w / 2, h + t] },
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: rect + w * t, why: 'The roof is a triangle: half of base × height.' }, { value: rect, why: 'Add the triangle on top as well.' }, ans + w, w * (h + t)], labelNum),
+        hint: 'Split it into the rectangle and the triangle. Find each area, then add.',
+        steps: [`Rectangle: ${w} × ${h} = ${rect}.`, `Triangle: ${w} × ${t} ÷ 2 = ${roof}.`, `Total: ${rect} + ${roof} = ${ans} square ${u}.`],
+        meta: { value: ans },
+      });
+    }
+    // A trapezoid: the average of the two parallel sides, times the height.
+    let a = rng.int(3, 10), b = rng.int(4, 14);
+    if (a === b) b += 2;
+    if (a > b) [a, b] = [b, a];
+    let h = rng.int(2, 8);
+    if ((a + b) % 2 && h % 2) h += 1;
+    const ans = ((a + b) * h) / 2;
+    const off = (b - a) / 2;
+    return P({
+      skill: this.id, tier,
+      text: `What is the area of this trapezoid in square ${u}?`,
+      visual: { kind: 'poly', pts: [[0, 0], [b, 0], [b - off, h], [off, h]], labels: [{ at: [b / 2, -0.6], text: `${b} ${u}` }, { at: [b / 2, h + 0.6], text: `${a} ${u}` }, { at: [off + 0.3, h / 2], text: `${h} ${u}`, anchor: 'start' }], height: [off, 0, off, h] },
+      answer: num(ans),
+      choices: makeChoices(rng, ans, [{ value: (a + b) * h, why: 'Two copies of this trapezoid make a parallelogram. The trapezoid is half of it.' }, { value: a * b, why: 'Use the height, not the two bases multiplied together.' }, b * h, ans + h], labelNum),
+      hint: `Two copies of this trapezoid fit together into a parallelogram with base ${a} + ${b}.`,
+      steps: [`${a} + ${b} = ${a + b}.`, `${a + b} × ${h} = ${(a + b) * h} (two trapezoids).`, `Half of that: ${ans} square ${u}.`],
+      meta: { value: ans },
+    });
+  },
+};
+
+// Volume with fraction edges, and packing a box with small unit-fraction cubes.
+const volumeFrac = {
+  id: 'volume_frac', domain: D, grade: 6, cc: '6.G.2', name: 'Volume with fraction edges', short: 'fraction volume',
+  gen(rng, tier) {
+    const u = rng.pick(['ft', 'in', 'cm', 'm']);
+    if (tier === 3 && rng.chance(0.5)) {
+      // How many half-unit cubes pack the box?
+      const l = rng.int(1, 4), w = rng.int(1, 3), h = rng.int(1, 3);
+      const ans = l * 2 * w * 2 * h * 2;
+      return P({
+        skill: this.id, tier,
+        text: `A box is ${l} ${u} long, ${w} ${u} wide and ${h} ${u} tall. How many cubes with {1/2}-${u} edges fill it?`,
+        visual: { kind: 'box3d', l, w, h, unit: u },
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: l * w * h, why: 'Those would be whole cubes. Each edge fits 2 half cubes.' }, { value: l * w * h * 2, why: 'Two half cubes fit along every edge: long, wide and tall. That is 2 × 2 × 2 = 8 per whole cube.' }, ans / 2, ans + 8], labelNum),
+        hint: `Along each edge, twice as many half cubes fit: ${l * 2} by ${w * 2} by ${h * 2}.`,
+        steps: [`${l * 2} half cubes long, ${w * 2} wide and ${h * 2} tall.`, `${l * 2} × ${w * 2} × ${h * 2} = ${ans} cubes.`],
+        meta: { value: ans },
+      });
+    }
+    const half = 2 * rng.int(1, 4) + 1;
+    const lFrac = F(half, 2);
+    const w = tier === 1 ? 2 * rng.int(1, 3) : rng.int(2, 5), h = rng.int(2, 5);
+    const V = lFrac.mul(w * h);
+    const lText = `{${(half - 1) / 2} 1/2}`;
+    return P({
+      skill: this.id, tier,
+      text: `A box is ${lText} ${u} long, ${w} ${u} wide and ${h} ${u} tall. What is its volume in cubic ${u}?`,
+      visual: { kind: 'box3d', l: half / 2, w, h, unit: u, lLabel: `${(half - 1) / 2}½` },
+      answer: frac(V),
+      choices: makeChoices(rng, V, [{ value: F((half - 1) / 2 * w * h, 1), why: `Don't drop the half: ${lText} × ${w} × ${h}.` }, V.add(w * h), F(half * w * h, 1), V.add(1)], labelFrac(true)),
+      hint: `Volume = length × width × height. ${lText} is the same as {${half}/2}.`,
+      steps: [`${w} × ${h} = ${w * h}.`, `{${half}/2} × ${w * h} = {${half * w * h}/2}.`, `That is ${fmtNum(V.value)} cubic ${u}.`],
+      meta: { value: V },
+    });
+  },
+};
+
+// Polygons drawn on the coordinate plane: a missing corner, and side lengths from the coordinates.
+const coordPoly = {
+  id: 'coord_poly', domain: D, grade: 6, cc: '6.G.3', name: 'Polygons on the coordinate plane', short: 'coordinate polygons',
+  gen(rng, tier) {
+    const lo = tier === 1 ? 1 : -5;
+    let x1 = rng.int(lo, 2), x2 = x1 + rng.int(2, 6), y1 = rng.int(lo, 1), y2 = y1 + rng.int(2, 5);
+    const p = (x, y) => `(${x < 0 ? '−' + -x : x}, ${y < 0 ? '−' + -y : y})`;
+    if (tier === 3 || rng.chance(0.5)) {
+      const w = x2 - x1, h = y2 - y1;
+      const askArea = rng.chance(0.5);
+      const ans = askArea ? w * h : 2 * (w + h);
+      return P({
+        skill: this.id, tier,
+        text: `A rectangle has corners ${p(x1, y1)}, ${p(x2, y1)}, ${p(x2, y2)} and ${p(x1, y2)}. What is its ${askArea ? 'area' : 'perimeter'}?`,
+        visual: { kind: 'grid', lo: Math.min(-1, lo), hi: Math.max(6, x2, y2), points: [], poly: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]] },
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [askArea ? { value: 2 * (w + h), why: 'That is the perimeter. Area is width × height.' } : { value: w * h, why: 'That is the area. Perimeter adds all 4 sides.' }, askArea ? w + h : w + h, ans + 2, Math.abs(x2 + x1) * Math.abs(y2 + y1) + 1], labelNum),
+        hint: `Width: subtract the x numbers. Height: subtract the y numbers.`,
+        steps: [`Width = ${x2} − ${x1 < 0 ? `(−${-x1})` : x1} = ${w}.`, `Height = ${y2} − ${y1 < 0 ? `(−${-y1})` : y1} = ${h}.`, askArea ? `Area = ${w} × ${h} = ${ans}.` : `Perimeter = 2 × (${w} + ${h}) = ${ans}.`],
+        meta: { value: ans },
+      });
+    }
+    const correct = p(x1, y2);
+    const choices = [
+      { label: correct, value: 'c', correct: true },
+      { label: p(y2, x1), value: 'w1', why: 'x comes first, then y.' },
+      { label: p(x2, y2 + 1), value: 'w2', why: `The missing corner lines up with ${p(x1, y1)} (same x) and with ${p(x2, y2)} (same y).` },
+      { label: p(x1, y1 - 1), value: 'w3', why: `It has to be level with ${p(x2, y2)}: y = ${y2}.` },
+    ];
+    return P({
+      skill: this.id, tier,
+      text: `Three corners of a rectangle are ${p(x1, y1)}, ${p(x2, y1)} and ${p(x2, y2)}. Where is the fourth corner?`,
+      visual: { kind: 'grid', lo: Math.min(-1, lo), hi: Math.max(6, x2, y2), points: [{ x: x1, y: y1, icon: 'star' }, { x: x2, y: y1, icon: 'star' }, { x: x2, y: y2, icon: 'star' }] },
+      answer: pick(),
+      choices: rng.shuffle(choices.filter((c, i, arr) => arr.findIndex((q) => q.label === c.label) === i)),
+      hint: `A rectangle's corners line up: the missing one has the same x as ${p(x1, y1)} and the same y as ${p(x2, y2)}.`,
+      steps: [`Same x as ${p(x1, y1)}: x = ${x1}.`, `Same y as ${p(x2, y2)}: y = ${y2}.`, `The fourth corner is ${correct}.`],
+      answerText: correct,
+      meta: {},
+    });
+  },
+};
+
+// Nets: which solid a flat pattern folds into, and how many faces it has.
+const SOLIDS = {
+  cube: { name: 'cube', faces: 6, net: 'cube' },
+  box: { name: 'rectangular prism', faces: 6, net: 'box' },
+  sqpyr: { name: 'square pyramid', faces: 5, net: 'sqpyr' },
+  tripyr: { name: 'triangular pyramid', faces: 4, net: 'tripyr' },
+  triprism: { name: 'triangular prism', faces: 5, net: 'triprism' },
+};
+const nets = {
+  id: 'nets', domain: D, grade: 6, cc: '6.G.4', name: 'Nets of solids', short: 'nets',
+  gen(rng, tier) {
+    const keys = tier === 1 ? ['cube', 'sqpyr', 'tripyr'] : Object.keys(SOLIDS);
+    const k = rng.pick(keys);
+    const S = SOLIDS[k];
+    if (tier === 3 && rng.chance(0.5)) {
+      // Surface area from a cube or square pyramid net.
+      const s = rng.int(2, 8), u = rng.pick(['cm', 'in', 'ft']);
+      if (k === 'sqpyr' || rng.chance(0.4)) {
+        const t = 2 * rng.int(2, 5);
+        const ans = s * s + 4 * ((s * t) / 2);
+        return P({
+          skill: this.id, tier,
+          text: `This net folds into a square pyramid. The square is ${s} ${u} on each side and each triangle is ${t} ${u} tall. What is the surface area in square ${u}?`,
+          visual: { kind: 'net', solid: 'sqpyr' },
+          answer: num(ans),
+          choices: makeChoices(rng, ans, [{ value: s * s + 4 * s * t, why: 'Each triangle is half of base × height.' }, { value: 4 * ((s * t) / 2), why: 'Add the square base too.' }, ans + s, s * s * t], labelNum),
+          hint: 'Add the square and the 4 triangles.',
+          steps: [`Square: ${s} × ${s} = ${s * s}.`, `Each triangle: ${s} × ${t} ÷ 2 = ${(s * t) / 2}; four of them: ${4 * ((s * t) / 2)}.`, `Total: ${ans} square ${u}.`],
+          meta: { value: ans },
+        });
+      }
+      const ans = 6 * s * s;
+      return P({
+        skill: this.id, tier,
+        text: `This net folds into a cube with ${s}-${u} edges. What is the surface area in square ${u}?`,
+        visual: { kind: 'net', solid: 'cube' },
+        answer: num(ans),
+        choices: makeChoices(rng, ans, [{ value: s * s * s, why: 'That is the volume. Surface area adds the 6 squares of the net.' }, 4 * s * s, s * s, ans + s], labelNum),
+        hint: 'The net has 6 squares. Find one, then multiply by 6.',
+        steps: [`One square: ${s} × ${s} = ${s * s}.`, `6 × ${s * s} = ${ans} square ${u}.`],
+        meta: { value: ans },
+      });
+    }
+    if (rng.chance(0.5)) {
+      return P({
+        skill: this.id, tier,
+        text: 'Which solid does this net fold into?',
+        visual: { kind: 'net', solid: S.net },
+        answer: pick(),
+        choices: rng.shuffle([k, ...rng.shuffle(Object.keys(SOLIDS).filter((x) => x !== k)).slice(0, 3)].map((x) => ({ label: SOLIDS[x].name, value: x, correct: x === k, why: x === k ? undefined : `A ${SOLIDS[x].name} has ${SOLIDS[x].faces} faces. Count the shapes in the net and look at what they are.` }))),
+        hint: 'Count the faces, and look at their shapes: squares, rectangles or triangles?',
+        steps: [`The net has ${S.faces} faces.`, `It folds into a ${S.name}.`],
+        answerText: S.name,
+        meta: {},
+      });
+    }
+    return P({
+      skill: this.id, tier,
+      text: `How many faces does a ${S.name} have?`,
+      visual: { kind: 'net', solid: S.net },
+      answer: num(S.faces),
+      choices: makeChoices(rng, S.faces, [S.faces + 1, S.faces - 1, S.faces + 2, 8], labelNum),
+      hint: 'Every shape in its net becomes one face.',
+      steps: [`Its net has ${S.faces} shapes.`, `So a ${S.name} has ${S.faces} faces.`],
+      meta: { value: S.faces },
+    });
+  },
+};
+
+export const CAVE_SKILLS = [perimeter, areaRect, angleType, protractor, convert, areaMissing, angleAdd, classify, symmetry, volume, volumeComposite, convert5, hierarchy, coord, areaTri, areaPoly, volumeFrac, coordPoly, nets, surface];

@@ -270,6 +270,11 @@ sup { font-size: 0.62em; }
 .vis .v-icon-star { fill: #ffd166; }
 .vis .v-icon-igloo { fill: #e6f0ff; }
 .vis .v-icon-crystal { fill: var(--green); }
+.vis .v-ray-head { fill: var(--lantern); }
+.vis .v-open { fill: #10163f; stroke: var(--lantern); stroke-width: 3; }
+.vis .v-med { stroke: var(--lantern); stroke-width: 4; }
+.vis .v-quad { fill: rgba(230, 240, 255, 0.32); font-weight: 700; }
+.vis .v-q { fill: var(--lantern); }
 
 .quiz-input-row { display: flex; gap: 10px; }
 .quiz-input {
