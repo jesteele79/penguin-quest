@@ -50,6 +50,8 @@ export function buildTerrainMesh(terrain) {
     uGloom: { value: 1 },
     uWarmColor: { value: new THREE.Color(0xffb54d) },
     uGloomColor: { value: new THREE.Color(0x3a2a66) },
+    // The faint light the gloom gives off: Book 1's cold violet, Book 2's sooty ember.
+    uGloomGlow: { value: new THREE.Color(0.18, 0.08, 0.32) },
   };
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, map: snowTexture() });
   mat.onBeforeCompile = (shader) => {
@@ -71,6 +73,7 @@ uniform float uTime;
 uniform float uGloom;
 uniform vec3 uWarmColor;
 uniform vec3 uGloomColor;
+uniform vec3 uGloomGlow;
 varying float vGloom;
 varying float vWarm;
 varying vec3 vWorldP;
@@ -94,7 +97,7 @@ diffuseColor.rgb = mix(diffuseColor.rgb, uGloomColor, vGloom * uGloom * 0.72);`)
   spark *= snowy * (1.0 - smoothstep(8.0, 38.0, dist));
   totalEmissiveRadiance += vec3(0.85, 0.92, 1.0) * spark * 2.2;
   totalEmissiveRadiance += uWarmColor * vWarm * 0.55;
-  totalEmissiveRadiance += vec3(0.18, 0.08, 0.32) * vGloom * uGloom * 0.35;
+  totalEmissiveRadiance += uGloomGlow * vGloom * uGloom * 0.35;
 }`);
   };
   const mesh = new THREE.Mesh(geo, mat);

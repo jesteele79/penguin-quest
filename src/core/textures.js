@@ -35,6 +35,24 @@ export const glowTexture = () => cached('glow', () => {
   return toTexture(c, { srgb: false });
 });
 
+// A soft, lumpy puff for smoke and steam: a few overlapping blobs instead of one perfect circle.
+export const puffTexture = () => cached('puff', () => {
+  const c = makeCanvas(128, 128);
+  const g = c.getContext('2d');
+  const rng = new Rng(31);
+  for (let i = 0; i < 7; i++) {
+    const a = rng.float(0, Math.PI * 2), d = i ? rng.float(12, 26) : 0;
+    const x = 64 + Math.cos(a) * d, y = 64 + Math.sin(a) * d, r = i ? rng.float(22, 34) : 40;
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, 'rgba(255,255,255,0.55)');
+    grd.addColorStop(0.6, 'rgba(255,255,255,0.25)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 128, 128);
+  }
+  return toTexture(c, { srgb: false });
+});
+
 export const snowTexture = () => cached('snow', () => {
   const S = 256;
   const c = makeCanvas(S, S);

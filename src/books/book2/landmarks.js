@@ -5,6 +5,7 @@ import { REGION_COLORS, SHARED_TIME } from '../../core/materials.js';
 import { mergeColored, mat, jitter } from '../../core/geo.js';
 import { damp } from '../../core/mathutil.js';
 import { makeBeam } from '../../world/landmarks.js';
+import { puffTexture } from '../../core/textures.js';
 import { LOC } from './layout.js';
 
 const COLD = new THREE.Color(0x5e4a4a);
@@ -147,12 +148,12 @@ export function buildCrater(ctx) {
   ctx.terrainMesh.userData.addWarmth(V.x, V.z, V.crater + 4, 1);
   ctx.lanterns.push({ x: V.x, y: floor + 4, z: V.z, intensity: 90 });
   // Smoke: a few soft puffs rising and drifting with the wind.
-  const puffGeo = new THREE.IcosahedronGeometry(1, 1);
   const puffs = [];
-  for (let i = 0; i < 9; i++) {
-    const p = new THREE.Mesh(puffGeo, new THREE.MeshLambertMaterial({ color: 0x6a5e64, transparent: true, opacity: 0.5, depthWrite: false }));
+  for (let i = 0; i < 12; i++) {
+    const p = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTexture(), color: 0x8a7e84, transparent: true, opacity: 0.5, depthWrite: false }));
+    p.material.rotation = i * 1.7;
     scene.add(p);
-    puffs.push({ mesh: p, phase: i / 9 });
+    puffs.push({ mesh: p, phase: i / 12 });
   }
   ctx.crater = {
     lava, uniforms, center: new THREE.Vector3(V.x, floor, V.z),
@@ -163,10 +164,10 @@ export function buildCrater(ctx) {
   ctx.animated.push((dt, t) => {
     for (const p of puffs) {
       const k = (t * 0.045 + p.phase) % 1;
-      const s = 2.5 + k * 9;
+      const s = 6 + k * 20;
       p.mesh.position.set(V.x + k * 26 + Math.sin(t * 0.3 + p.phase * 9) * 2, floor + 10 + k * 46, V.z + k * 12);
       p.mesh.scale.setScalar(s);
-      p.mesh.material.opacity = 0.42 * Math.sin(Math.PI * k);
+      p.mesh.material.opacity = 0.55 * Math.sin(Math.PI * k);
     }
   });
 }

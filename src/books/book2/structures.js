@@ -65,13 +65,21 @@ function stall(ctx, x, z, yaw, label, stripe = 0xff6a4a) {
   ctx.collision.addCircle(x, z, 1.5, 'stall');
 }
 
+// A round-bottomed sailing dinghy, bow toward +z before its yaw.
+const SAIL = (() => {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0); s.lineTo(1.7, 0); s.lineTo(0, 2.8); s.closePath();
+  return new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: false });
+})();
 function boat(ctx, x, z, yaw, color = 0xe8604a) {
   const b = ctx.batch;
-  const y = WATER_Y + 0.15;
-  b.add(new THREE.CylinderGeometry(0.9, 0.55, 4.2, 8, 1, false, 0, Math.PI), color, worldMat(x, y, z, yaw, 0, 0.1, 0, Math.PI / 2, 0, Math.PI));
-  b.add(new THREE.BoxGeometry(1.6, 0.1, 3.6), WOOD, worldMat(x, y, z, yaw, 0, 0.12, 0));
-  b.add(new THREE.CylinderGeometry(0.06, 0.07, 3.6, 5), WOOD_D, worldMat(x, y, z, yaw, 0, 1.9, 0.3));
-  b.add(new THREE.ConeGeometry(1.0, 2.6, 3, 1), 0xf8f0dc, worldMat(x, y, z, yaw, 0.45, 2.2, 0.3, 0, Math.PI / 2, 0, 0.25, 1, 1));
+  const y = WATER_Y;
+  b.add(new THREE.SphereGeometry(1, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), color, worldMat(x, y, z, yaw, 0, 0.32, 0, 0, 0, 0, 0.95, 0.6, 2.2));
+  b.add(new THREE.TorusGeometry(1, 0.06, 4, 24), 0xfff4e6, worldMat(x, y, z, yaw, 0, 0.32, 0, Math.PI / 2, 0, 0, 0.95, 2.2, 1));
+  b.add(new THREE.CircleGeometry(1, 16), WOOD, worldMat(x, y, z, yaw, 0, 0.27, 0, -Math.PI / 2, 0, 0, 0.88, 2.1, 1));
+  b.add(new THREE.BoxGeometry(1.7, 0.08, 0.35), WOOD_D, worldMat(x, y, z, yaw, 0, 0.36, -0.6));
+  b.add(new THREE.CylinderGeometry(0.06, 0.07, 3.3, 5), WOOD_D, worldMat(x, y, z, yaw, 0, 1.9, 0.6));
+  b.add(SAIL, 0xfff8ea, worldMat(x, y, z, yaw, 0, 0.55, 0.55, 0, Math.PI / 2, 0));
 }
 
 function buildCamp(ctx) {

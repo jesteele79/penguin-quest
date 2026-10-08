@@ -12,7 +12,7 @@ const GLACIER_BAY = {
   Sky,
   water: {},
   effects: {},
-  gloom: 0x3a2a66,
+  gloom: 0x3a2a66, gloomGlow: [0.18, 0.08, 0.32],
 };
 
 const EMBER_ISLES = {
@@ -26,7 +26,7 @@ const EMBER_ISLES = {
   },
   // Warm motes drift up through the golden air; sand puffs and darker prints instead of snow.
   effects: { motes: { color: 0xffd9a0, fall: -0.16, sway: 1.8, size: 1.5, twinkle: 1, amount: 0.22 }, spray: [0xa8916a, 0x8a7656], footprint: 0x9c7b52 },
-  gloom: 0x2a2226,
+  gloom: 0x3b3230, gloomGlow: [0.09, 0.035, 0.015],
 };
 
 export const BIOME = isBook2 ? EMBER_ISLES : GLACIER_BAY;

@@ -53,6 +53,7 @@ export class World {
     this.shadowCasters = new ShadowCasters(scene);
     this.terrainMesh = buildTerrainMesh(this.terrain);
     this.terrainMesh.userData.uniforms.uGloomColor.value.set(BIOME.gloom);
+    this.terrainMesh.userData.uniforms.uGloomGlow.value.setRGB(...BIOME.gloomGlow);
     scene.add(this.terrainMesh);
     this.glow = new GlowField(scene, 1500);
     this.water = new Water(scene, this.terrain, BIOME.water);
