@@ -2,33 +2,40 @@ import * as THREE from 'three';
 import { glowTexture } from '../core/textures.js';
 import { WATER_Y } from './layout.js';
 
+// Falling snow over Glacier Bay; slow, twinkling warm motes rising over the Ember Isles.
 const snowVert = /* glsl */ `
 uniform float uTime;
 uniform vec3 uCenter;
 uniform float uScale;
 uniform vec3 uBox;
+uniform float uFall;
+uniform float uSway;
+uniform float uSize;
+uniform float uTwinkle;
 attribute float aSeed;
 varying float vFade;
 void main() {
   vec3 p = position;
-  p.y -= uTime * (1.1 + aSeed * 1.3);
-  p.x += sin(uTime * 0.8 + aSeed * 40.0) * 1.2;
-  p.z += cos(uTime * 0.6 + aSeed * 30.0) * 1.0;
+  p.y -= uTime * (1.1 + aSeed * 1.3) * uFall;
+  p.x += sin(uTime * 0.8 + aSeed * 40.0) * 1.2 * uSway;
+  p.z += cos(uTime * 0.6 + aSeed * 30.0) * 1.0 * uSway;
   // wrap into a box around the camera
   p = mod(p - uCenter + uBox * 0.5, uBox) + uCenter - uBox * 0.5;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float d = -mv.z;
   vFade = smoothstep(1.0, 4.0, d) * (1.0 - smoothstep(28.0, 42.0, d));
+  vFade *= mix(1.0, 0.35 + 0.65 * max(0.0, sin(uTime * (1.5 + aSeed * 2.0) + aSeed * 60.0)), uTwinkle);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = (0.09 + aSeed * 0.1) * uScale / max(d, 0.5);
+  gl_PointSize = (0.09 + aSeed * 0.1) * uSize * uScale / max(d, 0.5);
 }`;
 
 const snowFrag = /* glsl */ `
+uniform vec3 uColor;
 varying float vFade;
 void main() {
   float d = length(gl_PointCoord - 0.5) * 2.0;
   float a = (1.0 - smoothstep(0.4, 1.0, d)) * vFade * 0.85;
-  gl_FragColor = vec4(vec3(0.92, 0.95, 1.0), a);
+  gl_FragColor = vec4(uColor, a);
   #include <colorspace_fragment>
 }`;
 
@@ -61,10 +68,15 @@ const POOL = 700;
 
 const ONE = new THREE.Vector3(1, 1, 1);
 
+// Book 1's snow is the default look; a book can pass its own air, ground spray and footprints.
+// Mote colours are linear RGB triples (Book 1's snow colour predates colour management) or sRGB hex.
+const SNOWY = { motes: { color: [0.92, 0.95, 1.0], fall: 1, sway: 1, size: 1, twinkle: 0, amount: 1 }, spray: [0xffffff, 0xdfeaff], footprint: 0x8a9bd0 };
+
 export class Effects {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, look = {}) {
     this.scene = scene;
     this.terrain = terrain;
+    this.look = { ...SNOWY, ...look, motes: { ...SNOWY.motes, ...look.motes } };
     this.buildSnow(scene, 1400);
 
     // Particle pool: sparkles, snow spray, splashes.
@@ -94,7 +106,7 @@ export class Effects {
     fpGeo.rotateX(-Math.PI / 2);
     fpGeo.scale(1, 1, 1.5);
     this.footprints = new THREE.InstancedMesh(fpGeo, new THREE.MeshBasicMaterial({
-      color: 0x8a9bd0, transparent: true, opacity: 0.45, depthWrite: false,
+      color: this.look.footprint, transparent: true, opacity: 0.45, depthWrite: false,
     }), 90);
     this.footprints.renderOrder = 2;
     this.footprints.frustumCulled = false;
@@ -119,8 +131,10 @@ export class Effects {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    const m = this.look.motes;
     this.snowUniforms = {
       uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uScale: { value: 500 }, uBox: { value: new THREE.Vector3(70, 40, 70) },
+      uColor: { value: Array.isArray(m.color) ? new THREE.Color(...m.color) : new THREE.Color(m.color) }, uFall: { value: m.fall }, uSway: { value: m.sway }, uSize: { value: m.size }, uTwinkle: { value: m.twinkle },
     };
     this.snow = new THREE.Points(g, new THREE.ShaderMaterial({
       uniforms: this.snowUniforms, vertexShader: snowVert, fragmentShader: snowFrag,
@@ -133,7 +147,7 @@ export class Effects {
   }
 
   setSnowAmount(fraction) {
-    this.snow.geometry.setDrawRange(0, Math.floor(this.snowCount * fraction));
+    this.snow.geometry.setDrawRange(0, Math.floor(this.snowCount * fraction * this.look.motes.amount));
   }
 
   // opts: { count, color, speed, up, life, gravity, size, spread }
@@ -162,7 +176,7 @@ export class Effects {
   }
 
   snowSpray(pos, vx, vz, amount = 1) {
-    this.burst(pos, { count: Math.ceil(3 * amount), color: [0xffffff, 0xdfeaff], speed: 2.5, up: 2.5, life: 0.6, gravity: 9, size: 0.45, vx: -vx * 0.2, vz: -vz * 0.2, spread: 0.8 });
+    this.burst(pos, { count: Math.ceil(3 * amount), color: this.look.spray, speed: 2.5, up: 2.5, life: 0.6, gravity: 9, size: 0.45, vx: -vx * 0.2, vz: -vz * 0.2, spread: 0.8 });
   }
 
   splash(pos, big = 1) {

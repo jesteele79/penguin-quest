@@ -1,5 +1,5 @@
 // Drives the dev build in headless Chrome and saves screenshots, for reviewing screens at Chromebook sizes.
-//   node tools/shoot.mjs <plan.mjs> [--size 1366x768] [--out .cache/shots] [--page some.html]
+//   node tools/shoot.mjs <plan.mjs> [--size 1366x768] [--out .cache/shots] [--page some.html] [--query book=book2]
 // A plan exports `default async (page) => {...}` and uses page.eval(js), page.shot(name), page.wait(ms).
 // page.eval runs in the game page with top-level await; return a JSON-serialisable value.
 import { spawn } from 'node:child_process';
@@ -54,7 +54,8 @@ const send = (method, params = {}) => new Promise((res, rej) => { const id = nex
 await send('Runtime.enable');
 await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
-const url = pathToFileURL(path.resolve(opt('page', 'dist/PenguinQuest.html'))).href;
+const query = opt('query', '');
+const url = pathToFileURL(path.resolve(opt('page', 'dist/PenguinQuest.html'))).href + (query ? `?${query}` : '');
 await send('Page.navigate', { url });
 await sleep(2500);
 

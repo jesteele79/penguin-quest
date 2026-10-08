@@ -4,7 +4,7 @@ import { mergeColored, mat } from '../core/geo.js';
 import {
   iglooTexture, woodTexture, flagTexture, signTexture, doorTexture, doorwayTexture, awningTexture, glowTexture,
 } from '../core/textures.js';
-import { LOC, WATER_Y } from './layout.js';
+import { LOC, WATER_Y } from '../books/book1/layout.js';
 import { clamp } from '../core/mathutil.js';
 
 export const faceYaw = (fx, fz, tx, tz) => Math.atan2(tx - fx, tz - fz);
@@ -50,7 +50,7 @@ export function addLantern(ctx, x, z, height = 2.2, y0 = null) {
   ctx.collision.addCircle(x, z, 0.3, 'lantern');
 }
 
-function addFence(ctx, pts) {
+export function addFence(ctx, pts) {
   const { terrain, batch, collision } = ctx;
   for (let k = 0; k < pts.length - 1; k++) {
     const [ax, az] = pts[k], [bx, bz] = pts[k + 1];
@@ -98,22 +98,22 @@ function addSnowman(ctx, x, z, yaw, hat = null) {
   collision.addCircle(x, z, 1.15, 'snowman');
 }
 
-function addCrate(ctx, x, z, yaw, s = 1, stackY = 0) {
+function addCrate(ctx, x, z, yaw, s = 1, stackY = 0, cap = 0xf4f8ff) {
   const y = ctx.terrain.heightAt(x, z) + stackY;
   ctx.batch.add(new THREE.BoxGeometry(1.2 * s, 1.2 * s, 1.2 * s), 0x8a5c38, worldMat(x, y, z, yaw, 0, 0.6 * s, 0));
   ctx.batch.add(new THREE.BoxGeometry(1.24 * s, 0.14 * s, 1.24 * s), 0x5e3a22, worldMat(x, y, z, yaw, 0, 1.1 * s, 0));
-  ctx.batch.add(new THREE.BoxGeometry(1.1 * s, 0.1 * s, 1.1 * s), 0xf4f8ff, worldMat(x, y, z, yaw, 0, 1.24 * s, 0));
+  if (cap !== null) ctx.batch.add(new THREE.BoxGeometry(1.1 * s, 0.1 * s, 1.1 * s), cap, worldMat(x, y, z, yaw, 0, 1.24 * s, 0));
   if (!stackY) {
     const c = ctx.collision.addCircle(x, z, 0.85 * s, 'crate');
     c.top = y + 1.2 * s;
   }
 }
 
-function addBarrel(ctx, x, z) {
+function addBarrel(ctx, x, z, cap = 0xf4f8ff) {
   const y = ctx.terrain.heightAt(x, z);
   ctx.batch.add(new THREE.CylinderGeometry(0.55, 0.5, 1.25, 12), 0x8a5c38, mat(x, y + 0.62, z));
   for (const h of [0.25, 1.0]) ctx.batch.add(new THREE.TorusGeometry(0.55, 0.04, 4, 16), 0x3a3a44, mat(x, y + h, z, Math.PI / 2));
-  ctx.batch.add(new THREE.SphereGeometry(0.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0xf4f8ff, mat(x, y + 1.2, z, 0, 0, 0, 1, 0.3, 1));
+  if (cap !== null) ctx.batch.add(new THREE.SphereGeometry(0.5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), cap, mat(x, y + 1.2, z, 0, 0, 0, 1, 0.3, 1));
   ctx.collision.addCircle(x, z, 0.65, 'barrel');
 }
 
@@ -153,11 +153,11 @@ function addFlag(ctx, x, z, kind, height = 6.5, yaw = 0) {
   });
 }
 
-function addSignpost(ctx, x, z, entries) {
+function addSignpost(ctx, x, z, entries, cap = 0xf4f8ff) {
   const { scene, terrain, batch, collision } = ctx;
   const y = terrain.heightAt(x, z);
   batch.add(new THREE.CylinderGeometry(0.12, 0.15, 3.6, 6), 0x5e3a22, mat(x, y + 1.8, z));
-  batch.add(new THREE.SphereGeometry(0.2, 8, 6), 0xf4f8ff, mat(x, y + 3.62, z, 0, 0, 0, 1, 0.5, 1));
+  if (cap !== null) batch.add(new THREE.SphereGeometry(0.2, 8, 6), cap, mat(x, y + 3.62, z, 0, 0, 0, 1, 0.5, 1));
   collision.addCircle(x, z, 0.35, 'sign');
   entries.forEach((e, i) => {
     const tex = signTexture([e.text]);
@@ -371,7 +371,8 @@ function buildCampfire(ctx) {
 }
 
 // A wooden pier from a water end (x, z) back toward land along (dirX, dirZ) until the shore reaches `top`.
-function buildPier(ctx, { x, z, dirX, dirZ, w, top = 1.0, minLen = 6 }) {
+// cap: the snow on each post top (Book 2's warm islands pass null).
+export function buildPier(ctx, { x, z, dirX, dirZ, w, top = 1.0, minLen = 6, cap = 0xf4f8ff }) {
   const { scene, terrain, batch } = ctx;
   let len = minLen;
   for (let d = 0; d < 45; d += 0.5) {
@@ -393,7 +394,7 @@ function buildPier(ctx, { x, z, dirX, dirZ, w, top = 1.0, minLen = 6 }) {
       const bottom = Math.min(terrain.heightAt(p.x, p.z), WATER_Y) - 0.5;
       const h = top + 0.4 - bottom;
       batch.add(new THREE.CylinderGeometry(0.15, 0.17, h, 7), 0x5e3a22, mat(p.x, bottom + h / 2, p.z));
-      batch.add(new THREE.SphereGeometry(0.18, 6, 4), 0xf4f8ff, mat(p.x, top + 0.42, p.z, 0, 0, 0, 1, 0.5, 1));
+      if (cap !== null) batch.add(new THREE.SphereGeometry(0.18, 6, 4), cap, mat(p.x, top + 0.42, p.z, 0, 0, 0, 1, 0.5, 1));
     }
   }
   const platform = ctx.collision.addPlatform({ kind: 'box', x: cx, z: cz, hw: w / 2, hd: len / 2, rot: yaw, top });
@@ -493,4 +494,4 @@ export function buildStructures(ctx) {
   return ctx;
 }
 
-export { addLantern as lantern, addCrate, addBarrel, addSnowman, addFlag, addSignpost, glowTexture };
+export { addLantern as lantern, addCrate, addBarrel, addSnowman, addFlag, addSignpost, glowTexture, worldMat, shadowed };

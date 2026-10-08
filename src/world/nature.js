@@ -7,7 +7,7 @@ import { smoothstep } from '../core/mathutil.js';
 import {
   LOC, WORLD_RADIUS, CRYSTALS, SNOWFLAKES, CHESTS, GLOOM_SPOTS, SURVEY, BEACONS, BEDS, SEEDS, CHICK_SPOTS,
   NURSERY, PATROL_BOARD, CAULDRON, FESTIVAL, SLALOM, TREASURE_CLUES, gridToWorld,
-} from './layout.js';
+} from '../books/book1/layout.js';
 
 const fbm = makeFbm(createNoise2D(777));
 

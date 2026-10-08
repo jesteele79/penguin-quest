@@ -148,6 +148,75 @@ export const HATS = {
   },
 };
 
+// ---------------------------------------------------------------- the Ember Isles cast
+Object.assign(HATS, {
+  // Rockhopper plumes: golden feathers sweep back from above each eye.
+  crest(color = 0xffd23d) {
+    const g = new THREE.Group();
+    for (const s of [-1, 1]) {
+      for (let i = 0; i < 4; i++) {
+        const plume = mesh(new THREE.ConeGeometry(0.05 - i * 0.006, 0.62 + i * 0.08, 5), solid(color), s * (0.34 + i * 0.09), 0.18 - HAT_LIFT + i * 0.05, 0.42 - i * 0.16);
+        plume.rotation.set(-1.1 - i * 0.12, 0, -s * (1.25 + i * 0.08), 'YXZ');
+        g.add(plume);
+      }
+    }
+    return g;
+  },
+  // Brass inventor's goggles pushed up on the forehead.
+  goggles() {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.TorusGeometry(0.8, 0.06, 6, 28), solid(0x4a3428), 0, 0.12, 0, Math.PI / 2 - 0.25));
+    for (const s of [-1, 1]) {
+      const x = s * 0.27, y = 0.3;
+      const z = faceZ(x, y - HAT_LIFT * 0.5) + 0.04;
+      g.add(mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.16, 16), solid(0xc89a3a), x, y, z, Math.PI / 2 - 0.35, 0, 0));
+      g.add(mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.17, 16), basic(0x9fe8ff), x, y + 0.01, z + 0.02, Math.PI / 2 - 0.35, 0, 0));
+    }
+    return g;
+  },
+  chef() {
+    const g = new THREE.Group();
+    const white = solid(0xffffff);
+    g.add(mesh(new THREE.CylinderGeometry(0.66, 0.7, 0.42, 20), white, 0, 0.52, 0));
+    g.add(mesh(new THREE.SphereGeometry(0.74, 18, 12), white, 0, 1.08, 0, 0, 0, 0, 1, 0.72, 1));
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      g.add(mesh(new THREE.SphereGeometry(0.34, 12, 8), white, Math.cos(a) * 0.45, 1.12, Math.sin(a) * 0.45));
+    }
+    return g;
+  },
+  // A yellow fisherman's rain hat, longer at the back.
+  souwester(color = 0xffd23d) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.SphereGeometry(0.84, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), solid(color), 0, 0.14, 0, 0, 0, 0, 1, 0.9, 1));
+    const brim = mesh(new THREE.CylinderGeometry(0.98, 1.22, 0.07, 24), solid(color), 0, 0.12, -0.12, -0.18);
+    g.add(brim);
+    return g;
+  },
+  // A hibiscus tucked behind one ear.
+  hibiscus(color = 0xff5c8a) {
+    const g = new THREE.Group();
+    const flower = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      flower.add(mesh(new THREE.SphereGeometry(0.17, 10, 6), solid(color), Math.cos(a) * 0.16, Math.sin(a) * 0.16, 0, 0, 0, a, 1.3, 0.8, 0.35));
+    }
+    flower.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), solid(0xffd23d), 0, 0, 0.06));
+    flower.add(mesh(new THREE.SphereGeometry(0.16, 8, 4), solid(0x3a9a4a), -0.18, -0.2, -0.05, 0, 0, 0.6, 1.4, 0.5, 0.3));
+    flower.position.set(0.66, 0.16, 0.24);
+    flower.rotation.set(0, 1.0, 0);
+    g.add(flower);
+    return g;
+  },
+  sunhat(color = 0xe8c77a) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.06, 28), solid(color), 0, 0.42, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.58, 0.68, 0.46, 20), solid(color), 0, 0.66, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.69, 0.69, 0.12, 20), solid(0xff5c5c), 0, 0.5, 0));
+    return g;
+  },
+});
+
 export const HAT_LIST = ['beanie', 'earmuffs', 'party', 'tophat', 'pirate', 'headphones', 'wizard', 'viking', 'crown'];
 
 export function buildHat(id, color) {
@@ -169,4 +238,23 @@ export function apron(color = 0xff9fc6) {
   // Sized just outside the body (radii 1.0, 1.02, 0.95 at y 1.0) so it drapes over the belly.
   const m = mesh(new THREE.SphereGeometry(1, 20, 14, Math.PI / 2 - 0.85, 1.7, 0.95, 1.15), solid(color), 0, 1.0, 0.02, 0, 0, 0, 1.03, 1.04, 0.98);
   return m;
+}
+
+// A flower lei worn instead of a scarf.
+export function lei(colors = [0xff5c8a, 0xffd23d, 0xffffff, 0xff8a3d]) {
+  const g = new THREE.Group();
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    g.add(mesh(new THREE.IcosahedronGeometry(0.15, 0), solid(colors[i % colors.length]), Math.cos(a) * 0.86, Math.sin(a * 2) * 0.03 - (Math.sin(a) > 0 ? Math.sin(a) * 0.08 : 0), Math.sin(a) * 0.82));
+  }
+  g.position.y = 1.64;
+  return g;
+}
+
+// Soot smudges from a busy workshop.
+export function soot(p) {
+  const s = solid(0x3a3236);
+  p.head.add(mesh(new THREE.SphereGeometry(0.1, 8, 6), s, 0.42, -0.32, 0.56, 0, 0.6, 0, 1.2, 0.7, 0.3));
+  p.body.add(mesh(new THREE.SphereGeometry(0.14, 8, 6), s, -0.32, 0.86, 0.86, 0, -0.3, 0, 1.3, 0.8, 0.3));
 }

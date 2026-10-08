@@ -1,26 +1,28 @@
-// The Lost Chicks side quest: find each chick, answer its riddle, and it follows you home.
+// The lost little ones side quest (Book 1's chicks, Book 2's turtle hatchlings): find each one, answer its
+// riddle, and it follows you home.
 import * as THREE from 'three';
 import { G, pushActivity } from '../core/state.js';
 import { QuizActivity } from './activities.js';
 import { twoShot } from './minigames/common.js';
-import { Penguin } from '../actors/penguin.js';
 import { CHICK_SPOTS, NURSERY, WATER_Y } from '../world/layout.js';
+import { BOOK } from '../books/current.js';
 
-const NAMES = ['Peep', 'Tuffy', 'Bean', 'Dot', 'Waddle', 'Squeak', 'Pudding', 'Button'];
+const Y = BOOK.young;
+const NAMES = Y.names;
 const SPACING = 1.7;
 
 export class Chicks {
   constructor(ctx, interactions) {
     this.ctx = ctx;
     this.list = CHICK_SPOTS.map(([x, z], i) => {
-      const model = new Penguin(ctx.scene, { name: 'chick', scale: 0.4, body: 0x7d869f, belly: 0xe6e9f2, scarf: null, lowPoly: true });
+      const model = Y.make(ctx.scene);
       const y = ctx.terrain.heightAt(x, z);
       model.root.position.set(x, y, z);
       model.root.rotation.y = i * 1.3;
       const c = { i, name: NAMES[i], model, spot: new THREE.Vector3(x, y, z), state: 'lost', yaw: i * 1.3, speed: 0, t: Math.random() * 5 };
       interactions.add({
         id: `chick-${i}`, pos: () => (c.state === 'lost' ? c.model.root.position : null), radius: 3.4,
-        label: () => (c.state === 'lost' && G.quests.active('sq_chicks') ? `Help ${c.name}, the lost chick` : null),
+        label: () => (c.state === 'lost' && G.quests.active('sq_chicks') ? `Help ${c.name}, the lost ${Y.kind}` : null),
         action: () => this.help(c),
       });
       return c;
@@ -57,14 +59,14 @@ export class Chicks {
   help(c) {
     const domain = G.tutor.weakestDomain(G.unlockedDomains());
     pushActivity(new QuizActivity({
-      title: `${c.name}'s Riddle`, subtitle: 'Answer it and the chick will follow you home', color: '#ffb347', count: 1, domain, maxTier: 2,
+      title: `${c.name}'s Riddle`, subtitle: `Answer it and the ${Y.kind} will follow you home`, color: '#ffb347', count: 1, domain, maxTier: 2,
       shot: twoShot(G.player.pos, c.model.root.position, { dist: 5, up: 1.8, lookUp: 0.9 }),
       onFinish: () => {
         this.s.found.push(c.i);
         c.state = 'following';
         G.audio.play('cheer');
         G.world.effects.sparkle(c.model.root.position.clone().add(new THREE.Vector3(0, 1, 0)), 0xffb347, 30);
-        G.toasts.toast(`${c.name} is following you! Walk ${this.following() > 1 ? 'them' : 'it'} home to Nana Nestle at the Heart Huts.`, { ms: 4200 });
+        G.toasts.toast(`${c.name} is following you! Walk ${this.following() > 1 ? 'them' : 'it'} home to ${Y.home}.`, { ms: 4200 });
         G.saveSoon();
       },
     }));
@@ -83,13 +85,13 @@ export class Chicks {
     G.toasts.toast(`${arriving.map((c) => c.name).join(', ')} ${arriving.length > 1 ? 'are' : 'is'} home! <b>+${10 * arriving.length}</b> (${total}/8)`, { kind: 'gold', ms: 4200 });
     G.saveSoon();
     if (total >= 8 && G.quests.active('sq_chicks')) G.quests.advance('sq_chicks');
-    else G.quests.say([['nestle', total === 1 ? 'My sweet chick! Thank you, dear. Seven more are still out there.' : `That makes ${total}! Thank you, dear.`]], 'nestle', { shot: false });
+    else G.quests.say([[Y.keeper, total === 1 ? Y.firstHome : Y.moreHome(total)]], Y.keeper, { shot: false });
   }
 
   objective(step) {
     const home = this.s.home.length;
     const f = this.following();
-    if (f > 0) return { text: `Walk ${f} chick${f > 1 ? 's' : ''} home to Nana Nestle (${home}/8 home)`, target: new THREE.Vector3(NURSERY.x, 0, NURSERY.z), npc: 'nestle' };
+    if (f > 0) return { text: `Walk ${f} ${Y.kind}${f > 1 ? 's' : ''} home to ${Y.homeShort} (${home}/8 home)`, target: new THREE.Vector3(NURSERY.x, 0, NURSERY.z), npc: Y.keeper };
     let best = null, bd = Infinity;
     const p = G.player.pos;
     for (const c of this.list) {

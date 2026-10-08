@@ -9,7 +9,7 @@ import { terrainColor } from './world/terrain.js';
 import { Player } from './actors/player.js';
 import { FollowCam } from './actors/camera.js';
 import { Buddy } from './actors/buddy.js';
-import { LOC, WORLD_HALF, WATER_Y, PATROL_BOARD, CRYSTALS } from './world/layout.js';
+import { LOC, WORLD_HALF, WATER_Y, CRYSTALS } from './world/layout.js';
 import { SaveStore } from './game/save.js';
 import { Tutor } from './math/tutor.js';
 import { bookScope } from './books/books.js';
@@ -35,12 +35,11 @@ import { Wanderers } from './game/wander.js';
 import { Chicks } from './game/chicks.js';
 import { Treasure } from './game/treasure.js';
 import { Patrol } from './game/patrol.js';
-import { buildCauldron, startStarCharts } from './game/minigames/simple.js';
-import { buildFloeBridge } from './game/minigames/floehop.js';
-import { fireworks, startIntro } from './game/minigames/scenes.js';
+import { fireworks } from './game/minigames/scenes.js';
+import { BOOK } from './books/current.js';
+import { T } from './books/terms.js';
+import { ACTIVE } from './books/active.js';
 import { SHOP, findItem, NPCS } from './game/content.js';
-import { signTexture } from './core/textures.js';
-import { lambert } from './core/materials.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -62,7 +61,7 @@ function installHelpers() {
   };
   G.addStars = (n) => {
     G.save.data.stars += n;
-    G.toasts.toast(`<b>+${n}</b> Aurora Star${n > 1 ? 's' : ''}`, { kind: 'gold', ms: 2400 });
+    G.toasts.toast(`<b>+${n}</b> ${n > 1 ? T.stars : T.star}`, { kind: 'gold', ms: 2400 });
   };
   G.itemName = (key) => {
     const [slot, id] = key.split(':');
@@ -143,35 +142,6 @@ function buildMapImage(terrain) {
   return c;
 }
 
-function buildPatrolBoard(ctx) {
-  const { x, z } = PATROL_BOARD;
-  const y = ctx.terrain.heightAt(x, z);
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
-  g.rotation.y = Math.atan2(LOC.start.x - x, LOC.start.z - z);
-  const wood = lambert({ color: 0x7b5236 });
-  for (const s of [-1, 1]) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 3, 6), wood);
-    post.position.set(s * 1.3, 1.5, 0);
-    g.add(post);
-  }
-  const board = new THREE.Mesh(new THREE.BoxGeometry(2.9, 1.8, 0.14), lambert({ color: 0x8a5c38 }));
-  board.position.y = 2.1;
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.55), lambert({ map: signTexture(['Aurora Patrol']) }, false));
-  sign.position.set(0, 3.25, 0.09);
-  g.add(board, sign);
-  const paper = new THREE.MeshLambertMaterial({ color: 0xfff6e0, emissive: 0x332a10 });
-  [-0.85, 0, 0.85].forEach((px, i) => {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), paper);
-    p.position.set(px, 2.05 + (i === 1 ? 0.08 : 0), 0.08);
-    p.rotation.z = (i - 1) * 0.08;
-    g.add(p);
-  });
-  ctx.scene.add(g);
-  ctx.collision.addCircle(x, z, 1.5, 'board');
-  ctx.glow.add(x, y + 2.2, z, 0xffd166, 3.5, 0.5);
-}
-
 // ------------------------------------------------------------ colour grade
 // Grading lives inside tone mapping, so every preset gets it with no extra render pass. The Neutral
 // curve keeps the hand-picked palette's hues (ACES washed them out); then cool shadows, warm highlights
@@ -204,10 +174,10 @@ function boot() {
 
   G.save = new SaveStore();
   const peek = G.save.peek();
+  if (peek && (peek.active ?? 'book1') !== ACTIVE) { G.save.load(); G.save.switchBook(ACTIVE); G.save.save(); }
   const world = new World(scene, renderer);
   const ctx = world.ctx;
-  buildCauldron(ctx);
-  buildPatrolBoard(ctx);
+  BOOK.extras(ctx);
   const player = new Player(scene, world);
   player.model.setVisible(false);
   const input = new Input();
@@ -293,21 +263,26 @@ function registerInteractions() {
     const c = CRYSTALS[r];
     I.add({ id: `crystal-${r}`, pos: { x: c.x, z: c.z }, radius: 4.4, label: () => G.quests.crystalLabel(r), action: () => G.quests.useCrystal(r) });
   }
-  for (const key of ['fishSpot', 'jetty', 'counter', 'pad', 'arena', 'cauldron', 'slalomTop']) {
+  for (const key of BOOK.gameAnchors) {
     I.add({ id: `game-${key}`, pos: () => G.quests.anchor(key), radius: key === 'arena' ? 7 : 3.8, label: () => G.quests.gameLabel(key), action: () => G.quests.useGameAt(key) });
   }
-  I.add({ id: 'easel', pos: { x: LOC.easel.x, z: LOC.easel.z }, radius: 3.2, label: () => (G.quests.done('ch0') ? 'Solve the Star Charts' : null), action: () => startStarCharts() });
-  I.add({ id: 'board', pos: PATROL_BOARD, radius: 3.4, label: () => (G.quests.done('ch0') ? 'Read the Aurora Patrol board' : null), action: () => G.screens.journal('patrol') });
+  BOOK.interactions(I);
   G.sites.registerInteractions(I);
 }
 
 // ------------------------------------------------------------ title and game entry
 function showTitle() {
   G.inGame = false;
-  for (const r of [...REGIONS, 'crown']) G.world.sky.setRestored(r, true, true);
+  BOOK.titleWorld();
   pushActivity(new TitleScreen(
     () => { popActivity(); G.save.load(); enterGame(false); },
-    () => pushActivity(new NewGameScreen((profile) => { popActivity(); G.save.fresh(profile); enterGame(true); })),
+    () => pushActivity(new NewGameScreen((profile) => {
+      popActivity();
+      G.save.fresh(profile);
+      // This page was built for another book's world: reload into Book 1's.
+      if (ACTIVE !== 'book1') { G.save.save(); location.reload(); return; }
+      enterGame(true);
+    })),
   ));
 }
 
@@ -321,14 +296,9 @@ function syncWorld() {
     if (!d.crystals[r]) c.setCharge(Math.min(1, (d.resonance[r] || 0) / 24) * 0.75);
     G.world.sky.setRestored(r, d.crystals[r], true);
   }
-  G.world.sky.setRestored('crown', !!d.finale, true);
-  ctx.islandBarrier.setUp(!d.crystals.lake);
-  const spireOpen = d.finale || (G.quests.started('ch6') && G.quests.st('ch6').step >= 1);
-  ctx.spire.setOpen(!!spireOpen);
-  ctx.spire.setFinale(!!d.finale);
-  G.world.terrainMesh.userData.uniforms.uGloom.value = d.crystals.ridge ? 0 : 1;
+  BOOK.syncWorld(d, ctx);
+  G.world.terrainMesh.userData.uniforms.uGloom.value = BOOK.gloomCleared(d) ? 0 : 1;
   G.audio.setLayers(1 + REGIONS.filter((r) => d.crystals[r]).length);
-  if (d.flags.floeBridge) buildFloeBridge(d.flags.floeBridge);
 }
 
 function enterGame(isNew) {
@@ -369,8 +339,8 @@ function enterGame(isNew) {
   G.hud.showControls(!G.quests.done('ch0'));
   const newDay = G.patrol.ensureToday();
   pushActivity(new ExploreActivity());
-  if (isNew) startIntro();
-  if (newDay && G.quests.done('ch0')) setTimeout(() => G.toasts.toast('New Aurora Patrol tasks today! Press J to see them.', { ms: 5000 }), 1800);
+  if (isNew) BOOK.intro();
+  if (newDay && G.quests.done('ch0')) setTimeout(() => G.toasts.toast(`New ${T.patrol} tasks today! Press J to see them.`, { ms: 5000 }), 1800);
   G.saveNow();
 }
 
@@ -419,7 +389,7 @@ function startLoop() {
       newGame(profile = { name: 'Pip', grade: 5, scarf: 'coral' }) {
         while (G.activities.length) popActivity();
         G.quests.queue.length = 0;
-        G.save.fresh(profile);
+        G.save.fresh(profile, ACTIVE);
         enterGame(false);
         tick(1 / 30, true);
       },
@@ -490,7 +460,7 @@ function startLoop() {
       G.buddy.update(dt, player);
       G.quests.update(dt);
       const ug = world.terrainMesh.userData.uniforms.uGloom;
-      ug.value = damp(ug.value, d.crystals.ridge ? 0 : 1, 0.5, dt);
+      ug.value = damp(ug.value, BOOK.gloomCleared(d) ? 0 : 1, 0.5, dt);
 
       // HUD
       const scarf = findItem('scarf', d.equipped.scarf);

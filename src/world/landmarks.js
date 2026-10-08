@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { lambert, crystalMaterial, REGION_COLORS, SHARED_TIME } from '../core/materials.js';
 import { mergeColored, mat, jitter } from '../core/geo.js';
 import { symbolTexture } from '../core/textures.js';
-import { LOC, CRYSTALS, WATER_Y } from './layout.js';
+import { LOC, CRYSTALS, WATER_Y } from '../books/book1/layout.js';
 import { clusterGeometry, CRYSTAL_COLORS } from './nature.js';
 import { damp } from '../core/mathutil.js';
 
@@ -54,9 +54,9 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-function makeBeam(color) {
+export function makeBeam(color, height = 320) {
   const uniforms = { uColor: { value: new THREE.Color(color) }, uAlpha: { value: 0 }, uTime: SHARED_TIME };
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.4, 320, 20, 1, true), new THREE.ShaderMaterial({
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.4, height, 20, 1, true), new THREE.ShaderMaterial({
     uniforms, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
   }));

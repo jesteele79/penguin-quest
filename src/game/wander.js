@@ -1,5 +1,6 @@
 // Wandering Glooms: one puzzle each to cheer them up. They come back after a while for more practice.
 import * as THREE from 'three';
+import { T } from '../books/terms.js';
 import { G, pushActivity } from '../core/state.js';
 import { QuizActivity } from './activities.js';
 import { twoShot } from './minigames/common.js';
@@ -15,7 +16,7 @@ export class Wanderers {
       const item = { i, spot, gloom: null, t: Math.random() * 10, home: new THREE.Vector3(spot.x, ctx.terrain.heightAt(spot.x, spot.z), spot.z) };
       interactions.add({
         id: `gloom-${i}`, pos: () => item.gloom?.state === 'grumpy' ? item.gloom.position : null, radius: 4,
-        label: () => (item.gloom?.state === 'grumpy' && G.quests.done('ch0') ? 'Cheer up the Gloom' : null),
+        label: () => (item.gloom?.state === 'grumpy' && G.quests.done('ch0') ? `Cheer up the ${T.gloom}` : null),
         action: () => this.use(item),
       });
       return item;
@@ -38,7 +39,7 @@ export class Wanderers {
     if (!g || g.state !== 'grumpy') return;
     const domain = item.spot.domain && G.unlockedDomains().includes(item.spot.domain) ? item.spot.domain : G.tutor.weakestDomain(G.unlockedDomains());
     pushActivity(new QuizActivity({
-      title: 'Grumpy Gloom', subtitle: 'Solve its puzzle to send it some aurora light', color: '#b483ff', count: 1, domain,
+      title: `Grumpy ${T.gloom}`, subtitle: `Solve its puzzle to send it some ${T.gloomGift}`, color: T.gloomColor, count: 1, domain,
       shot: twoShot(G.player.pos, g.position, { lookUp: 1.3 }),
       onFinish: () => this.cheer(item),
     }));
@@ -55,7 +56,7 @@ export class Wanderers {
     if (!s.counters.gloomSpots.includes(item.i)) s.counters.gloomSpots.push(item.i);
     s.gloomRespawn[item.i] = s.stats.playSeconds + RESPAWN_SECONDS;
     G.addCoins(8);
-    G.toasts.toast('The Gloom is a happy Glimmer now! <b>+8</b>', { kind: 'violet' });
+    G.toasts.toast(`The ${T.gloom} is a happy ${T.glimmer} now! <b>+8</b>`, { kind: 'violet' });
     G.patrol?.event('gloom');
     G.saveSoon();
   }

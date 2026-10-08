@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import { Terrain } from './terrain.js';
 import { buildTerrainMesh } from './terrainMesh.js';
-import { Sky, FOG_COLOR, MOON_DIR } from './sky.js';
+import { BIOME, LIGHT_DIR } from './biome.js';
 import { Water } from './water.js';
 import { Collision } from './collision.js';
 import { GlowField } from './glow.js';
-import { buildNature } from './nature.js';
-import { buildStructures } from './structures.js';
-import { buildLandmarks } from './landmarks.js';
+import { buildBookWorld } from './builders.js';
 import { Roads } from './roads.js';
 import { Effects } from './effects.js';
 import { SHARED_TIME } from '../core/materials.js';
@@ -15,8 +13,8 @@ import { ShadowCasters } from './shadowcasters.js';
 import { WATER_Y } from './layout.js';
 
 // Shadow-camera axes: three's lookAt puts x along up × direction and y along direction × x.
-const SHADOW_R = new THREE.Vector3(0, 1, 0).cross(MOON_DIR).normalize();
-const SHADOW_U = MOON_DIR.clone().cross(SHADOW_R).normalize();
+const SHADOW_R = new THREE.Vector3(0, 1, 0).cross(LIGHT_DIR).normalize();
+const SHADOW_U = LIGHT_DIR.clone().cross(SHADOW_R).normalize();
 const _snap = new THREE.Vector3();
 
 export class World {
@@ -27,12 +25,13 @@ export class World {
     this.terrain = new Terrain();
     this.collision = new Collision();
 
-    scene.fog = new THREE.FogExp2(FOG_COLOR, 0.0042);
-    scene.background = FOG_COLOR.clone();
+    scene.fog = new THREE.FogExp2(BIOME.fog, BIOME.fogDensity);
+    scene.background = BIOME.fog.clone();
 
-    this.hemi = new THREE.HemisphereLight(0x8c9ef0, 0x1c2462, 1.7);
+    this.hemi = new THREE.HemisphereLight(BIOME.hemi.sky, BIOME.hemi.ground, BIOME.hemi.intensity);
     scene.add(this.hemi);
-    this.moon = new THREE.DirectionalLight(0xc9d6ff, 2.0);
+    // The key light: the moon over Glacier Bay, the low sun over the Ember Isles.
+    this.moon = new THREE.DirectionalLight(BIOME.light.color, BIOME.light.intensity);
     this.moon.castShadow = true;
     const sc = this.moon.shadow.camera;
     // A box fitted around the player: the further the box reaches, the blurrier every shadow gets.
@@ -50,14 +49,15 @@ export class World {
     });
     this.lanterns = [];
 
-    this.sky = new Sky(scene);
+    this.sky = new BIOME.Sky(scene);
     this.shadowCasters = new ShadowCasters(scene);
     this.terrainMesh = buildTerrainMesh(this.terrain);
+    this.terrainMesh.userData.uniforms.uGloomColor.value.set(BIOME.gloom);
     scene.add(this.terrainMesh);
     this.glow = new GlowField(scene, 1500);
-    this.water = new Water(scene, this.terrain);
+    this.water = new Water(scene, this.terrain, BIOME.water);
     this.roads = new Roads(scene, this.terrain);
-    this.effects = new Effects(scene, this.terrain);
+    this.effects = new Effects(scene, this.terrain, BIOME.effects);
 
     const ctx = {
       scene,
@@ -70,9 +70,7 @@ export class World {
       world: this,
     };
     this.ctx = ctx;
-    this.nature = buildNature(ctx);
-    this.structures = buildStructures(ctx);
-    this.landmarks = buildLandmarks(ctx);
+    buildBookWorld(ctx);
     this.animated = ctx.animated || [];
   }
 
@@ -102,8 +100,8 @@ export class World {
     const texel = (sc.right - sc.left) / this.moon.shadow.mapSize.x;
     const a = Math.round(focus.dot(SHADOW_R) / texel) * texel;
     const b = Math.round(focus.dot(SHADOW_U) / texel) * texel;
-    _snap.copy(SHADOW_R).multiplyScalar(a).addScaledVector(SHADOW_U, b).addScaledVector(MOON_DIR, focus.dot(MOON_DIR));
-    this.moon.position.copy(_snap).addScaledVector(MOON_DIR, 120);
+    _snap.copy(SHADOW_R).multiplyScalar(a).addScaledVector(SHADOW_U, b).addScaledVector(LIGHT_DIR, focus.dot(LIGHT_DIR));
+    this.moon.position.copy(_snap).addScaledVector(LIGHT_DIR, 120);
     this.moon.target.position.copy(_snap);
     this.shadowCasters.update(focus);
 

@@ -8,6 +8,9 @@ import { startBattle } from './minigames/battle.js';
 import { startBoss } from './minigames/boss.js';
 import { startSlalom } from './minigames/slalom.js';
 import { startSpireOpen, startFestival } from './minigames/scenes.js';
+import { isBook2 } from '../books/active.js';
+import { startForgeOrders, startKelpRecipe, startChartDive, startSiphon, startLavaHop, startSnorkel } from '../books/book2/games.js';
+import { startCraterOpen, startRekindle, startEmberFestival } from '../books/book2/scenes.js';
 
 export const GAMES = {
   warmup: startWarmup,
@@ -21,5 +24,14 @@ export const GAMES = {
   boss: startBoss,
   slalom: startSlalom,
   spireOpen: startSpireOpen,
-  festival: startFestival,
+  festival: isBook2 ? startEmberFestival : startFestival,
+  // The Ember Isles
+  lavahop: startLavaHop,
+  forge: startForgeOrders,
+  snorkel: startSnorkel,
+  recipe: startKelpRecipe,
+  dive: startChartDive,
+  siphon: startSiphon,
+  craterOpen: startCraterOpen,
+  rekindle: startRekindle,
 };

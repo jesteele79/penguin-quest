@@ -1,9 +1,11 @@
 import { el } from './dom.js';
+import { REGION_INFO } from '../game/content.js';
+import { T } from '../books/terms.js';
 import { ICON, portraitSVG } from './icons.js';
 import { REGION_COLORS } from '../core/materials.js';
 
 const CRYSTAL_ORDER = ['lake', 'grove', 'huts', 'cave', 'ridge'];
-const CRYSTAL_NAMES = { lake: 'Glimmer Lake', grove: 'Crystal Grove', huts: 'Heart Huts', cave: 'Glacier Cave', ridge: 'Gloom Ridge' };
+const CRYSTAL_NAMES = Object.fromEntries(CRYSTAL_ORDER.map((k) => [k, REGION_INFO[k].name]));
 
 export class HUD {
   constructor(root) {
@@ -23,7 +25,7 @@ export class HUD {
         el('div', { class: 'hud-row' }, this.heartsEl,
           el('span', { class: 'hud-chip', title: 'Fish coins', html: ICON.fish }, this.coinsEl),
           el('span', { class: 'hud-chip', title: 'Aurora Stars', html: ICON.star }, this.starsEl),
-          el('span', { class: 'hud-chip', title: 'Golden snowflakes', html: ICON.flake }, this.flakesEl))));
+          el('span', { class: 'hud-chip', title: T.Flakes, html: ICON.flake }, this.flakesEl))));
     this.root.append(this.plate);
 
     this.objText = el('div', { class: 'hud-obj-text' });

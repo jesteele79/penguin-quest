@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { WATER_Y, LOC } from './layout.js';
+import { WATER_Y, LOC } from '../books/book1/layout.js';
 import { MOON_DIR } from './sky.js';
 import { Rng } from '../core/rng.js';
 import { mergeColored, mat } from '../core/geo.js';
@@ -63,34 +63,43 @@ void main() {
   #include <fog_fragment>
 }`;
 
-function fishGeometry() {
+function fishGeometry([bodyCol, tailCol]) {
   const body = new THREE.SphereGeometry(0.5, 10, 6);
   const tail = new THREE.ConeGeometry(0.28, 0.5, 4);
   return mergeColored([
-    { geo: body, color: 0x10304a, matrix: mat(0, 0, 0, 0, 0, 0, 1, 0.42, 0.22) },
-    { geo: tail, color: 0x0c2638, matrix: mat(-0.62, 0, 0, 0, 0, Math.PI / 2, 1, 1, 0.35) },
+    { geo: body, color: bodyCol, matrix: mat(0, 0, 0, 0, 0, 0, 1, 0.42, 0.22) },
+    { geo: tail, color: tailCol, matrix: mat(-0.62, 0, 0, 0, 0, Math.PI / 2, 1, 1, 0.35) },
   ]);
 }
 
 // Scratch objects reused every frame (allocating them per frame causes garbage-collection hitches).
 const TMP = { m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(), p: new THREE.Vector3(), s: new THREE.Vector3() };
 
+// Book 1's lake is the default; a book can pass its own sea: { radius, tex, depthScale, colors, sunDir, floes, fish }.
+const LAKE = {
+  radius: LAKE_R, tex: TEX, depthScale: 5.5, floes: true, fish: { count: 46, spread: 60 }, sunDir: MOON_DIR,
+  colors: { deep: 0x06324a, shallow: 0x3fd6d6, glow: 0x19c9b8, foam: 0xe6fbff, sky: 0x3a4a9a, glowAmt: 1, fish: [0x10304a, 0x0c2638] },
+};
+
 export class Water {
-  constructor(scene, terrain) {
+  constructor(scene, terrain, opts = {}) {
+    const o = { ...LAKE, ...opts, colors: { ...LAKE.colors, ...opts.colors } };
+    this.opts = o;
     this.terrain = terrain;
     this.group = new THREE.Group();
     scene.add(this.group);
 
-    const data = new Uint8Array(TEX * TEX);
-    for (let j = 0; j < TEX; j++) {
-      for (let i = 0; i < TEX; i++) {
-        const x = -LAKE_R + ((i + 0.5) / TEX) * 2 * LAKE_R;
-        const z = -LAKE_R + ((j + 0.5) / TEX) * 2 * LAKE_R;
+    const R = o.radius, N = o.tex;
+    const data = new Uint8Array(N * N);
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const x = -R + ((i + 0.5) / N) * 2 * R;
+        const z = -R + ((j + 0.5) / N) * 2 * R;
         const h = terrain.heightAt(x, z);
-        data[j * TEX + i] = Math.round(THREE.MathUtils.clamp(-h / 5.5, 0, 1) * 255);
+        data[j * N + i] = Math.round(THREE.MathUtils.clamp(-h / o.depthScale, 0, 1) * 255);
       }
     }
-    const depthTex = new THREE.DataTexture(data, TEX, TEX, THREE.RedFormat, THREE.UnsignedByteType);
+    const depthTex = new THREE.DataTexture(data, N, N, THREE.RedFormat, THREE.UnsignedByteType);
     depthTex.magFilter = THREE.LinearFilter;
     depthTex.minFilter = THREE.LinearFilter;
     depthTex.needsUpdate = true;
@@ -98,17 +107,17 @@ export class Water {
     this.uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
       uTime: { value: 0 },
       uDepth: { value: null },
-      uLakeR: { value: LAKE_R },
-      uDeep: { value: new THREE.Color(0x06324a) },
-      uShallow: { value: new THREE.Color(0x3fd6d6) },
-      uGlow: { value: new THREE.Color(0x19c9b8) },
-      uFoam: { value: new THREE.Color(0xe6fbff) },
-      uSkyTint: { value: new THREE.Color(0x3a4a9a) },
-      uMoonDir: { value: MOON_DIR },
-      uGlowAmt: { value: 1 },
+      uLakeR: { value: R },
+      uDeep: { value: new THREE.Color(o.colors.deep) },
+      uShallow: { value: new THREE.Color(o.colors.shallow) },
+      uGlow: { value: new THREE.Color(o.colors.glow) },
+      uFoam: { value: new THREE.Color(o.colors.foam) },
+      uSkyTint: { value: new THREE.Color(o.colors.sky) },
+      uMoonDir: { value: o.sunDir },
+      uGlowAmt: { value: o.colors.glowAmt },
     }]);
     this.uniforms.uDepth.value = depthTex;
-    const geo = new THREE.CircleGeometry(LAKE_R, 96);
+    const geo = new THREE.CircleGeometry(R, 96);
     geo.rotateX(-Math.PI / 2);
     this.mesh = new THREE.Mesh(geo, new THREE.ShaderMaterial({
       uniforms: this.uniforms,
@@ -123,24 +132,24 @@ export class Water {
     this.group.add(this.mesh);
 
     this.buildFish();
-    this.buildFloes();
+    if (o.floes) this.buildFloes();
   }
 
   depthAt(x, z) { return WATER_Y - this.terrain.heightAt(x, z); }
 
   buildFish() {
     const rng = new Rng(55);
-    const N = 46;
+    const N = this.opts.fish.count, F = this.opts.fish.spread;
     this.fish = [];
     for (let i = 0; i < N; i++) {
       let x, z, tries = 0;
-      do { x = rng.float(-60, 60); z = rng.float(-60, 60); tries++; } while (this.depthAt(x, z) < 2.4 && tries < 50);
+      do { x = rng.float(-F, F); z = rng.float(-F, F); tries++; } while (this.depthAt(x, z) < 2.4 && tries < 50);
       this.fish.push({
         cx: x, cz: z, r: rng.float(3, 9), a: rng.float(0, Math.PI * 2),
         speed: rng.float(0.25, 0.6) * rng.sign(), y: -rng.float(0.9, 1.8), s: rng.float(0.7, 1.2), phase: rng.next() * 10,
       });
     }
-    this.fishMesh = new THREE.InstancedMesh(fishGeometry(), lambert({ vertexColors: true }, false), N);
+    this.fishMesh = new THREE.InstancedMesh(fishGeometry(this.opts.colors.fish), lambert({ vertexColors: true }, false), N);
     this.fishMesh.frustumCulled = false;
     this.group.add(this.fishMesh);
   }
@@ -194,6 +203,6 @@ export class Water {
       this.fishMesh.setMatrixAt(i, m);
     });
     this.fishMesh.instanceMatrix.needsUpdate = true;
-    this.updateFloes(time);
+    if (this.floeMesh) this.updateFloes(time);
   }
 }

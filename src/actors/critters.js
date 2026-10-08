@@ -1,0 +1,245 @@
+// Friends who are not penguins: Tortuga the old sea turtle and Shelldon the hermit crab. They share the
+// penguin model's interface (root, animate, updateAttachments, setVisible, setCulled), so NPCs, dialog and
+// cutscenes treat them the same way.
+import * as THREE from 'three';
+import { lambert, plush, CHARACTER_RIM } from '../core/materials.js';
+import { glowTexture } from '../core/textures.js';
+import { clamp, damp } from '../core/mathutil.js';
+
+const SPH = new THREE.SphereGeometry(1, 22, 14);
+const SPH_LO = new THREE.SphereGeometry(1, 12, 8);
+const cache = new Map();
+const plushOf = (color) => { if (!cache.has(color)) cache.set(color, plush(lambert({ color }, CHARACTER_RIM))); return cache.get(color); };
+const unlit = (color) => { const k = 'u' + color; if (!cache.has(k)) cache.set(k, new THREE.MeshBasicMaterial({ color })); return cache.get(k); };
+
+function part(geo, material, x, y, z, sx, sy = sx, sz = sx, rx = 0, ry = 0, rz = 0) {
+  const m = new THREE.Mesh(geo, material);
+  m.position.set(x, y, z);
+  m.scale.set(sx, sy, sz);
+  m.rotation.set(rx, ry, rz);
+  m.castShadow = true;
+  return m;
+}
+
+// Big glossy cartoon eyes: dark eye, two catchlights. Returns a group so it can blink (scale.y).
+function cuteEye(r, iris = 0x2a5cc8) {
+  const g = new THREE.Group();
+  g.add(part(SPH_LO, unlit(0x10142a), 0, 0, 0, r, r * 1.15, r * 0.6));
+  g.add(part(SPH_LO, unlit(iris), 0, -r * 0.1, r * 0.08, r * 0.72, r * 0.82, r * 0.55));
+  g.add(part(SPH_LO, unlit(0x05060c), 0, -r * 0.1, r * 0.14, r * 0.36, r * 0.42, r * 0.5));
+  g.add(part(SPH_LO, unlit(0xffffff), r * 0.28, r * 0.38, r * 0.42, r * 0.3, r * 0.3, r * 0.2));
+  g.add(part(SPH_LO, unlit(0xffffff), -r * 0.22, -r * 0.42, r * 0.42, r * 0.14, r * 0.14, r * 0.12));
+  return g;
+}
+
+let shadowMat = null;
+function blobShadow(scene) {
+  shadowMat ??= new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x000010, transparent: true, opacity: 0.42, depthWrite: false });
+  const m = new THREE.Mesh(new THREE.CircleGeometry(1.25, 20), shadowMat);
+  m.rotation.x = -Math.PI / 2;
+  m.renderOrder = 2;
+  scene.add(m);
+  return m;
+}
+
+class Critter {
+  constructor(scene, opts) {
+    this.scene = scene;
+    this.opts = opts;
+    this.root = new THREE.Group();
+    this.root.name = opts.name || 'critter';
+    this.root.scale.setScalar(opts.scale ?? 1);
+    this.body = new THREE.Group();
+    this.root.add(this.body);
+    this.shadow = blobShadow(scene);
+    this.shadowSize = 1.6;
+    scene.add(this.root);
+    this.time = Math.random() * 10;
+    this.blinkT = 2 + Math.random() * 3;
+    this.blink = 0;
+    this.celebrate = 0;
+    this.eyes = [];
+  }
+
+  setVisible(v) { this.shown = v; this.applyVisibility(); }
+
+  setCulled(c) { if (this.culled !== c) { this.culled = c; this.applyVisibility(); } }
+
+  applyVisibility() {
+    const v = this.shown !== false && !this.culled;
+    this.root.visible = v;
+    this.shadow.visible = v;
+  }
+
+  get position() { return this.root.position; }
+
+  land() {}
+
+  hop() {}
+
+  spin() {}
+
+  // Blinks and happy squints, shared by both critters.
+  blinkEyes(dt) {
+    this.blinkT -= dt;
+    if (this.blinkT <= 0) { this.blink = 0.14; this.blinkT = 2.4 + Math.random() * 3.5; }
+    if (this.blink > 0) this.blink -= dt;
+    const squint = this.celebrate > 0.5 ? 0.35 : 1;
+    for (const e of this.eyes) e.scale.y = this.blink > 0 ? 0.12 : squint;
+  }
+
+  updateAttachments(dt, groundY) {
+    const s = this.root.scale.x;
+    this.shadow.position.set(this.root.position.x, groundY + 0.06, this.root.position.z);
+    this.shadow.scale.setScalar(s * this.shadowSize);
+  }
+
+  dispose() { this.scene.remove(this.root); this.scene.remove(this.shadow); }
+}
+
+// ------------------------------------------------------------ Tortuga
+export class Turtle extends Critter {
+  constructor(scene, opts = {}) {
+    super(scene, opts);
+    this.shadowSize = 2.2;
+    const b = this.body;
+    const shellCol = opts.shell ?? 0x5f7d3c, skin = opts.skin ?? 0x8cc4a0;
+    b.add(part(SPH, plushOf(shellCol), 0, 0.95, 0, 1.5, 0.78, 1.7));
+    b.add(part(SPH, plushOf(0xe6d4a0), 0, 0.62, 0.05, 1.42, 0.32, 1.62));
+    b.add(part(new THREE.TorusGeometry(1.0, 0.11, 8, 28), plushOf(0x6b5232), 0, 0.72, 0, 1.48, 1.68, 1, Math.PI / 2));
+    // Lighter plates on the shell.
+    const plate = plushOf(opts.plate ?? 0x86a556);
+    b.add(part(SPH_LO, plate, 0, 1.68, 0.1, 0.62, 0.12, 0.7));
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.5;
+      b.add(part(SPH_LO, plate, Math.cos(a) * 0.86, 1.36, Math.sin(a) * 1.0, 0.42, 0.1, 0.46, -Math.sin(a) * 0.5, 0, Math.cos(a) * 0.5));
+    }
+    // Flippers: the front pair is big for swimming.
+    this.flippers = [];
+    for (const [x, z, s, front] of [[-1.25, 0.9, 0.95, true], [1.25, 0.9, 0.95, true], [-1.05, -1.1, 0.6, false], [1.05, -1.1, 0.6, false]]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(x, 0.55, z);
+      pivot.add(part(SPH_LO, plushOf(skin), Math.sign(x) * s * 0.7, 0, front ? 0.15 : 0, s * 0.9, s * 0.16, s * 0.5, 0, Math.sign(x) * (front ? -0.5 : 0.4), 0));
+      b.add(pivot);
+      this.flippers.push({ pivot, side: Math.sign(x), front });
+    }
+    b.add(part(new THREE.ConeGeometry(0.16, 0.5, 6), plushOf(skin), 0, 0.62, -1.75, 1, 1, 1, -Math.PI / 2 - 0.3));
+    // Head on a short neck, with kind eyes and round spectacles.
+    this.head = new THREE.Group();
+    this.head.position.set(0, 1.05, 1.75);
+    b.add(this.head);
+    this.head.add(part(SPH, plushOf(skin), 0, 0.15, 0.2, 0.62, 0.56, 0.66));
+    this.head.add(part(new THREE.CylinderGeometry(0.34, 0.42, 0.6, 12), plushOf(skin), 0, -0.05, -0.25, 1, 1, 1, Math.PI / 2 - 0.4));
+    for (const s of [-1, 1]) {
+      const e = cuteEye(0.15, 0x3a2a14);
+      e.position.set(s * 0.27, 0.27, 0.72);
+      e.rotation.y = s * 0.35;
+      this.head.add(e);
+      this.eyes.push(e);
+      this.head.add(part(new THREE.TorusGeometry(0.19, 0.025, 6, 20), plushOf(0x3b2a1a), s * 0.27, 0.27, 0.78, 1, 1, 1, 0, s * 0.35, 0));
+      this.head.add(part(SPH_LO, plushOf(0xff9fb0), s * 0.36, 0.06, 0.66, 0.09, 0.05, 0.03));
+    }
+    this.head.add(part(new THREE.TorusGeometry(0.12, 0.022, 6, 16, Math.PI), unlit(0x10142a), 0, 0.03, 0.8, 1, 1, 1, 0, 0, Math.PI));
+    this.root.rotation.order = 'YXZ';
+  }
+
+  animate(dt, st = {}) {
+    this.time += dt;
+    const t = this.time;
+    this.celebrate = damp(this.celebrate, st.celebrate ? 1 : 0, 6, dt);
+    const breathe = 1 + Math.sin(t * 1.4) * 0.015;
+    this.body.scale.set(1, breathe, 1);
+    this.head.rotation.x = (st.talking ? Math.sin(t * 6) * 0.1 : Math.sin(t * 0.7) * 0.04) - this.celebrate * 0.25;
+    this.head.rotation.y = Math.sin(t * 0.33) * 0.25 * (st.talking ? 0.3 : 1);
+    for (const f of this.flippers) {
+      const paddle = f.front ? (st.talking ? Math.sin(t * 3 + f.side) * 0.25 : Math.sin(t * 0.9 + f.side) * 0.05) : 0;
+      f.pivot.rotation.z = f.side * (paddle + this.celebrate * (f.front ? 0.6 + Math.sin(t * 12) * 0.25 : 0));
+    }
+    this.blinkEyes(dt);
+  }
+}
+
+// ------------------------------------------------------------ Shelldon
+export class Crab extends Critter {
+  constructor(scene, opts = {}) {
+    super(scene, opts);
+    this.shadowSize = 1.5;
+    const b = this.body;
+    const red = opts.color ?? 0xe8603a;
+    b.add(part(SPH, plushOf(red), 0, 0.55, 0.2, 0.62, 0.42, 0.5));
+    // The borrowed shell: a spiral of rings on his back, cream with pink stripes.
+    const shell = new THREE.Group();
+    shell.position.set(0, 1.05, -0.45);
+    shell.rotation.set(-0.5, 0, 0.3);
+    for (let i = 0; i < 5; i++) {
+      const r = 0.68 - i * 0.12;
+      shell.add(part(SPH, plushOf(i % 2 ? 0xf2a0a8 : 0xf6e2c2), Math.sin(i * 1.2) * 0.12, i * 0.27, Math.cos(i * 1.2) * 0.08, r, r * 0.8, r));
+    }
+    shell.add(part(new THREE.ConeGeometry(0.14, 0.4, 8), plushOf(0xf6e2c2), 0, 1.45, 0));
+    b.add(shell);
+    // Eyes on wobbly stalks.
+    this.stalks = [];
+    for (const s of [-1, 1]) {
+      const stalk = new THREE.Group();
+      stalk.position.set(s * 0.2, 0.82, 0.48);
+      stalk.add(part(new THREE.CylinderGeometry(0.045, 0.06, 0.46, 6), plushOf(red), 0, 0.22, 0));
+      const e = cuteEye(0.16);
+      e.position.set(0, 0.52, 0.04);
+      stalk.add(part(SPH_LO, plushOf(0xffffff), 0, 0.52, -0.02, 0.17, 0.19, 0.15));
+      stalk.add(e);
+      b.add(stalk);
+      this.stalks.push({ g: stalk, side: s });
+      this.eyes.push(e);
+    }
+    // Claws: the right one is bigger. Each has a fixed jaw and a moving one.
+    this.claws = [];
+    for (const s of [-1, 1]) {
+      const big = s > 0 ? 1.25 : 0.9;
+      const arm = new THREE.Group();
+      arm.position.set(s * 0.52, 0.55, 0.45);
+      arm.add(part(SPH_LO, plushOf(red), s * 0.18, 0.05, 0.12, 0.2, 0.14, 0.32, 0, s * 0.5, 0));
+      const claw = new THREE.Group();
+      claw.position.set(s * 0.32, 0.15, 0.4);
+      claw.scale.setScalar(big);
+      claw.add(part(SPH, plushOf(red), 0, 0, 0.12, 0.2, 0.17, 0.3));
+      const jaw = new THREE.Group();
+      jaw.position.set(0, 0.06, 0.2);
+      jaw.add(part(new THREE.ConeGeometry(0.1, 0.36, 8), plushOf(red), 0, 0, 0.16, 1, 1, 1, Math.PI / 2));
+      claw.add(jaw);
+      claw.add(part(new THREE.ConeGeometry(0.1, 0.34, 8), plushOf(0xd04a2a), 0, -0.07, 0.34, 1, 1, 1, Math.PI / 2));
+      arm.add(claw);
+      b.add(arm);
+      this.claws.push({ arm, jaw, side: s });
+    }
+    // Little legs.
+    this.legs = [];
+    for (const s of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        const leg = part(new THREE.CylinderGeometry(0.035, 0.05, 0.62, 5), plushOf(red), s * 0.55, 0.28, 0.25 - i * 0.24, 1, 1, 1, 0, 0, s * 1.0);
+        b.add(leg);
+        this.legs.push({ leg, side: s, i });
+      }
+    }
+  }
+
+  animate(dt, st = {}) {
+    this.time += dt;
+    const t = this.time;
+    this.celebrate = damp(this.celebrate, st.celebrate ? 1 : 0, 6, dt);
+    this.body.position.y = Math.abs(Math.sin(t * 2.2)) * 0.03 * (st.talking ? 2 : 1);
+    for (const s of this.stalks) {
+      s.g.rotation.z = Math.sin(t * 1.7 + s.side) * 0.12;
+      s.g.rotation.x = Math.sin(t * 1.1 + s.side * 2) * 0.08 - (st.talking ? 0.1 : 0);
+    }
+    for (const c of this.claws) {
+      const click = st.talking ? clamp(Math.sin(t * 9 + c.side) * 0.5 + 0.5, 0, 1) : clamp(Math.sin(t * 0.8 + c.side) * 3 - 2.4, 0, 1);
+      c.jaw.rotation.x = -click * 0.5;
+      c.arm.rotation.x = -this.celebrate * (1.2 + Math.sin(t * 10 + c.side) * 0.2);
+      c.arm.rotation.z = c.side * this.celebrate * 0.3;
+    }
+    for (const l of this.legs) l.leg.rotation.x = Math.sin(t * 3 + l.i * 1.4 + l.side) * 0.06;
+    this.blinkEyes(dt);
+  }
+}
+
+export const CRITTERS = { turtle: Turtle, crab: Crab };

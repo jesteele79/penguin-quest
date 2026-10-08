@@ -9,7 +9,9 @@ import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
-import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY } from '../books/books.js';
+import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById } from '../books/books.js';
+import { T } from '../books/terms.js';
+import { ACTIVE } from '../books/active.js';
 import { LESSONS } from '../math/lessons.js';
 import { SKILLS } from '../math/skills.js';
 
@@ -80,8 +82,8 @@ export class TitleScreen extends Screen {
     if (d) {
       const crystals = Object.values(d.crystals).filter(Boolean).length;
       const ch = chapterNumber(d);
-      const where = d.festival ? 'Aurora Legend' : ch === 0 ? 'Prologue' : `Chapter ${ch}`;
-      menu.append(btn(`<span class="big">Continue</span><span class="small">${escapeHTML(d.profile.name)} · ${where} · ${crystals} of 5 crystals</span>`, () => this.onContinue(), 'primary title-btn', { autofocus: true }));
+      const where = d.festival ? T.legend : ch === 0 ? 'Prologue' : `Chapter ${ch}`;
+      menu.append(btn(`<span class="big">Continue</span><span class="small">${escapeHTML(d.profile.name)} · ${where} · ${crystals} of 5 ${T.crystals}</span>`, () => this.onContinue(), 'primary title-btn', { autofocus: true }));
       menu.append(btn('<span class="big">New Adventure</span>', () => this.confirmNew(), 'title-btn'));
     } else {
       menu.append(btn('<span class="big">Start Adventure</span>', () => this.onNew(), 'primary title-btn', { autofocus: true }));
@@ -90,7 +92,7 @@ export class TitleScreen extends Screen {
     this.root.append(
       el('div', { class: 'logo' },
         el('div', { class: 'logo-1', text: 'Penguin Quest' }),
-        el('div', { class: 'logo-2', text: 'Aurora Rescue' }),
+        el('div', { class: `logo-2 logo-${ACTIVE}`, text: bookById(ACTIVE).title }),
         el('div', { class: 'logo-3', html: '<span>✦</span> An open-world math adventure <span>✦</span>' })),
       menu,
       bookShelf(d),
@@ -108,6 +110,17 @@ export class TitleScreen extends Screen {
   close() {}
 }
 
+// Switching books parks this book's progress in the save and reloads the page into the other book's world.
+function switchToBook(id) {
+  G.audio.play('open');
+  const data = G.save.peek();
+  if (!data) return;
+  G.save.data = data;
+  G.save.switchBook(id);
+  G.save.save();
+  location.reload();
+}
+
 // The series shelf on the title screen: the book being played, and what opens the next ones.
 function bookShelf(d) {
   const data = d ?? G.save.data;
@@ -115,10 +128,13 @@ function bookShelf(d) {
   const shelf = el('div', { class: 'book-shelf', 'aria-label': 'The Penguin Quest books' });
   for (const book of BOOKS) {
     const open = isUnlocked(data, tutor, book);
+    const current = book.id === (data.active ?? 'book1');
+    // A saved game can step into any open, finished book; its own progress waits on the shelf.
+    const canSwitch = !!d && open && book.ready && !current;
     let note;
-    if (book.n === 1) note = d ? 'Now playing' : 'Start here';
+    if (current) note = d ? 'Now playing' : 'Start here';
     else if (!book.ready) note = open ? 'Unlocked! Coming soon' : 'Coming soon';
-    else note = open ? 'Ready to play' : 'Locked';
+    else note = open ? (data.books?.[book.id] ? 'Continue this book' : 'Ready to play') : 'Locked';
     let detail = '';
     if (!open && book.n > 1) {
       const prev = BOOKS[book.n - 2];
@@ -128,8 +144,10 @@ function bookShelf(d) {
         : !st.storyDone ? `Finish ${prev.title}${togo ? ` and master ${togo} more skills` : ''}`
           : `Master ${togo} more grade ${prev.grade} skill${togo === 1 ? '' : 's'}`;
     }
-    shelf.append(el('div', {
-      class: `book-card ${open ? 'open' : 'locked'} ${book.n === 1 ? 'current' : ''}`,
+    shelf.append(el(canSwitch ? 'button' : 'div', {
+      class: `book-card ${open ? 'open' : 'locked'} ${current ? 'current' : ''} ${canSwitch ? 'switch' : ''}`,
+      type: canSwitch ? 'button' : undefined,
+      onclick: canSwitch ? () => switchToBook(book.id) : undefined,
       style: `--c1:${book.colors[0]};--c2:${book.colors[1]};--c3:${book.colors[2]}`,
       html: `<div class="book-cover"><span class="book-emblem">${BOOK_ICONS[book.icon]}</span><span class="book-num">Book ${book.n}</span></div>
         <div class="book-info"><div class="book-title">${book.title}</div><div class="book-grade">Grade ${book.grade} math</div>
@@ -227,7 +245,7 @@ export class PauseScreen extends Screen {
     this.root.append(el('div', { class: 'panel pause-panel' },
       el('h1', { text: 'Paused' }),
       el('div', { class: 'pause-stats' },
-        el('span', { html: `${ICON.crystal('#4dffa0', true)} ${crystals} / 5 crystals` }),
+        el('span', { html: `${ICON.crystal('#4dffa0', true)} ${crystals} / 5 ${T.crystals}` }),
         el('span', { html: `${ICON.flake} ${d.snowflakes.length} / 30` }),
         el('span', { html: `${ICON.fish} ${d.coins}` }),
         el('span', { html: `${ICON.star} ${d.stars}` }),
@@ -300,7 +318,7 @@ export class MapScreen extends Screen {
       el('h2', { text: 'Glacier Bay' }),
       el('div', { class: 'legend-row', html: '<span class="lg-player"></span> You' }),
       el('div', { class: 'legend-row', html: `${ICON.star} Next goal` }),
-      el('div', { class: 'legend-row', html: `${ICON.crystal('#4dffa0', true)} Aurora Crystal` }),
+      el('div', { class: 'legend-row', html: `${ICON.crystal('#4dffa0', true)} ${T.crystalName}` }),
       el('div', { class: 'legend-row', html: '<span class="lg-npc"></span> Friend' }),
       el('div', { class: 'legend-row', html: '<span class="lg-new"></span> Friend with a new quest' }),
       el('div', { class: 'legend-row', html: '<span class="lg-site"></span> Quest spot' }),
@@ -523,7 +541,7 @@ export class JournalScreen extends Screen {
       return `<div class="coll"><span>${label}</span><span>${x?.medal ? `<span class="medal ${x.medal}">${cap(x.medal)}</span> ${fmt ? fmt(x.best) : ''}` : '<span class="note">Not yet</span>'}</span></div>`;
     };
     return `<div class="coll-grid">
-      <div class="coll"><span>${ICON.flake} Golden snowflakes</span><b>${s.snowflakes.length} / 30</b></div>
+      <div class="coll"><span>${ICON.flake} ${T.Flakes}</span><b>${s.snowflakes.length} / 30</b></div>
       <div class="coll"><span>Treasure chests</span><b>${s.chests.length} / 12</b></div>
       <div class="coll"><span>Lost chicks home</span><b>${s.chicks.home.length} / 8</b></div>
       <div class="coll"><span>Pirate treasures</span><b>${s.treasures.length} / 4</b></div>

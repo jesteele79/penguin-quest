@@ -1,9 +1,12 @@
-// Walk-into collectibles: golden snowflakes (always) and crystal seeds (during the Chapter 2 seed hunt).
+// Walk-into collectibles: the book's 30 treasures (golden snowflakes, or sea glass) and Book 1's crystal
+// seeds (during the Chapter 2 seed hunt).
 import * as THREE from 'three';
 import { G } from '../core/state.js';
 import { mergeColored, mat } from '../core/geo.js';
 import { SNOWFLAKES, SEEDS } from '../world/layout.js';
 import { crystalMaterial } from '../core/materials.js';
+import { BOOK } from '../books/current.js';
+import { T } from '../books/terms.js';
 
 function flakeGeometry() {
   const parts = [];
@@ -22,9 +25,12 @@ function seedGeometry() {
   return mergeColored([{ geo: new THREE.OctahedronGeometry(0.5, 0), color: 0xffffff, matrix: mat(0, 0, 0, 0, 0, 0, 1, 1.5, 1) }]);
 }
 
+// A book can bring its own collectible (see book2/hooks.js); Book 1's is the golden snowflake.
+const LOOK = BOOK.collectible ?? { height: 1.3, glow: 0xffd166, glowSize: 4, glowAmount: 0.9 };
+
 const SETS = {
-  flakes: { points: SNOWFLAKES, key: 'snowflakes', always: true, height: 1.3, radius: 1.6, glow: 0xffd166 },
-  seeds: { points: SEEDS, key: 'seeds', always: false, height: 0.9, radius: 1.6, glow: 0x38f0d2 },
+  flakes: { points: SNOWFLAKES, key: 'snowflakes', always: true, height: LOOK.height, radius: 1.6, glow: LOOK.glow, glowSize: LOOK.glowSize, glowAmount: LOOK.glowAmount },
+  seeds: { points: SEEDS ?? [], key: 'seeds', always: false, height: 0.9, radius: 1.6, glow: 0x38f0d2, glowSize: 4, glowAmount: 0.9 },
 };
 
 export class Pickups {
@@ -38,11 +44,11 @@ export class Pickups {
     for (const [set, def] of Object.entries(SETS)) {
       def.points.forEach(([x, z], i) => {
         const y = Math.max(ctx.terrain.heightAt(x, z), 0) + def.height;
-        const mesh = new THREE.Mesh(set === 'flakes' ? fg : sg, set === 'flakes' ? flakeMat : seedMat);
+        const mesh = set === 'flakes' && LOOK.make ? LOOK.make(i) : new THREE.Mesh(set === 'flakes' ? fg : sg, set === 'flakes' ? flakeMat : seedMat);
         mesh.position.set(x, y, z);
         mesh.castShadow = true;
         ctx.scene.add(mesh);
-        const glow = ctx.glow.add(x, y, z, def.glow, 4, 0.9);
+        const glow = ctx.glow.add(x, y, z, def.glow, def.glowSize, def.glowAmount);
         this.items[set].push({ i, x, z, y, mesh, glow, phase: i * 0.7 });
       });
     }
@@ -67,7 +73,7 @@ export class Pickups {
       for (const it of list) {
         const show = !this.isCollected(set, it.i) && (SETS[set].always || hunt);
         it.mesh.visible = show;
-        this.ctx.glow.set(it.glow, { color: SETS[set].glow, intensity: show ? 0.9 : 0 });
+        this.ctx.glow.set(it.glow, { color: SETS[set].glow, intensity: show ? SETS[set].glowAmount : 0 });
       }
     }
   }
@@ -108,7 +114,7 @@ export class Pickups {
     G.world.effects.sparkle(it.mesh.position, SETS[set].glow, 36);
     G.audio.play('chime');
     if (set === 'flakes') {
-      G.toasts.toast(`Golden snowflake! <b>${s.snowflakes.length}/30</b>`, { kind: 'gold' });
+      G.toasts.toast(`${T.Flake}! <b>${s.snowflakes.length}/30</b>`, { kind: 'gold' });
       G.patrol?.event('flake');
     } else {
       G.toasts.toast(`Crystal seed! <b>${s.seeds.length}/${this.total('seeds')}</b>`, { kind: 'teal' });

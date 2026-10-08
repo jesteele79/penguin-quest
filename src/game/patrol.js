@@ -1,22 +1,23 @@
-// Daily Aurora Patrol: three small tasks each day, streaks, and Aurora Stars.
+// The daily patrol (Aurora Patrol, Island Patrol): three small tasks each day, streaks, and Aurora Stars.
 import { G } from '../core/state.js';
 import { Rng, hashString } from '../core/rng.js';
 import { DOMAINS } from '../math/skills.js';
 import { todayStr } from './questengine.js';
+import { T } from '../books/terms.js';
 
 const POOL = [
   { id: 'solve_dom', weight: 3, make: (rng) => { const d = rng.pick(G.unlockedDomains()); return { kind: 'solve', domain: d, need: 8, text: `Solve 8 ${DOMAINS[d].name} puzzles` }; } },
   { id: 'solve_any', weight: 2, make: () => ({ kind: 'solve', need: 15, text: 'Solve 15 puzzles anywhere' }) },
   { id: 'inarow', weight: 2, make: () => ({ kind: 'inarow', need: 5, text: 'Get 5 answers right in a row (no hints)' }) },
-  { id: 'gloom', weight: 2, when: () => G.quests.done('ch0'), make: () => ({ kind: 'gloom', need: 2, text: 'Cheer up 2 wandering Glooms' }) },
+  { id: 'gloom', weight: 2, when: () => G.quests.done('ch0'), make: () => ({ kind: 'gloom', need: 2, text: `Cheer up 2 wandering ${T.glooms}` }) },
   { id: 'slide', weight: 1, make: () => ({ kind: 'slide', need: 250, text: 'Belly-slide 250 meters' }) },
-  { id: 'swim', weight: 1, when: () => G.quests.done('ch0'), make: () => ({ kind: 'swim', need: 150, text: 'Swim 150 meters in Glimmer Lake' }) },
-  { id: 'fish', weight: 1, when: () => G.quests.done('ch1'), make: () => ({ kind: 'fish', need: 5, text: 'Catch 5 fish at the dock' }) },
-  { id: 'serve', weight: 1, when: () => G.quests.done('ch3'), make: () => ({ kind: 'serve', need: 4, text: 'Serve 4 Snack Shack customers' }) },
-  { id: 'slalom', weight: 1, when: () => G.quests.started('sq_slalom'), make: () => ({ kind: 'slalom', need: 1, text: 'Finish a run in the Sledding Hill Slalom' }) },
-  { id: 'chart', weight: 1, when: () => G.quests.started('sq_stars'), make: () => ({ kind: 'chart', need: 1, text: "Finish today's Star Chart at the easel" }) },
+  { id: 'swim', weight: 1, when: () => G.quests.done('ch0'), make: () => ({ kind: 'swim', need: 150, text: `Swim 150 meters in ${T.swimPlace}` }) },
+  { id: 'fish', weight: 1, when: () => G.quests.started('sq_tourney'), make: () => ({ kind: 'fish', need: 5, text: `Catch 5 fish at ${T.fishPlace}` }) },
+  { id: 'serve', weight: 1, when: () => G.quests.done('ch3'), make: () => ({ kind: 'serve', need: 4, text: `Serve 4 customers at the ${T.stall}` }) },
+  { id: 'slalom', weight: 1, when: () => G.quests.started('sq_slalom'), make: () => ({ kind: 'slalom', need: 1, text: `Finish a run in the ${T.slalom}` }) },
+  { id: 'chart', weight: 1, when: () => G.quests.started('sq_stars'), make: () => ({ kind: 'chart', need: 1, text: `Finish today's ${T.chart} at ${T.chartPlace}` }) },
   { id: 'chest', weight: 1, when: () => G.save.data.chests.length < 12, make: () => ({ kind: 'chest', need: 1, text: 'Open a treasure chest' }) },
-  { id: 'flake', weight: 1, when: () => G.save.data.snowflakes.length <= 28, make: () => ({ kind: 'flake', need: 2, text: 'Find 2 golden snowflakes' }) },
+  { id: 'flake', weight: 1, when: () => G.save.data.snowflakes.length <= 28, make: () => ({ kind: 'flake', need: 2, text: `Find 2 ${T.flakes}` }) },
 ];
 
 const STREAK_REWARDS = { 3: 2, 7: 5, 14: 10, 30: 20 };
@@ -72,7 +73,7 @@ export class Patrol {
     G.addCoins(10, false);
     G.addStars(1);
     G.audio.play('chime');
-    G.toasts.toast(`Patrol task done: ${t.text}! <b>+10</b> and an Aurora Star`, { kind: 'gold', ms: 4200 });
+    G.toasts.toast(`Patrol task done: ${t.text}! <b>+10</b> and an ${T.star}`, { kind: 'gold', ms: 4200 });
     if (this.p.tasks.every((x) => x.done) && !this.p.allDone) {
       const p = this.p;
       p.allDone = true;
@@ -85,7 +86,7 @@ export class Patrol {
       G.addCoins(20, false);
       const bonus = STREAK_REWARDS[p.streak];
       if (bonus) G.addStars(bonus);
-      G.toasts.showBanner('Aurora Patrol complete!', `Streak: ${p.streak} day${p.streak > 1 ? 's' : ''}${bonus ? ` · +${bonus} bonus stars` : ''}`, '#ffd166', 3600);
+      G.toasts.showBanner(`${T.patrol} complete!`, `Streak: ${p.streak} day${p.streak > 1 ? 's' : ''}${bonus ? ` · +${bonus} bonus stars` : ''}`, '#ffd166', 3600);
       G.audio.play('fanfare');
     }
     G.saveSoon();

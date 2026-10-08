@@ -96,8 +96,10 @@ export class SaveStore {
     return this.data;
   }
 
-  fresh(profile) {
+  // A new adventure starts in Book 1 unless a test asks for another book.
+  fresh(profile, book = 'book1') {
     this.data = defaultSave();
+    this.data.active = book;
     Object.assign(this.data.profile, profile);
     this.data.equipped.scarf = profile.scarf ?? 'coral';
     if (!this.data.owned.includes('scarf:' + this.data.equipped.scarf)) this.data.owned.push('scarf:' + this.data.equipped.scarf);

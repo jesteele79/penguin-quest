@@ -12,7 +12,7 @@ import { typedValue } from '../math/build.js';
 import { speak } from '../ui/quizpanel.js';
 import { SKILLS } from '../math/skills.js';
 import { Rng } from '../core/rng.js';
-import { NPCS } from './content.js';
+import { NPCS, CAST } from './content.js';
 
 const STAGES = ['Explore', 'See', 'Watch', 'Your turn'];
 
@@ -43,7 +43,7 @@ export class LessonActivity {
     G.player.frozen = true;
     G.hud.setPrompt(null);
     G.audio.play('open');
-    const mentor = NPCS[this.lesson.mentor] ?? NPCS.professor;
+    const mentor = NPCS[this.lesson.mentor] ?? CAST[this.lesson.mentor] ?? NPCS.professor;
     this.say = el('div', { class: 'lesson-say' });
     this.speakBtn = el('button', { class: 'btn ghost lesson-speak', type: 'button', 'aria-label': 'Read this aloud', html: ICON.speaker });
     this.speakBtn.addEventListener('click', () => speak(this.sayText));

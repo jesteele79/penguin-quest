@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import { G, pushActivity } from '../core/state.js';
 import { DialogActivity, QuizActivity, Cutscene, ExploreActivity } from './activities.js';
 import { NPCS, REGION_INFO } from './content.js';
-import { MAIN, SIDE, SITE_SETS, CHATTER, RESONANCE_NEED, CRYSTAL_GOAL, SPIRE_TOP, FESTIVAL_SPOT } from './questdata.js';
+import { MAIN, SIDE, SITE_SETS, CHATTER, RESONANCE_NEED, CRYSTAL_GOAL } from './questdata.js';
 import { REGION_COLORS } from '../core/materials.js';
-import { CRYSTALS, LOC, SNOWFLAKES, PATROL_BOARD, CAULDRON, SLALOM, GLOOM_SPOTS } from '../world/layout.js';
+import { CRYSTALS, SNOWFLAKES, GLOOM_SPOTS } from '../world/layout.js';
+import { BOOK } from '../books/current.js';
+import { T } from '../books/terms.js';
 import { GAMES } from './games.js';
 import { DOMAINS, SKILLS } from '../math/skills.js';
 import { cocoaOrder } from '../math/skills/decimals.js';
@@ -145,7 +147,7 @@ export class QuestEngine {
     const after = () => {
       const next = this.mainNext();
       if (def.type === 'main' && next && !this.chapterOpen(next) && this.done(def.id)) {
-        G.toasts.toast(`${next.title.split(':')[0]} opens tomorrow! Try the Aurora Patrol board and side quests.`, { ms: 6000 });
+        G.toasts.toast(`${next.title.split(':')[0]} opens tomorrow! Try the ${T.patrol} board and side quests.`, { ms: 6000 });
       }
     };
     if (def.outro) this.say(def.outro, null, { shot: false }).then(after);
@@ -169,7 +171,7 @@ export class QuestEngine {
     const n = (this.s.shards[region] = Math.min(3, (this.s.shards[region] || 0) + 1));
     G.world.ctx.crystals[region]?.setShards(n);
     G.audio.play('chime');
-    G.toasts.showBanner('Aurora Shard!', `${n} of 3 for the ${REGION_INFO[region].name} crystal`, REGION_COLORS[region].css, 2600);
+    G.toasts.showBanner(`${T.shard}!`, `${n} of 3 for the ${T.crystalOf(REGION_INFO[region].name)}`, REGION_COLORS[region].css, 2600);
   }
 
   // ------------------------------------------------------------ counters & events
@@ -201,24 +203,7 @@ export class QuestEngine {
   }
 
   // ------------------------------------------------------------ positions
-  anchor(key) {
-    const ctx = G.world.ctx;
-    switch (key) {
-      case 'professor': case 'purl': case 'king': return G.npcs.get(key).pos;
-      case 'fishSpot': return V(ctx.dock.waterEnd.x - 1.2, 0, ctx.dock.waterEnd.z);
-      case 'jetty': return V(ctx.launch.waterEnd.x, 0, ctx.launch.waterEnd.z + 1.2);
-      case 'counter': return V(LOC.counter.x + 2.2, 0, LOC.counter.z);
-      case 'pad': return V(ctx.buildPad.x, 0, ctx.buildPad.z);
-      case 'arena': return V(LOC.arena.x, 0, LOC.arena.z);
-      case 'cauldron': return V(CAULDRON.x, 0, CAULDRON.z);
-      case 'slalomTop': return V(SLALOM.top.x, 0, SLALOM.top.z);
-      case 'easel': return V(LOC.easel.x, 0, LOC.easel.z);
-      case 'spireTop': return V(SPIRE_TOP.x, 0, SPIRE_TOP.z);
-      case 'festival': return V(FESTIVAL_SPOT.x, 0, FESTIVAL_SPOT.z);
-      case 'board': return V(PATROL_BOARD.x, 0, PATROL_BOARD.z);
-      default: return null;
-    }
-  }
+  anchor(key) { return BOOK.anchor(key, G.world.ctx); }
 
   target(key) {
     const p = G.player.pos;
@@ -245,12 +230,12 @@ export class QuestEngine {
     if (id) return { ...this.objectiveFor(id), questId: id };
     const next = this.mainNext();
     if (next && !this.chapterOpen(next) && this.started('ch0')) {
-      return { text: `${next.title.split(':')[0]} opens tomorrow. Try the Aurora Patrol board or a side quest!`, target: this.anchor('board') };
+      return { text: `${next.title.split(':')[0]} opens tomorrow. Try the ${T.patrol} board or a side quest!`, target: this.anchor('board') };
     }
     if (!next) {
       const offer = SIDE.find((d) => this.sideOpen(d));
       if (offer) return { text: `New side quest: talk to ${NPCS[offer.giver].name}`, target: G.npcs.get(offer.giver).pos, npc: offer.giver };
-      return { text: 'Free play: Aurora Patrol, collections and practice', target: null };
+      return { text: `Free play: ${T.patrol}, collections and practice`, target: null };
     }
     return null;
   }
@@ -288,8 +273,8 @@ export class QuestEngine {
         const res = Math.floor(this.s.resonance[r] || 0);
         const c = CRYSTALS[r];
         const text = res < RESONANCE_NEED
-          ? `Charge the ${REGION_INFO[r].name} crystal with puzzles (${res}/${RESONANCE_NEED})`
-          : `Wake the ${REGION_INFO[r].name} crystal (${this.s.progress.charge[r] || 0}/${CRYSTAL_GOAL})`;
+          ? `${T.charge} the ${T.crystalOf(REGION_INFO[r].name)} with puzzles (${res}/${RESONANCE_NEED})`
+          : `${T.wake} the ${T.crystalOf(REGION_INFO[r].name)} (${this.s.progress.charge[r] || 0}/${CRYSTAL_GOAL})`;
         return { text, target: V(c.x, 0, c.z) };
       }
       case 'chicks': return G.chicks.objective(step);
@@ -314,9 +299,7 @@ export class QuestEngine {
   talk(npcId) {
     if (this.busy) return;
     const s = this.s;
-    if (!this.done('ch0') && !['professor', 'mo', 'lulu', 'sunny'].includes(npcId)) {
-      return this.say([[npcId, "Oh, hello there! Have you seen Professor Waddlesworth? He's been looking for you by the big igloo."]], npcId);
-    }
+    if (!this.done('ch0') && !BOOK.prologueFriends.includes(npcId)) return this.say([[npcId, BOOK.prologueLine]], npcId);
     // 1. Story or side "talk" steps
     for (const id of this.activeIds()) {
       const step = this.step(id);
@@ -344,7 +327,7 @@ export class QuestEngine {
       if (step?.type === 'count' && step.turnin === npcId && this.countProgress(id) >= step.need) return this.advance(id);
     }
     // 4. Special friends
-    if (npcId === 'nestle' && this.active('sq_chicks') && G.chicks.following() > 0) return G.chicks.deliver();
+    if (npcId === BOOK.nursery && this.active('sq_chicks') && G.chicks.following() > 0) return G.chicks.deliver();
     // 5. Offer a new side quest
     const offer = SIDE.find((d) => d.giver === npcId && this.sideOpen(d));
     if (offer) {
@@ -354,8 +337,8 @@ export class QuestEngine {
       });
     }
     // 6. Shop
-    if (npcId === 'mittens' && this.done('ch3')) {
-      return this.say([['mittens', 'Want to try on something cozy? My Wardrobe is open!']], npcId).then(() => pushActivity(new ShopScreen(true)));
+    if (npcId === BOOK.shop.npc && this.done(BOOK.shop.after)) {
+      return this.say([[npcId, BOOK.shop.line]], npcId).then(() => pushActivity(new ShopScreen(true)));
     }
     // 7. Reminders for active side quests from this friend, then chatter
     const mine = SIDE.find((d) => d.giver === npcId && this.active(d.id));
@@ -460,12 +443,12 @@ export class QuestEngine {
 
   crystalLabel(region) {
     if (!this.done('ch0')) return null;
-    if (this.s.crystals[region]) return 'Practice at the crystal';
+    if (this.s.crystals[region]) return `Practice at the ${T.crystal}`;
     if (this.crystalStep(region)) {
       const r = Math.floor(this.s.resonance[region] || 0);
-      return r < RESONANCE_NEED ? `Charge the crystal (${r}/${RESONANCE_NEED})` : 'Wake the crystal';
+      return r < RESONANCE_NEED ? `${T.charge} the ${T.crystal} (${r}/${RESONANCE_NEED})` : `${T.wake} the ${T.crystal}`;
     }
-    return 'Look at the crystal';
+    return `Look at the ${T.crystal}`;
   }
 
   useCrystal(region) {
@@ -477,7 +460,7 @@ export class QuestEngine {
       const grade = bookById(this.s.active).grade;
       const todo = DOMAINS[region].skills.filter((s) => s.grade === grade && G.tutor.isUnlocked(s) && !G.tutor.isMastered(s.id)).map((s) => s.id);
       return pushActivity(new QuizActivity({
-        title: 'Crystal Practice', subtitle: `${info.subject} · ${todo.length ? 'skills to master' : '5 puzzles'} for fish coins`, color, count: 5,
+        title: `${T.Crystal} Practice`, subtitle: `${info.subject} · ${todo.length ? 'skills to master' : '5 puzzles'} for fish coins`, color, count: 5,
         pick: () => ({ domain: region, skills: todo.length ? todo : undefined }), shot: this.crystalShot(c.base),
         onCorrect: () => { c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 20); },
         onFinish: () => { G.addCoins(15); G.toasts.toast('Practice complete! +15 bonus'); },
@@ -486,26 +469,26 @@ export class QuestEngine {
     const id = this.crystalStep(region);
     if (!id) {
       const shards = this.s.shards[region] || 0;
-      const who = { lake: 'Captain Flipper at the fishing dock', grove: 'Fern in the grove', huts: 'Mama Mittens at the huts', cave: 'Pebble outside the cave', ridge: 'Scout Skipper below the ridge' }[region];
+      const who = BOOK.helpers[region];
       const msg = this.started(CHAPTER_OF[region])
-        ? `The crystal is sealed. It needs 3 Aurora Shards (you have ${shards}). ${who[0].toUpperCase() + who.slice(1)} can help you find them.`
-        : `The crystal is sealed tight. One day, ${who} will need your help.`;
+        ? `The ${T.crystal} is sealed. It needs 3 ${T.shard}s (you have ${shards}). ${who[0].toUpperCase() + who.slice(1)} can help you find them.`
+        : `The ${T.crystal} is sealed tight. One day, ${who} will need your help.`;
       return this.say([['', msg]]);
     }
     const res = this.s.resonance[region] || 0;
     if (res < RESONANCE_NEED) {
       return pushActivity(new QuizActivity({
-        title: 'Charge the Crystal', subtitle: `Every puzzle adds aurora energy (${Math.floor(res)}/${RESONANCE_NEED})`, color,
+        title: `${T.charge} the ${T.Crystal}`, subtitle: `Every puzzle adds ${T.energy} (${Math.floor(res)}/${RESONANCE_NEED})`, color,
         count: Math.max(2, Math.min(5, Math.ceil(RESONANCE_NEED - res))), domain: region, shot: this.crystalShot(c.base),
         onCorrect: () => { c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 25); },
         onFinish: () => {
           const now = Math.floor(this.s.resonance[region]);
-          G.toasts.toast(now >= RESONANCE_NEED ? 'The crystal is fully charged! Wake it up!' : `Crystal charge: ${now}/${RESONANCE_NEED}`, { ms: 3600 });
+          G.toasts.toast(now >= RESONANCE_NEED ? `The ${T.crystal} is ready! ${T.wake} it!` : `${T.Crystal} charge: ${now}/${RESONANCE_NEED}`, { ms: 3600 });
         },
       }));
     }
     return pushActivity(new QuizActivity({
-      title: 'Crystal Challenge', subtitle: `${info.name} · ${info.subject}`, color,
+      title: `${T.Crystal} Challenge`, subtitle: `${info.name} · ${info.subject}`, color,
       count: CRYSTAL_GOAL, done: this.s.progress.charge[region] || 0, domain: region, shot: this.crystalShot(c.base),
       onCorrect: (p, n) => { this.s.progress.charge[region] = n; c.setCharge(0.75 + (0.25 * n) / CRYSTAL_GOAL); c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 30); },
       onFinish: () => this.restoreCrystal(region, id),
@@ -540,10 +523,9 @@ export class QuestEngine {
         call: () => {
           G.world.sky.setRestored(region, true);
           G.world.sky.pulse(region, 2);
-          G.toasts.showBanner('Aurora Crystal Restored!', `${info.name} glows again`, color.css, 3600, { replace: true });
+          G.toasts.showBanner(T.restored, `${info.name} ${T.glowsAgain}`, color.css, 3600, { replace: true });
           G.audio.play('fanfare');
-          if (region === 'ridge') G.world.fadeGloom = true;
-          if (region === 'lake') G.world.ctx.islandBarrier.setUp(false);
+          BOOK.onRestore(region, G.world.ctx);
         },
       },
     ], () => {
@@ -619,10 +601,7 @@ export class QuestEngine {
         }
       }
     }
-    // The Glimmer King only exists after the finale battle.
-    const kingHere = this.done('ch6') || (this.active('ch6') && this.st('ch6').step >= 2);
-    const king = G.npcs.get('king');
-    if (king && king.visible !== kingHere) G.npcs.setVisible('king', kingHere);
+    BOOK.update(this);
   }
 
   // ------------------------------------------------------------ markers for maps

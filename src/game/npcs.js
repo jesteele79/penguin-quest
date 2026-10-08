@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Penguin } from '../actors/penguin.js';
+import { CRITTERS } from '../actors/critters.js';
 import { NPCS } from './content.js';
 import { dampAngle } from '../core/mathutil.js';
 import { LOC } from '../world/layout.js';
@@ -11,11 +12,13 @@ export class NPCManager {
     const dock = world.ctx.dock;
     for (const [id, def] of Object.entries(NPCS)) {
       let pos = def.pos;
-      if (id === 'captain') pos = { x: dock.landEnd.x - 1.5, z: dock.landEnd.z - 3.6 };
-      const model = new Penguin(scene, { ...def.look, name: id });
+      // Book 1's captain stands wherever his dock was built.
+      if (!pos && id === 'captain') pos = { x: dock.landEnd.x - 1.5, z: dock.landEnd.z - 3.6 };
+      const Model = def.model ? CRITTERS[def.model] : Penguin;
+      const model = new Model(scene, { ...def.look, name: id });
       const y = world.terrain.heightAt(pos.x, pos.z);
       model.root.position.set(pos.x, y, pos.z);
-      const home = def.faceTo ?? (id === 'captain' ? { x: dock.waterEnd.x, z: dock.waterEnd.z } : LOC.lake);
+      const home = def.faceTo ?? (id === 'captain' ? { x: dock.waterEnd.x, z: dock.waterEnd.z } : LOC.lake ?? LOC.home);
       const yaw = Math.atan2(home.x - pos.x, home.z - pos.z);
       model.root.rotation.y = yaw;
       const collider = world.collision.addDynamic({ x: pos.x, z: pos.z, r: 0.9 * (def.look.scale ?? 1), active: true });

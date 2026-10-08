@@ -734,3 +734,9 @@ tr.dim td { color: var(--frost-dim); }
 .cmp-grid { display: grid; gap: 6px; align-items: stretch; justify-content: center; }
 .cmp-grid .place-cell.added .pd { color: var(--frost-dim); }
 .cmp-grid .place-dot { grid-row: span 1; }
+
+/* ------------------------------------------------ Book 2 title and shelf */
+.logo-2.logo-book2 { background: linear-gradient(90deg, #ffd166, #ff9a3c 30%, #ff5c8a 58%, #2ec4b6 85%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 5px 0 #5a1e3a); }
+button.book-card { font: inherit; color: inherit; cursor: pointer; }
+.book-card.switch { border-color: rgba(46, 196, 182, 0.7); }
+.book-card.switch:hover, .book-card.switch:focus-visible { transform: translateY(-2px); border-color: var(--lantern); }
