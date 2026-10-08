@@ -139,7 +139,8 @@ function buildHarbor(ctx) {
   stiltHut(ctx, H.x - 12, H.z + 12, faceYaw(H.x - 12, H.z + 12, H.x, H.z), { color: 0xf4d9b0 });
   stiltHut(ctx, H.x + 6, H.z + 16, faceYaw(H.x + 6, H.z + 16, H.x, H.z), { color: 0xc9e8e0 });
   stiltHut(ctx, H.x - 4, H.z - 14, faceYaw(H.x - 4, H.z - 14, H.x, H.z), { color: 0xf8c8b8 });
-  stall(ctx, LOC.counter.x, LOC.counter.z, faceYaw(LOC.counter.x, LOC.counter.z, H.x - 8, H.z + 2), "Chef Marlo's", 0xff6a4a);
+  // Customers line up to the west of the counter, so it faces west.
+  stall(ctx, LOC.counter.x, LOC.counter.z, -Math.PI / 2, "Chef Marlo's", 0xff6a4a);
   stall(ctx, LOC.shelldon.x + 2, LOC.shelldon.z + 2, faceYaw(LOC.shelldon.x, LOC.shelldon.z, H.x, H.z), 'Shells & Trades', 0x3fb8e0);
   // Marlo's big cooking pot.
   const p = CAULDRON;
@@ -161,7 +162,7 @@ function buildHarbor(ctx) {
 function buildForge(ctx) {
   const F = LOC.forge;
   const y = ground(ctx, F.x, F.z);
-  const yaw = faceYaw(F.x, F.z, LOC.rocco.x, LOC.rocco.z + 6);
+  const yaw = faceYaw(F.x, F.z, LOC.forgeFront.x, LOC.forgeFront.z);
   const b = ctx.batch;
   b.add(new THREE.BoxGeometry(7, 3.4, 5), STONE_D, worldMat(F.x, y, F.z, yaw, 0, 1.7, -1.5));
   b.add(new THREE.BoxGeometry(7.4, 0.4, 5.4), 0x4a4044, worldMat(F.x, y, F.z, yaw, 0, 3.55, -1.5));

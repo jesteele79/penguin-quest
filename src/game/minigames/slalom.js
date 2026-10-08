@@ -1,15 +1,17 @@
-// Sledding Hill Slalom: the penguin slides down on its own. Pick the lane with the right answer before each gate.
+// Slalom (Book 1's sledding hill, Book 2's volcano ash slope): the penguin slides down on its own. Pick the lane
+// with the right answer before each gate.
 import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../../core/state.js';
 import { Round, V, awardMedal } from './common.js';
 import { toHTML } from '../../math/fmt.js';
 import { SLALOM } from '../../world/layout.js';
+import { BOOK } from '../../books/current.js';
 import { damp } from '../../core/mathutil.js';
 
 const GATES = [9, 18, 27, 36, 45, 54];
 const FINISH = 61;
 const LANES = [-3.2, 0, 3.2];
-const FACT_SKILLS = ['mul_facts', 'div_facts', 'exponents', 'integers', 'rounding', 'pow10'];
+const FACT_SKILLS = BOOK.slalomSkills;
 const MEDALS = { gold: 12, silver: 20 };
 
 class SlalomActivity {

@@ -100,11 +100,12 @@ export class EmberVent {
   }
 }
 
-// Mount Ember's crater: a lake of slow lava, a glow you can see from the beach, and a lazy plume of smoke.
+// Slow lava, shared by the crater and the forge's pool. The pattern is laid out in world space so any shape
+// of surface gets the same scale of crust.
 const lavaFrag = /* glsl */ `
 uniform float uTime;
 uniform float uHeat;
-varying vec2 vUv;
+varying vec2 vP;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
 float vnoise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
@@ -112,25 +113,32 @@ float vnoise(vec2 p) {
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
 }
 void main() {
-  vec2 p = vUv * 9.0;
+  vec2 p = vP;
   float n = vnoise(p + vec2(uTime * 0.15, uTime * 0.07)) * 0.6 + vnoise(p * 2.3 - vec2(uTime * 0.11, 0.0)) * 0.4;
-  float crust = smoothstep(0.42, 0.62, n);
-  vec3 hot = mix(vec3(1.0, 0.36, 0.05), vec3(1.0, 0.82, 0.3), smoothstep(0.0, 0.4, n));
-  vec3 col = mix(hot * (1.2 + uHeat), vec3(0.16, 0.08, 0.07), crust * (1.0 - uHeat * 0.5));
+  float crust = smoothstep(0.44, 0.6, n);
+  // Deep orange lava, brightest in the cracks between the plates of dark crust.
+  vec3 hot = mix(vec3(0.95, 0.2, 0.02), vec3(1.0, 0.6, 0.12), smoothstep(0.42, 0.1, n));
+  vec3 col = mix(hot * (0.95 + uHeat * 0.5), vec3(0.13, 0.06, 0.05), crust * (1.0 - uHeat * 0.5));
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 const lavaVert = /* glsl */ `
-varying vec2 vUv;
-void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+varying vec2 vP;
+void main() {
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vP = w.xz * 0.42;
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+const lavaMaterial = (uniforms) => new THREE.ShaderMaterial({ uniforms, vertexShader: lavaVert, fragmentShader: lavaFrag });
 
+// Mount Ember's crater: a lake of slow lava, a glow you can see from the beach, and a lazy plume of smoke.
 export function buildCrater(ctx) {
   const { scene, terrain, glow } = ctx;
   const V = LOC.volcano;
   const floor = terrain.heightAt(V.x, V.z);
   const uniforms = { uTime: SHARED_TIME, uHeat: { value: 0 } };
-  const lava = new THREE.Mesh(new THREE.CircleGeometry(V.crater * 0.82, 40), new THREE.ShaderMaterial({ uniforms, vertexShader: lavaVert, fragmentShader: lavaFrag }));
+  const lava = new THREE.Mesh(new THREE.CircleGeometry(V.crater * 0.82, 40), lavaMaterial(uniforms));
   lava.rotation.x = -Math.PI / 2;
   lava.position.set(V.x, floor + 0.9, V.z);
   scene.add(lava);
@@ -159,6 +167,48 @@ export function buildCrater(ctx) {
       p.mesh.position.set(V.x + k * 26 + Math.sin(t * 0.3 + p.phase * 9) * 2, floor + 10 + k * 46, V.z + k * 12);
       p.mesh.scale.setScalar(s);
       p.mesh.material.opacity = 0.42 * Math.sin(Math.PI * k);
+    }
+  });
+}
+
+// The lava pool beside the forge: glowing up onto the rocks around it, with lazy bubbles swelling and popping.
+// The forge vent stands on the rock island at its east end.
+export function buildLavaPool(ctx) {
+  const { scene, glow, terrainMesh } = ctx;
+  const P = LOC.lavaPool;
+  const lava = new THREE.Mesh(new THREE.CircleGeometry(1, 56), lavaMaterial({ uTime: SHARED_TIME, uHeat: { value: 0.1 } }));
+  lava.rotation.x = -Math.PI / 2;
+  lava.scale.set(P.a, P.b, 1);
+  lava.position.set(P.x, P.lavaY, P.z);
+  scene.add(lava);
+  for (let i = 0; i < 5; i++) glow.add(P.x - P.a * 0.75 + i * P.a * 0.375, P.lavaY + 1.2, P.z, 0xff6a2a, 15, 0.5);
+  for (let i = 0; i < 28; i++) {
+    const a = (i / 28) * Math.PI * 2;
+    terrainMesh.userData.addWarmth(P.x + Math.cos(a) * P.a, P.z + Math.sin(a) * P.b, 5, 0.22);
+  }
+  terrainMesh.userData.addWarmth(P.isle.x, P.isle.z, P.isle.r + 2, 0.3);
+  ctx.lanterns.push({ x: P.x - P.a * 0.5, y: P.lavaY + 2, z: P.z, intensity: 60 }, { x: P.x + P.a * 0.35, y: P.lavaY + 2, z: P.z, intensity: 60 });
+  const dome = new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xff9a3a });
+  const bubbles = Array.from({ length: 6 }, (_, i) => {
+    const m = new THREE.Mesh(dome, bubbleMat);
+    scene.add(m);
+    return { mesh: m, k: i / 6, life: 1.2 + Math.random() };
+  });
+  const place = (b) => {
+    for (let tries = 0; tries < 6; tries++) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 0.8;
+      const x = P.x + Math.cos(a) * P.a * r, z = P.z + Math.sin(a) * P.b * r;
+      if (Math.hypot(x - P.isle.x, z - P.isle.z) > P.isle.r + 2.5) { b.mesh.position.set(x, P.lavaY - 0.05, z); return; }
+    }
+  };
+  bubbles.forEach(place);
+  ctx.animated.push((dt) => {
+    for (const b of bubbles) {
+      b.k += dt / b.life;
+      if (b.k >= 1) { b.k = 0; b.life = 1.2 + Math.random(); place(b); }
+      const s = 0.25 + Math.sqrt(Math.sin(Math.PI * b.k)) * 0.45;
+      b.mesh.scale.set(s, s * 0.7, s);
     }
   });
 }

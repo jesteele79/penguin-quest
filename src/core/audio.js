@@ -307,6 +307,10 @@ export class AudioEngine {
       case 'bubble':
         this.tone({ f: 380, to: 900, type: 'sine', dur: 0.12, vol: 0.06 });
         break;
+      case 'sizzle':
+        this.noise({ dur: 0.7, vol: 0.11, type: 'highpass', f: 4200, to: 2400, q: 0.5 });
+        for (let i = 0; i < 6; i++) this.noise({ dur: 0.03, vol: 0.07, f: 2500 + r() * 3500, q: 3, when: 0.04 + r() * 0.5 });
+        break;
       case 'whoosh':
         this.noise({ dur: 0.5, vol: 0.08, f: 400, to: 2400, q: 0.7 });
         break;

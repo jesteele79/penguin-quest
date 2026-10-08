@@ -10,6 +10,8 @@ import { startIntro } from '../../game/minigames/scenes.js';
 import { signTexture } from '../../core/textures.js';
 import { lambert } from '../../core/materials.js';
 import { Penguin } from '../../actors/penguin.js';
+import { crystalMaterial } from '../../core/materials.js';
+import { clusterGeometry } from '../../world/nature.js';
 
 const V = (x, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const SUBJECTS = ['lake', 'grove', 'huts', 'cave', 'ridge'];
@@ -91,6 +93,9 @@ export const HOOKS = {
 
   intro: startIntro,
 
+  // Called every frame of play with the player, for things a world does on its own (Book 2's lava).
+  frame() {},
+
   onRestore(region, ctx) {
     if (region === 'lake') ctx.islandBarrier.setUp(false);
   },
@@ -106,6 +111,21 @@ export const HOOKS = {
   prologueLine: "Oh, hello there! Have you seen Professor Waddlesworth? He's been looking for you by the big igloo.",
   shop: { npc: 'mittens', after: 'ch3', line: 'Want to try on something cozy? My Wardrobe is open!' },
   nursery: 'nestle',
+  slalomSkills: ['mul_facts', 'div_facts', 'exponents', 'integers', 'rounding', 'pow10'],
+  architect: {
+    title: 'Ice Architect', contestTitle: 'Snow Sculpture Contest', color: '#55b4ff', subtitle: (n) => `Help Pebble rebuild the cave floor (${n} builds)`,
+    skills: ['area_rect', 'perimeter', 'volume', 'area_missing', 'surface_area', 'area_tri', 'angle_add', 'convert', 'angle_type', 'coord'],
+    sculptSkills: ['volume', 'area_rect', 'surface_area', 'area_missing', 'perimeter'],
+    cube: { color: 0xcfeaff, emissive: 0x1a3a7a, emissiveIntensity: 0.5, transparent: true, opacity: 0.92 }, ghost: 0x9fe8ff,
+    sculpt: (seed) => new THREE.Mesh(clusterGeometry(seed, true), crystalMaterial(0xbfe6ff, 0.5)),
+  },
+  market: {
+    title: 'Snack Shack', rushTitle: 'Snack Shack Rush', color: '#ff72c8',
+    skills: ['money', 'dec_addsub', 'dec_compare', 'unit_rate', 'percent', 'dec_round'],
+    lines: ['One snack, please!', 'Can you help me with my order?', "I'm so hungry!", 'What do I owe?', 'Mmm, cocoa weather!', 'Two of those, please!', 'Is it on sale today?', 'Keep the change? Just kidding!'],
+    hats: [null, null, 'beanie', 'earmuffs', 'party', 'tophat', 'headphones'],
+  },
+  gloomLook: {},
   // The lost little ones of the side quest.
   young: {
     kind: 'chick', names: ['Peep', 'Tuffy', 'Bean', 'Dot', 'Waddle', 'Squeak', 'Pudding', 'Button'],

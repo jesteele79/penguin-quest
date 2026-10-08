@@ -439,6 +439,7 @@ function startLoop() {
         else if (e.type === 'stroke') G.audio.play('stroke');
         else if (e.type === 'slide') G.audio.play('whoosh');
       }
+      BOOK.frame(dt, player);
       const sp = Math.abs(player.speed);
       if (player.sliding && player.grounded) {
         if (Math.random() < dt * 40) world.effects.burst(player.pos.clone().add(V(0, 0.3, 0)), { count: 2, color: G.trailColors ?? [0xffffff], speed: 2.5, up: 2.5, life: 0.6, gravity: 9, size: 0.45, vx: -Math.sin(player.yaw) * sp * 0.2, vz: -Math.cos(player.yaw) * sp * 0.2, spread: 0.8 });

@@ -28,26 +28,41 @@ function fuzzyBody() {
 
 const EYE = new THREE.SphereGeometry(0.2, 12, 8);
 const HAPPY_EYE = new THREE.TorusGeometry(0.15, 0.045, 6, 12, Math.PI);
-const HAPPY_COLORS = [0x4dffa0, 0x45e2ff, 0xff78d2, 0xffd166, 0xb483ff];
+// Book 1's Glooms are cold purple shadow; Book 2's Sootlings are puffs of soot with ember eyes.
+const LOOKS = {
+  gloom: { body: 0x2c2152, emissive: 0x1a0f38, rim: 0x9a6bff, horn: 0x241a44, eye: 0xffe27a, brow: 0x120a24, glow: 0x7a4ad8, happy: [0x4dffa0, 0x45e2ff, 0xff78d2, 0xffd166, 0xb483ff], horns: true },
+  soot: { body: 0x3a3436, emissive: 0x1a1214, rim: 0xff8a3d, horn: 0x2a2426, eye: 0xffa040, brow: 0x140e10, glow: 0xff6a2a, happy: [0xffd166, 0xff9a3c, 0xff5c8a, 0x7fe0d0, 0xfff1d6], horns: false },
+};
 
 export class Gloom {
-  constructor(scene, { scale = 1, king = false } = {}) {
+  constructor(scene, { scale = 1, king = false, soot = false } = {}) {
+    const L = LOOKS[soot ? 'soot' : 'gloom'];
     this.scene = scene;
     this.root = new THREE.Group();
     this.root.scale.setScalar(scale);
-    this.bodyMat = withRim(new THREE.MeshLambertMaterial({ color: 0x2c2152, emissive: 0x1a0f38, flatShading: true }), { color: 0x9a6bff, power: 2.2, strength: 0.7 });
+    this.bodyMat = withRim(new THREE.MeshLambertMaterial({ color: L.body, emissive: L.emissive, flatShading: true }), { color: L.rim, power: 2.2, strength: 0.7 });
     this.body = new THREE.Mesh(fuzzyBody(), this.bodyMat);
     this.body.position.y = 1.0;
     this.body.castShadow = true;
     this.root.add(this.body);
-    const hornMat = new THREE.MeshLambertMaterial({ color: 0x241a44, flatShading: true });
-    for (const s of [-1, 1]) {
-      const h = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 5), hornMat);
-      h.position.set(s * 0.5, 1.95, 0);
-      h.rotation.z = -s * 0.45;
-      this.root.add(h);
+    const hornMat = new THREE.MeshLambertMaterial({ color: L.horn, flatShading: true });
+    if (L.horns) {
+      for (const s of [-1, 1]) {
+        const h = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 5), hornMat);
+        h.position.set(s * 0.5, 1.95, 0);
+        h.rotation.z = -s * 0.45;
+        this.root.add(h);
+      }
+    } else {
+      // Wisps of smoke curling off the top of the head.
+      this.wisps = [0.36, 0.26, 0.18].map((r, i) => {
+        const w = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), this.bodyMat);
+        w.position.set((i - 1) * 0.18, 2.0 + i * 0.32, -0.05 * i);
+        this.root.add(w);
+        return w;
+      });
     }
-    this.eyeMat = new THREE.MeshBasicMaterial({ color: 0xffe27a });
+    this.eyeMat = new THREE.MeshBasicMaterial({ color: L.eye });
     this.eyes = [];
     this.happyEyes = [];
     for (const s of [-1, 1]) {
@@ -56,7 +71,7 @@ export class Gloom {
       e.scale.set(1, 0.72, 0.5);
       this.root.add(e);
       this.eyes.push(e);
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.07, 0.08), new THREE.MeshBasicMaterial({ color: 0x120a24 }));
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.07, 0.08), new THREE.MeshBasicMaterial({ color: L.brow }));
       brow.position.set(s * 0.33, 1.4, 0.9);
       brow.rotation.z = s * 0.35;
       this.root.add(brow);
@@ -67,7 +82,7 @@ export class Gloom {
       this.root.add(he);
       this.happyEyes.push(he);
     }
-    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 5, 10, Math.PI), new THREE.MeshBasicMaterial({ color: 0xffe27a }));
+    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.035, 5, 10, Math.PI), new THREE.MeshBasicMaterial({ color: L.eye }));
     mouth.position.set(0, 0.8, 0.92);
     mouth.rotation.z = Math.PI;
     this.mouth = mouth;
@@ -87,7 +102,7 @@ export class Gloom {
         this.root.add(ic);
       }
     }
-    this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0x7a4ad8, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: L.glow, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
     this.glow.position.y = 1;
     this.glow.scale.setScalar(4.5);
     this.root.add(this.glow);
@@ -96,8 +111,8 @@ export class Gloom {
     this.state = 'grumpy';
     this.happy = 0;
     this.rise = 0;
-    this.happyColor = new THREE.Color(HAPPY_COLORS[Math.floor(Math.random() * HAPPY_COLORS.length)]);
-    this.baseColor = new THREE.Color(0x2c2152);
+    this.happyColor = new THREE.Color(L.happy[Math.floor(Math.random() * L.happy.length)]);
+    this.baseColor = new THREE.Color(L.body);
     this.hop = 0;
   }
 
@@ -120,6 +135,7 @@ export class Gloom {
   update(dt, lookAt) {
     this.t += dt;
     const t = this.t;
+    if (this.wisps) this.wisps.forEach((w, i) => { w.position.x = (i - 1) * 0.18 + Math.sin(t * 2 + i) * 0.08; w.position.y = 2.0 + i * 0.32 + this.body.position.y - 1.0; });
     if (this.state === 'grumpy') {
       this.body.position.y = 1.0 + Math.abs(Math.sin(t * 4)) * 0.18;
       this.body.scale.set(1 + Math.sin(t * 8) * 0.03, 1 - Math.sin(t * 8) * 0.03, 1);

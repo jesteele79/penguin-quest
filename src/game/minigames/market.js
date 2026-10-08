@@ -1,14 +1,17 @@
-// The Snack Shack: serve a line of penguin customers by solving their money and decimal problems.
+// A food counter (Book 1's Snack Shack, Book 2's harbor stall): serve a line of penguin customers by solving
+// their money and decimal problems.
 import * as THREE from 'three';
 import { G, pushActivity } from '../../core/state.js';
 import { QuizActivity } from '../activities.js';
 import { Penguin } from '../../actors/penguin.js';
 import { V, awardMedal } from './common.js';
 import { LOC } from '../../world/layout.js';
+import { BOOK } from '../../books/current.js';
 
-const LINES = ['One snack, please!', 'Can you help me with my order?', "I'm so hungry!", 'What do I owe?', 'Mmm, cocoa weather!', 'Two of those, please!', 'Is it on sale today?', 'Keep the change? Just kidding!'];
+const M = BOOK.market;
+const LINES = M.lines;
 const SCARVES = [0x2f8cff, 0x39d98a, 0xffd23d, 0x8a5cff, 0xff72c8, 0xff9a3c, 0x4dd8ff, 0xe8434b];
-const HATS = [null, null, 'beanie', 'earmuffs', 'party', 'tophat', 'headphones'];
+const HATS = M.hats;
 
 class MarketActivity extends QuizActivity {
   constructor(params, onDone) {
@@ -17,9 +20,9 @@ class MarketActivity extends QuizActivity {
     const standY = G.terrain.heightAt(LOC.counter.x + 2, LOC.counter.z);
     const pos = V(LOC.counter.x + 2.2, standY, LOC.counter.z);
     super({
-      title: rush ? 'Snack Shack Rush' : 'Snack Shack', subtitle: rush ? `Serve ${count} customers. Fewer mistakes, better medal!` : `Serve ${count} customers`,
-      color: '#ff72c8', count, domain: 'huts',
-      pick: () => ({ domain: 'huts', skills: ['money', 'dec_addsub', 'dec_compare', 'unit_rate', 'percent', 'dec_round'] }),
+      title: rush ? M.rushTitle : M.title, subtitle: rush ? `Serve ${count} customers. Fewer mistakes, better medal!` : `Serve ${count} customers`,
+      color: M.color, count, domain: 'huts',
+      pick: () => ({ domain: 'huts', skills: M.skills }),
       shot: { pos: V(LOC.counter.x - 3.5, standY + 4.2, LOC.counter.z + 11), look: V(LOC.counter.x + 1.4, standY + 1.2, LOC.counter.z - 0.5), fov: 52 },
       onProblem: () => this.callNext(),
       onCorrect: () => this.serve(),

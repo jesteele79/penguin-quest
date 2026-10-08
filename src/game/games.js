@@ -9,7 +9,8 @@ import { startBoss } from './minigames/boss.js';
 import { startSlalom } from './minigames/slalom.js';
 import { startSpireOpen, startFestival } from './minigames/scenes.js';
 import { isBook2 } from '../books/active.js';
-import { startForgeOrders, startKelpRecipe, startChartDive, startSiphon, startLavaHop, startSnorkel } from '../books/book2/games.js';
+import { startForgeOrders, startKelpRecipe, startChartDive, startSiphon, startSnorkel } from '../books/book2/games.js';
+import { startLavaHop } from '../books/book2/lavahop.js';
 import { startCraterOpen, startRekindle, startEmberFestival } from '../books/book2/scenes.js';
 
 export const GAMES = {

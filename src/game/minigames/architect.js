@@ -1,13 +1,12 @@
-// Ice Architect: answers turn into real 3D builds on the cave's build pad (area tiles, fence posts, cube stacks).
+// The builder (Book 1's Ice Architect in the cave, Book 2's temple rebuild): answers turn into real 3D builds on
+// the build pad (area tiles, fence posts, cube stacks, joined boxes). Contest mode builds sculptures.
 import * as THREE from 'three';
 import { G, pushActivity } from '../../core/state.js';
 import { QuizActivity } from '../activities.js';
 import { V, awardMedal } from './common.js';
-import { crystalMaterial } from '../../core/materials.js';
-import { clusterGeometry } from '../../world/nature.js';
+import { BOOK } from '../../books/current.js';
 
-const BUILD_SKILLS = ['area_rect', 'perimeter', 'volume', 'area_missing', 'surface_area', 'area_tri', 'angle_add', 'convert', 'angle_type', 'coord'];
-const SCULPT_SKILLS = ['volume', 'area_rect', 'surface_area', 'area_missing', 'perimeter'];
+const A = BOOK.architect;
 const MAX = 400;
 
 class ArchitectActivity extends QuizActivity {
@@ -20,9 +19,9 @@ class ArchitectActivity extends QuizActivity {
     const camPos = V(pad.x, pad.y, pad.z).addScaledVector(fwd, 6.2).add(V(0, 8.2, 0));
     const side = V(-fwd.z, 0, fwd.x);
     super({
-      title: sculpture ? 'Snow Sculpture Contest' : 'Ice Architect', subtitle: sculpture ? 'The judges love exact measurements!' : `Help Pebble rebuild the cave floor (${count} builds)`,
-      color: '#55b4ff', count,
-      pick: () => ({ domain: 'cave', skills: sculpture ? SCULPT_SKILLS : BUILD_SKILLS }),
+      title: sculpture ? A.contestTitle : A.title, subtitle: sculpture ? 'The judges love exact measurements!' : A.subtitle(count),
+      color: A.color, count,
+      pick: () => ({ domain: 'cave', skills: sculpture ? A.sculptSkills : A.skills }),
       shot: { pos: camPos.addScaledVector(side, -2.5), look: V(pad.x, pad.y + 0.6, pad.z).addScaledVector(side, -3.4), fov: 58 },
       onProblem: (p) => this.prepare(p),
       onCorrect: (p) => this.build(p),
@@ -42,12 +41,12 @@ class ArchitectActivity extends QuizActivity {
     const fwd = V(Math.sin(pad.yaw), 0, Math.cos(pad.yaw));
     const stand = V(pad.x, 0, pad.z).addScaledVector(fwd, 4.6);
     G.player.teleport(stand.x, stand.z, pad.yaw + Math.PI);
-    this.cubes = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xcfeaff, emissive: 0x1a3a7a, emissiveIntensity: 0.5, transparent: true, opacity: 0.92 }), MAX);
+    this.cubes = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(A.cube), MAX);
     this.cubes.count = 0;
     this.cubes.castShadow = true;
     this.cubes.frustumCulled = false;
     G.scene.add(this.cubes);
-    this.ghost = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x9fe8ff, transparent: true, opacity: 0.8 }));
+    this.ghost = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: A.ghost, transparent: true, opacity: 0.8 }));
     this.ghost.visible = false;
     G.scene.add(this.ghost);
     this.dimLabels = [];
@@ -95,6 +94,10 @@ class ArchitectActivity extends QuizActivity {
       lab(`${v.l} ${unit}`, 0, 0.3, (d * s) / 2 + 0.6);
       lab(`${v.w} ${unit}`, (w * s) / 2 + 0.8, 0.3, 0);
       lab(`${v.h} ${typeof v.h === 'number' ? unit : ''}`, (w * s) / 2 + 0.6, h * s, (d * s) / 2);
+    } else if (v?.kind === 'boxes') {
+      lab(`${v.a.l} ${unit}`, (-w / 2 + v.a.l / 2) * s, 0.3, (d * s) / 2 + 0.6);
+      lab(`${v.b.l} ${unit}`, (-w / 2 + v.a.l + v.b.l / 2) * s, 0.3, (d * s) / 2 + 0.6);
+      lab(`${v.w} ${unit}`, (w * s) / 2 + 0.8, 0.3, 0);
     }
   }
 
@@ -115,6 +118,13 @@ class ArchitectActivity extends QuizActivity {
       const s = Math.min(5.8 / w, 5.8 / d, 6 / h, 1.1);
       return { w, d, h, s };
     }
+    if (v.kind === 'boxes') {
+      // Two boxes side by side; when box B's height is the question, the answer is that height.
+      const hb = v.b.label ? p.answer.value.value : v.b.h;
+      const w = v.a.l + v.b.l, d = v.w, h = Math.max(v.a.h, hb);
+      const s = Math.min(5.8 / w, 5.8 / d, 6 / h, 1.1);
+      return { w, d, h, s, steps: [{ x0: 0, l: v.a.l, h: v.a.h }, { x0: v.a.l, l: v.b.l, h: hb }] };
+    }
     return null;
   }
 
@@ -123,9 +133,11 @@ class ArchitectActivity extends QuizActivity {
     const dims = this.dimsOf(p);
     this.ghost.visible = false;
     if (!dims) { this.sculpt(); return; }
-    const { w, d, h, s, flat, perimeter, cut } = dims;
+    const { w, d, h, s, flat, perimeter, cut, steps } = dims;
     const cells = [];
-    if (perimeter) {
+    if (steps) {
+      for (const st of steps) for (let k = 0; k < st.h; k++) for (let j = 0; j < d; j++) for (let i = st.x0; i < st.x0 + st.l; i++) cells.push([i, j, k, 0.94, 0.94]);
+    } else if (perimeter) {
       for (let i = 0; i < w; i++) for (let j = 0; j < d; j++) {
         if (i === 0 || j === 0 || i === w - 1 || j === d - 1) cells.push([i, j, 0, 0.35, 2.2]);
       }
@@ -144,7 +156,7 @@ class ArchitectActivity extends QuizActivity {
 
   sculpt() {
     const pad = this.pad;
-    const m = new THREE.Mesh(clusterGeometry(Math.floor(Math.random() * 1000), true), crystalMaterial(0xbfe6ff, 0.5));
+    const m = A.sculpt(Math.floor(Math.random() * 1000));
     m.position.set(pad.x + (Math.random() - 0.5) * 2, pad.y, pad.z + (Math.random() - 0.5) * 2);
     m.scale.setScalar(0.01);
     m.userData.grow = 0;
@@ -158,7 +170,7 @@ class ArchitectActivity extends QuizActivity {
       const n = this.o.count;
       const medal = this.firstTries >= n ? 'gold' : this.firstTries >= n - 1 ? 'silver' : 'bronze';
       const res = awardMedal('architect:sculpt', medal, -this.firstTries);
-      G.toasts.showBanner('The judges have decided!', `${medal[0].toUpperCase() + medal.slice(1)} ribbon: ${this.firstTries} of ${n} perfect builds${res.first ? ` · +${res.coins}` : ''}`, '#55b4ff', 4200);
+      G.toasts.showBanner('The judges have decided!', `${medal[0].toUpperCase() + medal.slice(1)} ribbon: ${this.firstTries} of ${n} perfect builds${res.first ? ` · +${res.coins}` : ''}`, A.color, 4200);
     }
     this.onDoneGame?.();
   }

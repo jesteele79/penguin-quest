@@ -15,7 +15,13 @@ export const LOC = {
   camp: { x: -12, z: 92 },
   kids: { x: 20, z: 104 },
   easel: { x: -15, z: 100 },
-  lavaStart: { x: -34, z: -38 },
+  // A long pool of slow lava beside the forge, sunk into the same terrace. The forge's vent sits on a rock
+  // island at its east end; the Lava Hop crosses from the west bank, one row of stones (rows: x) per puzzle.
+  lavaPool: {
+    x: -11, z: -42, a: 25, b: 12.5, rim: 10.5, floor: 7.4, lavaY: 8.6,
+    isle: { x: 0, z: -42, r: 5 }, rows: [-30, -24.6, -19.2, -13.8, -8.4],
+  },
+  lavaStart: { x: -37.5, z: -42 },
   snorkelStart: { x: -104, z: 14 },
   arrival: { x: 0, z1: 122, w: 4, top: 1.1 },
   launch: { x0: 0, z1: 122, w: 4, top: 1.1 },
@@ -24,8 +30,9 @@ export const LOC = {
   lagoon: { x: -138, z: 18, r: 26 },
   station: { x: -122, z: 22 },
   forge: { x: -44, z: -52 },
-  rocco: { x: -38, z: -46 },
-  lavaField: { x: -12, z: -46 },
+  // Rocco works beside the forge, out of the way of the Lava Hop's start on the pool's west bank.
+  rocco: { x: -50, z: -48 },
+  forgeFront: { x: -46, z: -45 },
   volcano: { x: 0, z: -96, top: 44, crater: 13 },
   camp2: { x: 46, z: -62 },
   cinder: { x: 48, z: -66 },
@@ -39,16 +46,25 @@ export const LOC = {
   sandbar: [{ x: -54, z: 108 }, { x: -82, z: 124 }],
   cliffs: { x: 104, z: -104, r: 20, top: 20 },
   lighthouse: { x: 110, z: -112 },
-  lumi: { x: 98, z: -98 },
+  lumi: { x: 92, z: -100 },
   rampA: { x: 66, z: -74, h: 7 },
   rampB: { x: 88, z: -90, h: 20 },
-  arena: { x: 26, z: -48 },
+  // The old lookout circle on the cliff top, where the Sootlings gather.
+  arena: { x: 106, z: -98 },
   island: { x: 0, z: 0, r: 0 },
 };
 
+// Distance from (x, z) to the lava pool's edge, negative over the lava. Measured along the ray from the
+// pool's centre, which is exact on both axes and close enough elsewhere for a gentle oval.
+export function poolDist(x, z, P = LOC.lavaPool) {
+  const dx = x - P.x, dz = z - P.z;
+  const e = Math.hypot(dx / P.a, dz / P.b);
+  return e < 1e-6 ? -Math.min(P.a, P.b) : Math.hypot(dx, dz) * (1 - 1 / e);
+}
+
 // The five Ember Vents that feed the Heart-Ember, one per subject.
 export const CRYSTALS = {
-  lake: { x: -52, z: -60 },
+  lake: { x: 0, z: -42 },
   grove: { x: -124, z: -7 },
   huts: { x: 132, z: 14 },
   cave: { x: -98, z: 132 },
@@ -78,7 +94,7 @@ export const SNOWFLAKES = [
   [8, 110], [-12, 112], [16, 96],
   [-60, 60], [40, 40], [34, 92], [-22, 116], [48, 76], [-80, 56], [-68, -20],
   [30, -20], [-6, 20], [90, -60], [114, 55], [133, 47], [-93, 35], [-150, -10], [-143, 46],
-  [-96, 112], [-112, 146], [-80, 128], [10, -40], [-30, -90], [30, -110], [72, -110],
+  [-96, 112], [-112, 146], [-80, 128], [18, -28], [-30, -90], [30, -110], [72, -110],
   [116, -126], [92, -20], [6, 60], [-86, -48], [50, 8],
 ];
 
@@ -89,7 +105,7 @@ export const CHESTS = [
 
 // Where grumpy Sootlings drift, and which subject they quiz on (null = the weakest one).
 export const GLOOM_SPOTS = [
-  { x: -30, z: -36, domain: 'lake' }, { x: -64, z: -64, domain: 'lake' },
+  { x: -30, z: -24, domain: 'lake' }, { x: -64, z: -64, domain: 'lake' },
   { x: -100, z: 30, domain: 'grove' }, { x: 104, z: 8, domain: 'huts' },
   { x: -86, z: 119, domain: 'cave' }, { x: 74, z: -84, domain: 'ridge' },
   { x: 24, z: -30, domain: null }, { x: 40, z: 70, domain: null },
@@ -112,7 +128,8 @@ export const NURSERY = { x: 26, z: 114 };
 export const PATROL_BOARD = { x: 8, z: 92 };
 export const CAULDRON = { x: 122, z: 18 };
 export const FESTIVAL = { x: 0, z: 86 };
-export const SLALOM = { top: { x: 12, z: -78 }, toward: { x: 26, z: -40 } };
+// Down the ash slope on Mount Ember's south-east side.
+export const SLALOM = { top: { x: 14, z: -72 }, toward: { x: 30, z: -36 } };
 
 // Tortuga's sea chart: a 12 x 12 grid over the islands, 30 units per square, (0, 0) at the south-west.
 export const GRID = { x0: -180, z0: 180, cell: 30, n: 12 };

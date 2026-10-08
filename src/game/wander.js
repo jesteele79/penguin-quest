@@ -1,6 +1,7 @@
 // Wandering Glooms: one puzzle each to cheer them up. They come back after a while for more practice.
 import * as THREE from 'three';
 import { T } from '../books/terms.js';
+import { BOOK } from '../books/current.js';
 import { G, pushActivity } from '../core/state.js';
 import { QuizActivity } from './activities.js';
 import { twoShot } from './minigames/common.js';
@@ -29,7 +30,7 @@ export class Wanderers {
   }
 
   spawn(item) {
-    const g = new Gloom(this.ctx.scene, { scale: 0.9 });
+    const g = new Gloom(this.ctx.scene, { scale: 0.9, ...BOOK.gloomLook });
     g.position.copy(item.home);
     item.gloom = g;
   }

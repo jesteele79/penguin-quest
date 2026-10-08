@@ -23,7 +23,8 @@ export const SITE_SETS = {
   lamps: { kind: 'lamp', points: LAMPS, label: 'Light the signal lamp', title: 'Signal Lamp', domain: 'ridge', count: 2 },
   legends: {
     kind: 'lantern', label: 'Begin the Legend Trial', title: 'Legend Trial', count: 6, hard: true,
-    points: ['lake', 'grove', 'huts', 'cave', 'ridge'].map((r) => [CRYSTALS[r].x + 4.5, CRYSTALS[r].z + 4.5]),
+    // The forge vent's island is too small for a lantern, so that one stands on the pool's south bank.
+    points: ['lake', 'grove', 'huts', 'cave', 'ridge'].map((r) => (r === 'lake' ? [2, -27] : [CRYSTALS[r].x + 4.5, CRYSTALS[r].z + 4.5])),
     domains: ['lake', 'grove', 'huts', 'cave', 'ridge'],
   },
   invites: {
@@ -95,11 +96,12 @@ export const MAIN = [
         after: [
           ['rocco', 'The steam is coming back! Okay, okay, you are pretty good.'],
           ['rocco', 'Look what was stuck in the last valve: a brass gear stamped with a letter C. And a tiny drawing of a balloon. Weird.'],
-          ['rocco', 'Now the lava stream is warm again, but the vent is on the far side. Only the stones with the right answers are cool enough to stand on. Race you! ...I mean, you go first.'],
+          ['rocco', 'Now the lava pool is bubbling again, and the vent sits on the rock island at the far end. Stepping stones rise out of the lava, but only the ones with the right answers are cool enough to stand on.'],
+          ['rocco', 'Race you! ...I mean, you go first.'],
         ],
       },
       {
-        type: 'game', game: 'lavahop', at: 'lavaStart', label: 'Start the Lava Hop', text: 'Hop across the lava stream on the cool stones', shard: true,
+        type: 'game', game: 'lavahop', at: 'lavaStart', label: 'Start the Lava Hop', text: 'Hop across the lava pool on the cool stones', shard: true,
         after: [
           ['rocco', 'You did not even singe a feather! Fine. You are a real hopper.'],
           ['rocco', 'One last thing before we wake the vent: I have a pile of glass orders. Everybody wants bowls and floats, and I need help with the numbers.'],

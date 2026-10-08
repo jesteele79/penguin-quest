@@ -3,7 +3,7 @@
 // and sea cliffs with a lighthouse to the north-east. Pure functions, like Book 1's terrain.
 import { createNoise2D, makeFbm } from '../../core/noise.js';
 import { lerp, smoothstep } from '../../core/mathutil.js';
-import { LOC } from './layout.js';
+import { LOC, poolDist } from './layout.js';
 
 const nA = createNoise2D(2718);
 const nB = createNoise2D(3141);
@@ -62,8 +62,15 @@ export function rawHeight(x, z) {
   const flat = (p, r, fall, target) => { const t = 1 - smoothstep(r, r + fall, Math.hypot(x - p.x, z - p.z)); h = lerp(h, target, t); };
   flat(loc.home, 20, 14, 2.4);
   flat(loc.harbor, 18, 12, 2.6);
-  flat(loc.forge, 11, 9, 10);
+  // The forge and the lava pool share one level terrace at the foot of the volcano.
+  const LP = loc.lavaPool;
+  flat(loc.forge, 11, 9, LP.rim);
   flat(loc.camp2, 10, 8, 7.5);
+  const pd = poolDist(x, z, LP);
+  h = lerp(h, LP.rim, 1 - smoothstep(4, 12, pd));
+  if (pd < 0) h = Math.min(h, LP.floor + (LP.rim - LP.floor) * smoothstep(-2, 0, pd));
+  const I = LP.isle, di = Math.hypot(x - I.x, z - I.z);
+  if (di < I.r + 2) h = Math.max(h, lerp(LP.floor, LP.rim + 0.2, 1 - smoothstep(I.r - 0.5, I.r + 1.5, di)));
 
   // Lighthouse headland: a high plateau with cliffs to the sea, and a ramp up from the hills.
   const C = loc.cliffs;
@@ -132,14 +139,18 @@ export function terrainColor(x, z, h, slope, roadD, out) {
   const streak = smoothstep(0.2, 0.7, nB(x * 0.11, z * 0.03));
   r = lerp(r, lerp(0.27, 0.42, streak * 0.4), volc); g = lerp(g, 0.21, volc); b = lerp(b, 0.22, volc);
   r = lerp(r, 0.46, ash * 0.8); g = lerp(g, 0.41, ash * 0.8); b = lerp(b, 0.42, ash * 0.8);
-  // lava fields east of the forge
-  const lf = 1 - smoothstep(10, 26, Math.hypot(x - loc.lavaField.x, z - loc.lavaField.z));
+  // dark basalt around the lava pool
+  const pd = poolDist(x, z, loc.lavaPool);
+  const lf = 1 - smoothstep(2, 16, pd);
   r = lerp(r, 0.2, lf * 0.85); g = lerp(g, 0.17, lf * 0.85); b = lerp(b, 0.19, lf * 0.85);
   // cliffs
   const s1 = smoothstep(0.75, 1.3, slope);
   r = lerp(r, 0.58, s1 * 0.85); g = lerp(g, 0.47, s1 * 0.85); b = lerp(b, 0.38, s1 * 0.85);
   const s2 = smoothstep(1.4, 2.4, slope);
   r = lerp(r, 0.42, s2 * 0.8); g = lerp(g, 0.34, s2 * 0.8); b = lerp(b, 0.3, s2 * 0.8);
+  // a black crust lip where the ground dips into the lava, and the island the vent stands on
+  const lip = Math.max(1 - smoothstep(-0.5, 2.5, pd), 1 - smoothstep(loc.lavaPool.isle.r - 1.5, loc.lavaPool.isle.r + 1, Math.hypot(x - loc.lavaPool.isle.x, z - loc.lavaPool.isle.z)));
+  r = lerp(r, 0.15, lip); g = lerp(g, 0.12, lip); b = lerp(b, 0.12, lip);
   // under water: pale lagoon sand, then deep blue-green
   const under = smoothstep(0.3, -0.6, h);
   r = lerp(r, 0.86, under); g = lerp(g, 0.85, under); b = lerp(b, 0.7, under);

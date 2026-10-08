@@ -328,6 +328,7 @@ sup { font-size: 0.62em; }
 .toast.show { opacity: 1; transform: none; }
 .toast.gold { border-color: rgba(255, 209, 102, 0.7); }
 .toast.teal { border-color: rgba(56, 240, 210, 0.7); }
+.toast.hot { border-color: rgba(255, 122, 42, 0.85); }
 .toast.violet { border-color: rgba(180, 131, 255, 0.7); }
 .toast b { color: var(--lantern); }
 .banner { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%) scale(0.8); text-align: center; opacity: 0; pointer-events: none; width: min(900px, 92vw); }
@@ -361,6 +362,7 @@ sup { font-size: 0.62em; }
 .fish-label.sel, .floe-label.sel { border-color: var(--lantern); box-shadow: 0 0 20px rgba(255, 209, 102, 0.8); }
 .fish-label.right, .floe-label.right { border-color: var(--good); box-shadow: 0 0 22px rgba(77, 255, 160, 0.9); }
 .floe-label { font-size: 24px; }
+.stone-label { border-color: rgba(255, 176, 120, 0.6); }
 .speech { padding: 8px 14px; border-radius: 16px 16px 16px 4px; background: #fff; color: #1b2466; font-size: 17px; box-shadow: 0 6px 16px rgba(0,0,0,0.35); }
 .gloom-label { padding: 5px 10px; border-radius: 12px; background: rgba(40, 24, 80, 0.85); border: 1.5px solid rgba(180, 131, 255, 0.6); font-size: 16px; opacity: 0.8; }
 .gloom-label.target { font-size: 20px; opacity: 1; border-color: var(--lantern); box-shadow: 0 0 20px rgba(255, 209, 102, 0.8); }

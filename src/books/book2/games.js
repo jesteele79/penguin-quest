@@ -99,18 +99,7 @@ export function startTideCharts() {
   }));
 }
 
-// First versions of the two action games, as framed puzzle sets: the Lava Hop and the snorkel trail.
-export function startLavaHop(params, onDone) {
-  const start = at(LOC.lavaStart, 1);
-  pushActivity(new QuizActivity({
-    title: 'Lava Hop', subtitle: 'Find the cool stones · 5 multiply and divide puzzles', color: '#ff6b35', count: 5,
-    pick: () => ({ domain: 'lake' }),
-    shot: twoShot(G.player.pos, start, { dist: 9, up: 4, lookUp: 0.5 }),
-    onCorrect: () => G.world.effects.burst(start.clone().add(V(0, 0.5, 0)), { count: 24, color: [0xff8a3d, 0xffd166], speed: 4, up: 5, life: 1.0, gravity: 6, size: 0.45 }),
-    onFinish: () => onDone(),
-  }));
-}
-
+// A first version of the snorkel trail, as a framed puzzle set.
 export function startSnorkel(params, onDone) {
   const start = at(LOC.snorkelStart, 0.5);
   pushActivity(new QuizActivity({

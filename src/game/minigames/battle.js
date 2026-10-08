@@ -1,10 +1,13 @@
-// Cheer-Up Battle on Gloom Ridge: Glooms waddle in with puzzles. Type the answer to send aurora light.
+// Cheer-Up Battle (Glooms on Gloom Ridge, Sootlings at the lighthouse): they waddle in with puzzles. Type the
+// answer to send them light and warmth.
 import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../../core/state.js';
 import { Round, V } from './common.js';
 import { Gloom } from '../../actors/gloom.js';
 import { toHTML } from '../../math/fmt.js';
 import { LOC } from '../../world/layout.js';
+import { BOOK } from '../../books/current.js';
+import { T } from '../../books/terms.js';
 
 const WAVES = [3, 4, 5];
 const SPAWN_R = 13.5;
@@ -30,7 +33,7 @@ class BattleActivity {
     G.hearts = { now: this.hearts, max: this.maxHearts };
     G.cam.setShot({ pos: this.center.clone().add(V(0, 8, 12)), look: this.center.clone().add(V(0, 3.2, -10)), fov: 58 }, 1.2);
     const panel = G.quiz;
-    panel.open({ title: 'Cheer-Up Battle', subtitle: 'Type the answer for the glowing Gloom, then press Enter', color: '#b483ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    panel.open({ title: 'Cheer-Up Battle', subtitle: `Type the answer for the glowing ${T.gloom}, then press Enter`, color: T.gloomColor, layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onSubmit: (r) => this.submit(r),
       onHint: () => { if (this.target && !this.target.round.over) { this.target.round.hint(); G.audio.play('hint'); panel.showHint(this.target.round.p); } },
@@ -43,11 +46,11 @@ class BattleActivity {
   startWave() {
     const n = WAVES[this.wave];
     G.quiz.setProgress(this.wave, WAVES.length);
-    G.toasts.showBanner(`Wave ${this.wave + 1} of ${WAVES.length}`, `${n} grumpy Glooms incoming!`, '#b483ff', 2200, { replace: true });
+    G.toasts.showBanner(`Wave ${this.wave + 1} of ${WAVES.length}`, `${n} grumpy ${T.glooms} incoming!`, T.gloomColor, 2200, { replace: true });
     for (let i = 0; i < n; i++) {
       const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.42;
       const x = this.center.x + Math.cos(a) * SPAWN_R, z = this.center.z + Math.sin(a) * SPAWN_R;
-      const g = new Gloom(G.scene, { scale: 0.95 });
+      const g = new Gloom(G.scene, { scale: 0.95, ...BOOK.gloomLook });
       g.position.set(x, G.terrain.heightAt(x, z), z);
       const p = G.tutor.next(Math.random() < 0.25 ? 'lake' : 'ridge', { format: 'input' });
       const label = G.labels.add('<span>?</span>', { cls: 'gloom-label', pos: g.position, offsetY: 3.1, maxDist: 60, clear: true });
@@ -79,7 +82,7 @@ class BattleActivity {
     if (r.outcome === 'correct') {
       G.audio.play('zap');
       G.audio.play('correct');
-      this.zap(t, 0xb483ff);
+      this.zap(t, T.gloomHex);
       G.quiz.showCorrect(`<span class="coin-pop">+${r.coins}</span>`);
       setTimeout(() => this.cheer(t), 250);
       return;
@@ -87,11 +90,11 @@ class BattleActivity {
     G.audio.play('wrong');
     t.g.bump();
     if (r.outcome === 'hint') {
-      G.quiz.showWrong({ why: r.why, message: 'The Gloom grumbles. Try again!' });
+      G.quiz.showWrong({ why: r.why, message: `The ${T.gloom} grumbles. Try again!` });
       G.quiz.showHint(t.round.p);
     } else {
       this.state = 'reveal';
-      G.quiz.showReveal(t.round.p, "Here's how to solve it. Then press Enter to cheer this Gloom up!");
+      G.quiz.showReveal(t.round.p, `Here's how to solve it. Then press Enter to cheer this ${T.gloom} up!`);
     }
   }
 
@@ -148,7 +151,7 @@ class BattleActivity {
     G.hearts = { now: this.hearts, max: this.maxHearts };
     G.audio.play('hurt');
     G.cam.addShake(0.8);
-    G.toasts.screenFlash('#6a4ab8', 0.35);
+    G.toasts.screenFlash(T.hurtFlash, 0.35);
     const back = t.g.position.clone().sub(this.center).setY(0).setLength(9);
     t.g.position.set(this.center.x + back.x, t.g.position.y, this.center.z + back.z);
     if (this.hearts <= 0) {

@@ -9,7 +9,7 @@ import { smoothstep } from '../../core/mathutil.js';
 import { coastSD } from './shape.js';
 import {
   LOC, WORLD_RADIUS, CRYSTALS, SNOWFLAKES, CHESTS, GLOOM_SPOTS, CHICK_SPOTS, NURSERY, PATROL_BOARD, CAULDRON,
-  FESTIVAL, SLALOM, VALVES, CRATES, LAMPS, TIDE_POOLS,
+  FESTIVAL, SLALOM, VALVES, CRATES, LAMPS, TIDE_POOLS, poolDist,
 } from './layout.js';
 
 const fbm = makeFbm(createNoise2D(4711));
@@ -139,11 +139,11 @@ const CLEAR = [
 for (const c of Object.values(CRYSTALS)) CLEAR.push({ ...c, r: 7 });
 for (const [x, z] of [...SNOWFLAKES, ...CHESTS, ...CHICK_SPOTS, ...VALVES, ...CRATES, ...LAMPS, ...TIDE_POOLS]) CLEAR.push({ x, z, r: 4 });
 for (const g of GLOOM_SPOTS) CLEAR.push({ x: g.x, z: g.z, r: 7 });
-for (let k = 0; k <= 46; k += 4) {
+for (let k = 0; k <= 66; k += 4) {
   const dx = SLALOM.toward.x - SLALOM.top.x, dz = SLALOM.toward.z - SLALOM.top.z, l = Math.hypot(dx, dz);
   CLEAR.push({ x: SLALOM.top.x + (dx / l) * k, z: SLALOM.top.z + (dz / l) * k, r: 8 });
 }
-const isClear = (x, z) => CLEAR.every((c) => (x - c.x) ** 2 + (z - c.z) ** 2 >= c.r * c.r);
+const isClear = (x, z) => poolDist(x, z) > 6 && CLEAR.every((c) => (x - c.x) ** 2 + (z - c.z) ** 2 >= c.r * c.r);
 const volcanoD = (x, z) => Math.hypot(x - LOC.volcano.x, z - LOC.volcano.z);
 
 export function buildNature(ctx) {
