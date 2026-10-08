@@ -8,6 +8,7 @@ import { CRYSTALS, LOC, SNOWFLAKES, PATROL_BOARD, CAULDRON, SLALOM, GLOOM_SPOTS 
 import { GAMES } from './games.js';
 import { DOMAINS, SKILLS } from '../math/skills.js';
 import { cocoaOrder } from '../math/skills/decimals.js';
+import { bookById } from '../books/books.js';
 import { ShopScreen } from './screens.js';
 import { orbitShot, angleToPlayer } from './minigames/common.js';
 
@@ -472,8 +473,12 @@ export class QuestEngine {
     const info = REGION_INFO[region];
     const color = REGION_COLORS[region].css;
     if (this.s.crystals[region]) {
+      // Practice goes to this subject's grade-level skills that are not mastered yet, if there are any.
+      const grade = bookById(this.s.active).grade;
+      const todo = DOMAINS[region].skills.filter((s) => s.grade === grade && G.tutor.isUnlocked(s) && !G.tutor.isMastered(s.id)).map((s) => s.id);
       return pushActivity(new QuizActivity({
-        title: 'Crystal Practice', subtitle: `${info.subject} · 5 puzzles for fish coins`, color, count: 5, domain: region, shot: this.crystalShot(c.base),
+        title: 'Crystal Practice', subtitle: `${info.subject} · ${todo.length ? 'skills to master' : '5 puzzles'} for fish coins`, color, count: 5,
+        pick: () => ({ domain: region, skills: todo.length ? todo : undefined }), shot: this.crystalShot(c.base),
         onCorrect: () => { c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 20); },
         onFinish: () => { G.addCoins(15); G.toasts.toast('Practice complete! +15 bonus'); },
       }));

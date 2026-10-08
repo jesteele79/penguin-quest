@@ -9,6 +9,7 @@ import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
+import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY } from '../books/books.js';
 
 const NAME_IDEAS = ['Pip', 'Waddles', 'Frosty', 'Nova', 'Pebble', 'Blizzard', 'Sprinkles', 'Tux', 'Iggy', 'Aurora', 'Flipper', 'Comet'];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -90,6 +91,7 @@ export class TitleScreen extends Screen {
         el('div', { class: 'logo-2', text: 'Aurora Rescue' }),
         el('div', { class: 'logo-3', html: '<span>✦</span> An open-world math adventure <span>✦</span>' })),
       menu,
+      bookShelf(d),
       el('div', { class: 'title-foot' },
         btn('For grown-ups', () => pushActivity(new GrownupsScreen()), 'ghost small'),
         el('span', { class: 'title-hint', html: 'Use <kbd>↑</kbd><kbd>↓</kbd> and <kbd>Enter</kbd>, or click' })),
@@ -102,6 +104,37 @@ export class TitleScreen extends Screen {
 
   onKey(e, inField) { if (!inField) arrowNav(this.root, e); }
   close() {}
+}
+
+// The series shelf on the title screen: the book being played, and what opens the next ones.
+function bookShelf(d) {
+  const data = d ?? G.save.data;
+  const tutor = G.makeTutor(data);
+  const shelf = el('div', { class: 'book-shelf', 'aria-label': 'The Penguin Quest books' });
+  for (const book of BOOKS) {
+    const open = isUnlocked(data, tutor, book);
+    let note;
+    if (book.n === 1) note = d ? 'Now playing' : 'Start here';
+    else if (!book.ready) note = open ? 'Unlocked! Coming soon' : 'Coming soon';
+    else note = open ? 'Ready to play' : 'Locked';
+    let detail = '';
+    if (!open && book.n > 1) {
+      const prev = BOOKS[book.n - 2];
+      const st = bookStatus(data, tutor, prev);
+      const togo = skillsToGo(st);
+      detail = !isUnlocked(data, tutor, prev) ? `Opens after Book ${prev.n}`
+        : !st.storyDone ? `Finish ${prev.title}${togo ? ` and master ${togo} more skills` : ''}`
+          : `Master ${togo} more grade ${prev.grade} skill${togo === 1 ? '' : 's'}`;
+    }
+    shelf.append(el('div', {
+      class: `book-card ${open ? 'open' : 'locked'} ${book.n === 1 ? 'current' : ''}`,
+      style: `--c1:${book.colors[0]};--c2:${book.colors[1]};--c3:${book.colors[2]}`,
+      html: `<div class="book-cover"><span class="book-emblem">${BOOK_ICONS[book.icon]}</span><span class="book-num">Book ${book.n}</span></div>
+        <div class="book-info"><div class="book-title">${book.title}</div><div class="book-grade">Grade ${book.grade} math</div>
+        <div class="book-note">${open ? '' : BOOK_ICONS.lock} ${note}</div>${detail ? `<div class="book-detail">${detail}</div>` : ''}</div>`,
+    }));
+  }
+  return shelf;
 }
 
 // ------------------------------------------------------------ New game
@@ -408,7 +441,28 @@ export class JournalScreen extends Screen {
         ${q && !q.done ? this.stepList(def, q) : ''}
         ${q && !q.done ? `<button class="btn small ${tracked ? 'sel' : ''}" data-track="${def.id}">${tracked ? 'Tracking' : 'Track this'}</button>` : ''}
       </section>`;
-    }).join('');
+    }).join('') + this.nextBook();
+  }
+
+  // What it takes to open the next book, shown under the last chapter.
+  nextBook() {
+    const s = G.save.data;
+    const cur = BOOKS[0], next = BOOKS[1];
+    const st = bookStatus(s, G.tutor, cur);
+    const open = isUnlocked(s, G.tutor, next);
+    const pct = Math.round(st.pct * 100);
+    const togo = skillsToGo(st);
+    const tick = (ok) => (ok ? '✓' : '○');
+    return `<section class="quest-card next-book" style="--c:${next.colors[1]}">
+      <div class="qc-head"><h3>Next: Book ${next.n}, ${escapeHTML(next.title)}</h3>${open ? '<span class="pill ok">Unlocked</span>' : '<span class="pill dim">Locked</span>'}</div>
+      <p class="note">${escapeHTML(next.blurb)} Grade ${next.grade} math.${next.ready ? '' : ' Coming soon!'}</p>
+      <ul class="steps">
+        <li class="${st.storyDone ? 'done' : ''}">${tick(st.storyDone)} Finish ${escapeHTML(cur.title)}</li>
+        <li class="${togo === 0 ? 'done' : ''}">${tick(togo === 0)} Master ${Math.round(UNLOCK_MASTERY * 100)}% of the grade ${cur.grade} skills (${st.mastered} of ${st.total})</li>
+      </ul>
+      <div class="mini-track wide"><div style="width:${pct}%"></div></div>
+      ${togo && st.missing.length ? `<p class="note">Practise at a restored crystal to master: ${st.missing.slice(0, 4).map((x) => escapeHTML(x.name)).join(', ')}${st.missing.length > 4 ? ', and more' : ''}.</p>` : ''}
+    </section>`;
   }
 
   side() {
@@ -478,7 +532,9 @@ export class JournalScreen extends Screen {
 }
 
 function stepSummary(st) {
-  const t = typeof st.text === 'function' ? st.text(0, G.sites?.count(st.set) ?? 0, '') : st.text;
+  // Only site steps have a site count (the prologue's snowflake step crashed the journal here).
+  const total = st.type === 'sites' ? G.sites?.count(st.set) ?? 0 : st.type === 'collect' ? G.pickups?.total(st.set) ?? 0 : st.need ?? 0;
+  const t = typeof st.text === 'function' ? st.text(0, total, '') : st.text;
   if (st.type === 'crystal') return 'Charge and wake the Aurora Crystal';
   return (t || '').replace(/\s*\(0\/\d+\)$/, '').replace(/\(0\/\d+\)/, '');
 }
@@ -668,6 +724,16 @@ export class GrownupsScreen extends Screen {
     const setVal = (fn) => { fn(live); if (!G.inGame) { const dd = G.save.peek(); if (dd) { fn(dd); G.save.data = dd; G.save.save(); } } else G.saveSoon(); this.render(); };
     const gradeSel = el('div', { class: 'seg', 'data-cols': 3 });
     for (const g of [4, 5, 6]) gradeSel.append(btn(`Grade ${g}`, () => setVal((x) => { x.profile.grade = g; if (G.inGame) G.tutor.setGrade(g); }), data.profile.grade === g ? 'sel' : ''));
+    const bookRows = BOOKS.slice(1).map((b) => {
+      const forced = !!data.flags?.unlocked?.includes(b.id);
+      const prev = BOOKS[b.n - 2];
+      const st = bookStatus(data, tut, prev);
+      const note = !b.ready ? `Coming soon. It opens after ${prev.title} with ${Math.round(UNLOCK_MASTERY * 100)}% of grade ${prev.grade} skills mastered (now ${st.mastered} of ${st.total}).`
+        : isUnlocked(data, tut, b) ? 'Open.' : `Opens after ${prev.title} with ${Math.round(UNLOCK_MASTERY * 100)}% of grade ${prev.grade} skills mastered (now ${st.mastered} of ${st.total}).`;
+      return el('div', { class: 'set-row' },
+        el('div', {}, el('div', { class: 'label', text: `Book ${b.n}: ${b.title} (grade ${b.grade})` }), el('div', { class: 'note', text: note })),
+        btn(forced ? 'Opened early' : 'Open early', () => setVal((x) => { x.flags.unlocked = [...new Set([...(x.flags.unlocked ?? []), b.id])]; }), forced ? 'sel' : '', b.ready ? {} : { disabled: true }));
+    });
     const paceSel = el('div', { class: 'seg', 'data-cols': 2 });
     paceSel.append(btn('One chapter per day', () => setVal((x) => { x.settings.pace = 'daily'; }), data.settings.pace !== 'free' ? 'sel' : ''));
     paceSel.append(btn('No limit', () => setVal((x) => { x.settings.pace = 'free'; }), data.settings.pace === 'free' ? 'sel' : ''));
@@ -690,6 +756,8 @@ export class GrownupsScreen extends Screen {
       el('h2', { text: 'Settings for grown-ups' }),
       el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: 'Grade level' }), el('div', { class: 'note', text: 'Skills below this grade start as review. Skills above it open once the grade-level skills are mastered.' })), gradeSel),
       el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: 'Story pace' }), el('div', { class: 'note', text: 'With one chapter per day, the next chapter opens the morning after the last one is finished. Side quests, the daily patrol and practice are always open.' })), paceSel),
+      el('h2', { text: 'Books' }),
+      ...bookRows,
       el('div', { class: 'row' },
         btn('Copy report', () => this.copy(data, tut), ''),
         btn('Reset all progress', () => pushActivity(new ConfirmScreen('Reset all progress?', 'This erases the saved game and the practice history on this device. It cannot be undone.', 'Erase everything', () => { G.save.wipe(); location.reload(); })), 'danger ghost')),

@@ -2,10 +2,19 @@ import { emptyTutorState } from '../math/tutor.js';
 
 const KEY = 'penguinquest.save.v2';
 
+// Fields that belong to one book. The active book keeps them at the top level (so the game reads them
+// directly); the others are parked in data.books until their book is opened.
+export const BOOK_KEYS = [
+  'pos', 'q', 'tracked', 'briefed', 'resonance', 'shards', 'progress', 'crystals', 'finale', 'festival',
+  'snowflakes', 'seeds', 'chests', 'chicks', 'treasures', 'gloomRespawn', 'medals',
+];
+
 export function defaultSave() {
   return {
-    v: 2,
+    v: 3,
     created: Date.now(),
+    active: 'book1',
+    books: {},
     profile: { name: 'Pip', grade: 4, scarf: 'coral' },
     settings: { music: 0.5, sfx: 0.8, voice: 1, quality: 'auto', gentle: false, readAloud: false, bigText: false, textSize: 1, easyRead: false, textSpeed: 'normal', reduceMotion: null, showTrail: true, pace: 'daily' },
     pos: null,
@@ -104,6 +113,21 @@ export class SaveStore {
       console.warn('Could not save progress.', e);
       return false;
     }
+  }
+
+  // Park the active book's state and bring another book's state (or a fresh one) to the top level.
+  switchBook(id) {
+    const d = this.data;
+    const from = d.active ?? 'book1';
+    if (id === from) return d;
+    const fresh = defaultSave();
+    d.books = d.books ?? {};
+    d.books[from] = JSON.parse(JSON.stringify(Object.fromEntries(BOOK_KEYS.map((k) => [k, d[k]]))));
+    const next = d.books[id];
+    for (const k of BOOK_KEYS) d[k] = next && k in next ? next[k] : fresh[k];
+    delete d.books[id];
+    d.active = id;
+    return d;
   }
 
   wipe() {
