@@ -10,8 +10,9 @@ import { T } from '../books/terms.js';
 import { GAMES } from './games.js';
 import { DOMAINS, SKILLS } from '../math/skills.js';
 import { cocoaOrder } from '../math/skills/decimals.js';
-import { bookById } from '../books/books.js';
-import { ShopScreen } from './screens.js';
+import { bookById, voyages, placeName } from '../books/books.js';
+import { ShopScreen, VoyageScreen } from './screens.js';
+import { ACTIVE } from '../books/active.js';
 import { orbitShot, angleToPlayer } from './minigames/common.js';
 
 const V = (x, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -233,6 +234,8 @@ export class QuestEngine {
       return { text: `${next.title.split(':')[0]} opens tomorrow. Try the ${T.patrol} board or a side quest!`, target: this.anchor('board') };
     }
     if (!next) {
+      const onward = this.onwardVoyage();
+      if (onward) return { text: `Sail to ${placeName(onward.world)} with Captain Flipper`, target: G.npcs.get('captain')?.pos ?? null, npc: 'captain' };
       const offer = SIDE.find((d) => this.sideOpen(d));
       if (offer) return { text: `New side quest: talk to ${NPCS[offer.giver].name}`, target: G.npcs.get(offer.giver).pos, npc: offer.giver };
       return { text: `Free play: ${T.patrol}, collections and practice`, target: null };
@@ -328,7 +331,15 @@ export class QuestEngine {
     }
     // 4. Special friends
     if (npcId === BOOK.nursery && this.active('sq_chicks') && G.chicks.following() > 0) return G.chicks.deliver();
-    // 5. Offer a new side quest
+    // 5. Captain Flipper sails to the next open book (or back to another), until told "not yet" this visit.
+    if (npcId === 'captain' && this.done('ch0') && !this.voyageDeclined) {
+      const to = this.onwardVoyage() ?? voyages(G.save.data, G.tutor, ACTIVE)[0];
+      if (to) {
+        const line = to.n < bookById(ACTIVE).n ? `Homesick for ${placeName(to.world)}, matey? My boat is ready whenever you are.` : `${to.world} ${to.world.endsWith('s') ? 'are' : 'is'} waiting, matey! Shall we set sail?`;
+        return this.say([[npcId, line]], npcId).then(() => pushActivity(new VoyageScreen(to.id, () => { this.voyageDeclined = true; })));
+      }
+    }
+    // 6. Offer a new side quest
     const offer = SIDE.find((d) => d.giver === npcId && this.sideOpen(d));
     if (offer) {
       return this.say(offer.offer, npcId).then(() => {
@@ -336,11 +347,11 @@ export class QuestEngine {
         G.toasts.toast(`New side quest: <b>${offer.title}</b>. Press J to see your quests.`, { ms: 4200 });
       });
     }
-    // 6. Shop
+    // 7. Shop
     if (npcId === BOOK.shop.npc && this.done(BOOK.shop.after)) {
       return this.say([[npcId, BOOK.shop.line]], npcId).then(() => pushActivity(new ShopScreen(true)));
     }
-    // 7. Reminders for active side quests from this friend, then chatter
+    // 8. Reminders for active side quests from this friend, then chatter
     const mine = SIDE.find((d) => d.giver === npcId && this.active(d.id));
     if (mine) {
       const o = this.objectiveFor(mine.id);
@@ -567,9 +578,28 @@ export class QuestEngine {
     else fn(g.step.params ?? {}, (result) => this.advance(g.id, result), { questId: g.id });
   }
 
+  // The next book in the series, once it is open and ready to sail to.
+  onwardVoyage() {
+    const here = bookById(ACTIVE);
+    return voyages(G.save.data, G.tutor, ACTIVE).find((b) => b.n > here.n) ?? null;
+  }
+
+  // A book that has just opened is announced once (mastery can tip it over at any time, not only at the end).
+  announceVoyage() {
+    const d = G.save.data;
+    const book = this.onwardVoyage();
+    if (!book || d.flags.announced?.includes(book.id)) return;
+    d.flags.announced = [...(d.flags.announced ?? []), book.id];
+    G.audio.play('fanfare');
+    G.toasts.showBanner(`Book ${book.n} unlocked: ${book.title}!`, 'Captain Flipper is ready to sail you there', book.colors[1], 5600);
+    G.saveSoon();
+  }
+
   // ------------------------------------------------------------ per-frame
   update(dt) {
     if (!(G.top instanceof ExploreActivity)) return;
+    this.voyageT = (this.voyageT ?? 2) - dt;
+    if (this.voyageT <= 0) { this.voyageT = 5; this.announceVoyage(); }
     if (this.queue.length) { this.queue.shift()(); return; }
     const next = this.mainNext();
     if (next && !this.started(next.id) && this.chapterOpen(next)) {

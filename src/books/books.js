@@ -10,7 +10,7 @@ export const BOOKS = [
     blurb: 'Bring the fading aurora back to a snowy island.', colors: ['#1e2a78', '#38f0d2', '#b483ff'], icon: 'flake',
   },
   {
-    id: 'book2', n: 2, title: 'The Ember Isles', grade: 5, world: 'The Ember Isles', final: null, ready: false,
+    id: 'book2', n: 2, title: 'The Ember Isles', grade: 5, world: 'The Ember Isles', final: 'ch7', ready: true,
     blurb: 'Sail to a warm volcanic archipelago where the Heart-Ember is cooling.', colors: ['#5a1e3a', '#ff6b35', '#2ec4b6'], icon: 'flame',
   },
   {
@@ -20,6 +20,12 @@ export const BOOKS = [
 ];
 
 export const bookById = (id) => BOOKS.find((b) => b.id === id) ?? BOOKS[0];
+export const nextBook = (book) => BOOKS[book.n] ?? null;
+// A book's world in the middle of a sentence: "sail to the Ember Isles".
+export const placeName = (world) => world.replace(/^The /, 'the ');
+
+// The books a player could sail to from this one right now: open, finished being written, not this one.
+export const voyages = (data, tutor, here) => BOOKS.filter((b) => b.id !== here && b.ready && isUnlocked(data, tutor, b));
 
 // What each book teaches: the year before as review, its own grade as the core, and a few previews of the
 // next grade for players who race ahead (they open once the domain's easier skills are mastered).

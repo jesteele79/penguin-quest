@@ -743,3 +743,14 @@ tr.dim td { color: var(--frost-dim); }
 button.book-card { font: inherit; color: inherit; cursor: pointer; }
 .book-card.switch { border-color: rgba(46, 196, 182, 0.7); }
 .book-card.switch:hover, .book-card.switch:focus-visible { transform: translateY(-2px); border-color: var(--lantern); }
+
+/* ------------------------------------------------ Captain Flipper's voyages */
+.voyage-panel { width: min(520px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 12px; text-align: center; align-items: center; }
+.voyage-panel .row { align-self: stretch; }
+.voyage-cover { position: relative; width: 120px; height: 150px; border-radius: 10px 16px 16px 10px; display: grid; place-items: center; background: linear-gradient(150deg, var(--c1), var(--c2) 70%, var(--c3)); box-shadow: inset 6px 0 0 rgba(0,0,0,0.25), 0 10px 24px rgba(0,0,0,0.4); color: #fff; }
+.voyage-cover .book-emblem .ico { width: 54px; height: 54px; }
+.voyage-cover .book-num { position: absolute; bottom: 10px; font-family: var(--display); font-size: 0.95em; }
+.voyage-screen.sailing { background: linear-gradient(180deg, var(--c1), var(--c2)); transition: background 0.8s; }
+.voyage-boat svg { width: 140px; animation: voyage-bob 1.2s ease-in-out infinite, voyage-cross 1.6s ease-in forwards; }
+@keyframes voyage-bob { 50% { transform: translateY(-6px) rotate(-3deg); } }
+@keyframes voyage-cross { from { translate: -40px 0; } to { translate: 60px 0; } }

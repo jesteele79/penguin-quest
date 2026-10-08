@@ -9,7 +9,7 @@ import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
-import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById } from '../books/books.js';
+import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById, nextBook, placeName } from '../books/books.js';
 import { T } from '../books/terms.js';
 import { ACTIVE } from '../books/active.js';
 import { BOOK } from '../books/current.js';
@@ -114,12 +114,46 @@ export class TitleScreen extends Screen {
 // Switching books parks this book's progress in the save and reloads the page into the other book's world.
 function switchToBook(id) {
   G.audio.play('open');
+  if (G.inGame) G.saveNow();
   const data = G.save.peek();
   if (!data) return;
   G.save.data = data;
   G.save.switchBook(id);
   G.save.save();
   location.reload();
+}
+
+// Captain Flipper's boat: sail to another open book. The world fades to the sea and the page reloads there.
+export class VoyageScreen extends Screen {
+  constructor(bookId, onDecline) {
+    super('voyage-screen');
+    this.book = bookById(bookId);
+    this.onDecline = onDecline;
+  }
+
+  render() {
+    const b = this.book;
+    const home = b.id === 'book1';
+    this.root.innerHTML = '';
+    this.root.style.cssText = `--c1:${b.colors[0]};--c2:${b.colors[1]};--c3:${b.colors[2]}`;
+    this.root.append(el('div', { class: 'panel voyage-panel' },
+      el('div', { class: 'voyage-cover', html: `<span class="book-emblem">${BOOK_ICONS[b.icon]}</span><span class="book-num">Book ${b.n}</span>` }),
+      el('h1', { text: home ? `Sail home to ${placeName(b.world)}?` : `Sail to ${placeName(b.world)}?` }),
+      el('p', { class: 'note', text: `${b.title}: ${b.blurb}` }),
+      el('p', { class: 'note', text: 'Your adventure here is saved, and Captain Flipper can sail you back any time.' }),
+      el('div', { class: 'row end' },
+        btn('Not yet', () => { this.onDecline?.(); this.close(); }, 'ghost'),
+        btn('Set sail!', () => this.sail(), 'primary', { autofocus: true }))));
+  }
+
+  sail() {
+    G.audio.play('whoosh');
+    this.root.classList.add('sailing');
+    this.root.querySelector('.voyage-panel').replaceChildren(
+      el('div', { class: 'voyage-boat', html: '<svg viewBox="0 0 64 40"><path d="M6 26 L58 26 L50 36 L14 36 Z" fill="#8a5c38"/><rect x="31" y="4" width="2.5" height="22" fill="#5a3a22"/><path d="M34 6 L52 22 L34 22 Z" fill="#fff4ec"/><path d="M30 8 L16 22 L30 22 Z" fill="#ff5a4e"/><path d="M0 38 Q8 34 16 38 T32 38 T48 38 T64 38" stroke="#7fe0d0" stroke-width="2.5" fill="none"/></svg>' }),
+      el('h1', { text: `Sailing to ${placeName(this.book.world)}...` }));
+    setTimeout(() => switchToBook(this.book.id), 1600);
+  }
 }
 
 // The series shelf on the title screen: the book being played, and what opens the next ones.
@@ -482,7 +516,8 @@ export class JournalScreen extends Screen {
   // What it takes to open the next book, shown under the last chapter.
   nextBook() {
     const s = G.save.data;
-    const cur = BOOKS[0], next = BOOKS[1];
+    const cur = bookById(s.active ?? 'book1'), next = nextBook(cur);
+    if (!next) return '';
     const st = bookStatus(s, G.tutor, cur);
     const open = isUnlocked(s, G.tutor, next);
     const pct = Math.round(st.pct * 100);
@@ -490,7 +525,7 @@ export class JournalScreen extends Screen {
     const tick = (ok) => (ok ? '✓' : '○');
     return `<section class="quest-card next-book" style="--c:${next.colors[1]}">
       <div class="qc-head"><h3>Next: Book ${next.n}, ${escapeHTML(next.title)}</h3>${open ? '<span class="pill ok">Unlocked</span>' : '<span class="pill dim">Locked</span>'}</div>
-      <p class="note">${escapeHTML(next.blurb)} Grade ${next.grade} math.${next.ready ? '' : ' Coming soon!'}</p>
+      <p class="note">${escapeHTML(next.blurb)} Grade ${next.grade} math.${!next.ready ? ' Coming soon!' : open ? ' Captain Flipper is ready to sail you there!' : ''}</p>
       <ul class="steps">
         <li class="${st.storyDone ? 'done' : ''}">${tick(st.storyDone)} Finish ${escapeHTML(cur.title)}</li>
         <li class="${togo === 0 ? 'done' : ''}">${tick(togo === 0)} Master ${Math.round(UNLOCK_MASTERY * 100)}% of the grade ${cur.grade} skills (${st.mastered} of ${st.total})</li>
