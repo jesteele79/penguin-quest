@@ -3,6 +3,7 @@ import { G, pushActivity, popActivity } from '../core/state.js';
 import { checkAnswer } from '../math/check.js';
 import { twoShot } from './minigames/common.js';
 import { WATER_Y } from '../world/layout.js';
+import { LessonActivity, lessonDue } from './lesson.js';
 
 // ---------------------------------------------------------------- Explore
 export class ExploreActivity {
@@ -191,7 +192,17 @@ export class QuizActivity {
   nextProblem() {
     const o = this.o;
     const spec = o.pick ? o.pick(this.done) : { domain: o.domain };
-    const p = spec.problem ?? G.tutor.next(spec.domain, { format: spec.format ?? o.format, skills: spec.skills, minChoices: 3, minTier: spec.minTier, maxTier: spec.maxTier });
+    const p = spec.problem ?? G.tutor.next(spec.domain, { format: spec.format ?? o.format, skills: spec.skills, minChoices: 3, minTier: spec.minTier, maxTier: spec.maxTier, lessons: true });
+    if (lessonDue(p.skill, 'new')) {
+      G.quiz.input.blur();
+      pushActivity(new LessonActivity(p.skill, { onDone: () => this.present(p, spec) }));
+      return;
+    }
+    this.present(p, spec);
+  }
+
+  present(p, spec) {
+    const o = this.o;
     this.problem = p;
     this.attempts = 0;
     this.hintUsed = false;
@@ -257,6 +268,13 @@ export class QuizActivity {
     clearTimeout(this.advanceT);
     if (G.top !== this) return;
     if (G.quiz.state === 'correct' || G.quiz.state === 'reveal') {
+      // A worked solution is a sign the idea is new: teach it properly before moving on.
+      if (G.quiz.state === 'reveal' && lessonDue(this.problem.skill, 'struggle')) {
+        G.quiz.state = 'lesson';
+        G.quiz.input.blur();
+        pushActivity(new LessonActivity(this.problem.skill, { onDone: () => (this.done >= this.o.count ? this.finish() : this.nextProblem()) }));
+        return;
+      }
       if (this.done >= this.o.count) { this.finish(); return; }
       this.nextProblem();
     }

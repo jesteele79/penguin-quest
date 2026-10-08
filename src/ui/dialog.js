@@ -1,4 +1,4 @@
-import { el, escapeHTML } from './dom.js';
+import { el, escapeHTML, readable } from './dom.js';
 import { portraitSVG, ICON } from './icons.js';
 import { speak } from './quizpanel.js';
 
@@ -31,7 +31,7 @@ export class DialogBox {
   show(line) {
     this.box.classList.add('show');
     this.name.textContent = line.who || '';
-    this.name.style.setProperty('--accent', line.accent || '#ff5a4e');
+    this.name.style.setProperty('--accent', readable(line.accent || '#ff5a4e'));
     this.portrait.innerHTML = portraitSVG(line.portrait || {});
     this.portrait.classList.toggle('hidden', line.portrait === false);
     this.full = line.text;

@@ -58,7 +58,8 @@ export class Tutor {
     return DOMAINS[domain].skills.filter((s) => this.isUnlocked(s) && (!filter || filter(s)));
   }
 
-  pickSkill(domain, { skills, exclude } = {}) {
+  pickSkill(domain, opts = {}) {
+    const { skills, exclude } = opts;
     let pool;
     if (skills) {
       const all = skills.map((id) => SKILLS[id]).filter(Boolean);
@@ -66,6 +67,11 @@ export class Tutor {
       pool = open.length ? open : all.sort((a, b) => a.grade - b.grade).slice(0, 1);
     } else {
       pool = this.domainSkills(domain, (s) => !exclude || !exclude.includes(s.id));
+    }
+    // A brand-new idea waits for a calm puzzle (where its lesson can run) instead of an action game.
+    if (!opts.lessons && this.lessonGate) {
+      const ok = pool.filter((s) => !this.lessonGate(s.id));
+      if (ok.length) pool = ok;
     }
     if (!pool.length) return null;
     const qn = this.state.qn;

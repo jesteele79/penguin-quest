@@ -50,7 +50,7 @@ class BattleActivity {
       const g = new Gloom(G.scene, { scale: 0.95 });
       g.position.set(x, G.terrain.heightAt(x, z), z);
       const p = G.tutor.next(Math.random() < 0.25 ? 'lake' : 'ridge', { format: 'input' });
-      const label = G.labels.add('<span>?</span>', { cls: 'gloom-label', pos: g.position, offsetY: 3.1, maxDist: 60 });
+      const label = G.labels.add('<span>?</span>', { cls: 'gloom-label', pos: g.position, offsetY: 3.1, maxDist: 60, clear: true });
       this.glooms.push({ g, round: new Round(p), label, html: `<span>${toHTML(p.text)}</span>`, delay: 1 + i * 2.2, done: false });
     }
     this.state = 'fight';

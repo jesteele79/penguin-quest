@@ -41,6 +41,7 @@ export function defaultSave() {
     patrol: { day: null, tasks: [], streak: 0, lastDone: null, best: 0, allDone: false },
     counters: { glooms: 0, gloomSpots: [], fish: 0, served: 0, slide: 0, swim: 0, chests: 0, chartDays: [], inARow: 0, bestInARow: 0 },
     tutor: emptyTutorState(),
+    lessons: {},
     stats: { playSeconds: 0, sessions: 0, lastPlayed: 0 },
     flags: {},
   };

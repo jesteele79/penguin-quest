@@ -41,7 +41,8 @@ class FishingActivity {
     G.hud.setVisible(false);
     G.audio.setMood('quiz');
     this.center = V(this.base.x + 8.5, WATER_Y, this.base.z);
-    G.cam.setShot({ pos: this.base.clone().add(V(-5.5, 4.8, 3.2)), look: this.center.clone().add(V(0, -0.5, 0)), fov: 58 }, 1.0);
+    // High over the shoulder: the answers spread across open water below the question, and the penguin stays out of the way.
+    G.cam.setShot({ pos: this.base.clone().add(V(-4.5, 7.5, 3.0)), look: this.center.clone().add(V(0, 0.4, 0)), fov: 58 }, 1.0);
     // Rod in the right flipper
     const rod = new THREE.Group();
     const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 3.2, 6), new THREE.MeshLambertMaterial({ color: 0x6b4428 }));
@@ -79,7 +80,7 @@ class FishingActivity {
       m.position.copy(lane);
       m.scale.setScalar(1.6);
       G.scene.add(m);
-      const label = G.labels.add(`<b class="k">${i + 1}</b><span>${toHTML(c.label)}</span>`, { cls: 'fish-label', pos: lane, offsetY: 1.9, maxDist: 60 });
+      const label = G.labels.add(`<b class="k">${i + 1}</b><span>${toHTML(c.label)}</span>`, { cls: 'fish-label', pos: lane, offsetY: 1.9, maxDist: 60, clear: true });
       this.fish.push({ mesh: m, lane, label, phase: Math.random() * 6, alive: true, i, leave: 0 });
     });
     this.sel = Math.min(this.sel, n - 1);

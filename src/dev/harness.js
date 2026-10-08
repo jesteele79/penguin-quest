@@ -19,17 +19,34 @@ export function installHarness() {
           top.advance();
           G.dev.step(0.05);
         } else if (n === 'Cutscene') G.dev.step(0.5);
+        else if (n === 'LessonActivity') log.push(`lesson ${await T.lesson()}`);
         else break;
       }
       return log;
     },
 
-    // Answers standard quiz panels. wrongEvery = n answers every nth problem wrong first.
+    // Works through a lesson the way a child would: try the model, read on, answer "Your turn".
+    async lesson() {
+      const top = G.top;
+      if (top?.constructor.name !== 'LessonActivity') return null;
+      const id = top.skillId;
+      for (let i = 0; i < 40 && G.top === top; i++) {
+        if (top.stage === 0 && top.model && !top.model.done) top.showMe();
+        else if (top.stage === 3 && !top.solved) { top.input.value = G.dev.typed(top.practice.answer); top.check(); }
+        else top.next();
+        G.dev.step(0.05);
+        await yieldT();
+      }
+      return id;
+    },
+
+    // Answers standard quiz panels, taking any lesson that comes up on the way. wrongEvery = n answers every nth problem wrong first.
     async solve(max = 60, wrongEvery = 0) {
       const log = [];
       let k = 0;
       for (let i = 0; i < max; i++) {
         await yieldT();
+        if (G.top?.constructor.name === 'LessonActivity') { log.push(`lesson ${await T.lesson()}`); continue; }
         const top = G.top;
         if (!top || !top.problem || !G.quiz.isOpen) break;
         const p = top.problem;

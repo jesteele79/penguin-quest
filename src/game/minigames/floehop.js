@@ -105,7 +105,7 @@ class FloeHopActivity {
       const x = cx + (k - 1) * 5.2;
       const f = makeFloe(x, z, WATER_Y - 1.4);
       f.platform.active = false;
-      const label = G.labels.add(`<span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'floe-label', pos: V(x, WATER_Y, z), offsetY: 1.6, maxDist: 70 });
+      const label = G.labels.add(`<span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'floe-label', pos: V(x, WATER_Y, z), offsetY: 1.6, maxDist: 70, clear: true });
       this.floes.push({ ...f, x, z, ci, correct: p.choices[ci].correct, label, rise: 0, crack: 0, sinking: false, row: this.row });
     });
     G.audio.play('splash');

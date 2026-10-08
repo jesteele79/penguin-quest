@@ -10,6 +10,7 @@ export class TouchControls {
   constructor(root, input, { onMenu, onJournal } = {}) {
     this.input = input;
     this.layer = el('div', { class: 'touch hidden' });
+    this.zones = el('div', { class: 'touch hidden' });
     this.stickZone = el('div', { class: 'touch-zone left interactive' });
     this.lookZone = el('div', { class: 'touch-zone right interactive' });
     this.base = el('div', { class: 'touch-stick hidden' }, el('div', { class: 'touch-knob' }));
@@ -18,7 +19,10 @@ export class TouchControls {
     this.slide = el('button', { class: 'touch-btn slide', type: 'button', 'aria-label': 'Belly-slide', html: '<span>Slide</span>' });
     this.menu = el('button', { class: 'touch-btn menu', type: 'button', 'aria-label': 'Menu', html: '<span>☰</span>' });
     this.journal = el('button', { class: 'touch-btn journal', type: 'button', 'aria-label': 'Journal', html: '<span>📖</span>' });
-    this.layer.append(this.stickZone, this.lookZone, this.base, this.jump, this.slide, this.menu, this.journal);
+    this.zones.append(this.stickZone, this.lookZone);
+    this.layer.append(this.base, this.jump, this.slide, this.menu, this.journal);
+    // The drag zones go beneath everything (world labels included) so a tap on a "Talk" bubble or a panel still lands; the buttons stay on top.
+    root.prepend(this.zones);
     root.append(this.layer);
 
     // Joystick
@@ -80,6 +84,7 @@ export class TouchControls {
     if (show === this.shown) return;
     this.shown = show;
     this.layer.classList.toggle('hidden', !show);
+    this.zones.classList.toggle('hidden', !show);
     if (!show) {
       this.input.touchAxis.forward = this.input.touchAxis.turn = 0;
       this.input.touchSlide = false;

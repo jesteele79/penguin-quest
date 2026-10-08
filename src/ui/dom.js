@@ -39,3 +39,18 @@ export function arrowNav(container, e, selector = 'button:not([disabled]), [data
   e.preventDefault();
   return true;
 }
+
+const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+
+// Character colours double as name text on the night-blue panels; dark ones (the captain's navy) are lifted until they pass WCAG AA for large bold text.
+export function readable(hex, bg = '#1b2466', ratio = 3.4) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex ?? '');
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  let c = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const b = parseInt(bg.slice(1), 16);
+  const lb = lum([(b >> 16) & 255, (b >> 8) & 255, b & 255]);
+  for (let i = 0; i < 30 && (lum(c) + 0.05) / (lb + 0.05) < ratio; i++) c = c.map((v) => v + (255 - v) * 0.12);
+  return `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+}

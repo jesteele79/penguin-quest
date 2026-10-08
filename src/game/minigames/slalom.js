@@ -92,7 +92,7 @@ class SlalomActivity {
     g.choiceIdx = idx;
     idx.forEach((ci, lane) => {
       const pos = this.point(g.d, LANES[lane], 3.2);
-      g.labels.push(G.labels.add(`<b class="k">${lane + 1}</b><span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'fish-label', pos, offsetY: 0, maxDist: 80 }));
+      g.labels.push(G.labels.add(`<b class="k">${lane + 1}</b><span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'fish-label', pos, offsetY: 0, maxDist: 80, clear: true }));
     });
     this.answered = null;
     G.quiz.showProblem(p, { format: 'none', showSkill: false });

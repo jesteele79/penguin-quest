@@ -22,6 +22,7 @@ import { Toasts } from './ui/toast.js';
 import { WorldLabels } from './ui/labels.js';
 import { TouchControls } from './ui/touch.js';
 import { ExploreActivity } from './game/activities.js';
+import { lessonDue, LessonActivity } from './game/lesson.js';
 import { TitleScreen, NewGameScreen, PauseScreen, MapScreen, JournalScreen } from './game/screens.js';
 import { QuestEngine, REGIONS, CHAPTER_OF } from './game/questengine.js';
 import { NPCManager } from './game/npcs.js';
@@ -230,6 +231,7 @@ function boot() {
   G.toasts = new Toasts(uiRoot);
   G.toasts.blocked = () => G.dialog.box.classList.contains('show');
   G.labels = new WorldLabels(uiRoot);
+  G.labels.safeTop = () => G.quiz.topEdge;
   G.hud.attachWorldPrompt(G.labels, () => { G.tappedPrompt = true; });
   G.touch = new TouchControls(uiRoot, input, { onMenu: () => G.screens.pause(), onJournal: () => G.screens.journal() });
   // Prompts, the keypad and the controls card follow the device used last.
@@ -331,6 +333,8 @@ function syncWorld() {
 function enterGame(isNew) {
   const d = G.save.data;
   G.tutor = new Tutor(d.tutor, d.profile.grade);
+  G.tutor.lessonGate = (id) => lessonDue(id, 'new');
+  G.lesson = (id) => pushActivity(new LessonActivity(id, { replay: true }));
   const record = G.tutor.record.bind(G.tutor);
   G.tutor.record = (p, r) => {
     const out = record(p, r);

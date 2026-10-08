@@ -73,6 +73,13 @@ export class QuizPanel {
       el('footer', { class: 'quiz-foot' }, this.hintBtn, this.readBtn, this.closeBtn));
     root.append(this.panel);
     this.uiRoot = root;
+    // Answer labels out in the world keep below a top panel; the observer tracks its edge without a layout read every frame.
+    // Narrow screens dock the "top" panel at the bottom instead, and then nothing needs to move.
+    this.edge = 0;
+    new ResizeObserver(() => {
+      const top = this.panel.offsetTop;
+      this.edge = top < window.innerHeight * 0.3 ? top + this.panel.offsetHeight : 0;
+    }).observe(this.panel);
     this.handlers = {};
     this.problem = null;
     this.locked = false;
@@ -94,15 +101,19 @@ export class QuizPanel {
     this.closeBtn.classList.toggle('hidden', !closable);
     this.autoRead = readAloud;
     this.panel.classList.add('show');
+    this.uiRoot.classList.toggle('quiz-top', layout === 'top');
   }
 
   close() {
     this.panel.classList.remove('show');
+    this.uiRoot.classList.remove('quiz-top');
     this.input.blur();
     if ('speechSynthesis' in window) try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   }
 
   get isOpen() { return this.panel.classList.contains('show'); }
+
+  get topEdge() { return this.isOpen && this.panel.classList.contains('layout-top') ? this.edge : 0; }
 
   // 'keys' (keyboard), 'touch' or 'pad': the keypad appears for touch and controllers.
   setDevice(mode) {

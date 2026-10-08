@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../core/state.js';
-import { el, $$, arrowNav, escapeHTML } from '../ui/dom.js';
+import { el, $$, arrowNav, escapeHTML, readable } from '../ui/dom.js';
 import { ICON, portraitSVG } from '../ui/icons.js';
 import { drawMarker } from '../ui/hud.js';
 import { SHOP, findItem, SLOT_NAMES } from './content.js';
@@ -10,6 +10,8 @@ import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
 import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY } from '../books/books.js';
+import { LESSONS } from '../math/lessons.js';
+import { SKILLS } from '../math/skills.js';
 
 const NAME_IDEAS = ['Pip', 'Waddles', 'Frosty', 'Nova', 'Pebble', 'Blizzard', 'Sprinkles', 'Tux', 'Iggy', 'Aurora', 'Flipper', 'Comet'];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -378,13 +380,15 @@ export class JournalScreen extends Screen {
 
   render() {
     this.root.innerHTML = '';
-    const tabs = el('div', { class: 'tabs', role: 'tablist', 'data-cols': 5 });
-    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', 'Aurora Patrol'], ['collect', 'Collections'], ['chats', 'Chats']]) {
+    const tabs = el('div', { class: 'tabs', role: 'tablist', 'data-cols': 6 });
+    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', 'Aurora Patrol'], ['collect', 'Collections'], ['lessons', 'Lessons'], ['chats', 'Chats']]) {
       tabs.append(btn(label, () => { this.tab = id; this.render(); this.root.querySelector(`[data-tab="${id}"]`)?.focus(); }, this.tab === id ? 'sel' : '', { 'data-tab': id, role: 'tab' }));
     }
     const body = el('div', { class: 'journal-body' });
-    body.innerHTML = { story: () => this.story(), side: () => this.side(), patrol: () => this.patrol(), collect: () => this.collect(), chats: () => this.chats() }[this.tab]();
+    body.innerHTML = { story: () => this.story(), side: () => this.side(), patrol: () => this.patrol(), collect: () => this.collect(), chats: () => this.chats(), lessons: () => this.lessons() }[this.tab]();
     body.addEventListener('click', (e) => {
+      const lesson = e.target.closest('[data-lesson]');
+      if (lesson) { G.audio.play('click'); G.lesson(lesson.dataset.lesson); return; }
       const b = e.target.closest('[data-track]');
       if (!b) return;
       const id = b.dataset.track;
@@ -409,12 +413,24 @@ export class JournalScreen extends Screen {
     }).join('')}</ol>`;
   }
 
+  // Every lesson the child can open: ones already seen, and ones for skills that are open now.
+  lessons() {
+    const seen = G.save.data.lessons ?? {};
+    const rows = Object.entries(LESSONS).filter(([id]) => seen[id] || G.tutor.isUnlocked(SKILLS[id])).map(([id, L]) => {
+      const s = SKILLS[id];
+      const done = seen[id] && !seen[id].skipped;
+      return `<div class="lesson-row"><div><b>${escapeHTML(L.title)}</b><div class="note">${escapeHTML(DOMAINS[s.domain].name)} · grade ${s.grade}</div></div>
+        <span class="pill ${done ? 'ok' : 'dim'}">${done ? 'Learned' : 'New'}</span><button class="btn small" data-lesson="${id}">${done ? 'Watch again' : 'Start'}</button></div>`;
+    });
+    return `<p class="note">Short lessons from your friends. Open one any time to learn or review an idea.</p>${rows.join('') || '<p class="note">Lessons appear here as new ideas open up.</p>'}`;
+  }
+
   // Everything friends said recently, newest first, so nothing important is missed.
   chats() {
     const lines = G.dialog.log;
     const notes = G.toasts.log.slice(0, 12);
     if (!lines.length && !notes.length) return '<p class="note">Nothing yet. Go say hello to someone!</p>';
-    const chat = lines.map((l) => `<div class="chat-line"><b style="color:${l.accent ?? 'var(--lantern)'}">${escapeHTML(l.who || 'Story')}</b> ${escapeHTML(l.text)}</div>`).join('');
+    const chat = lines.map((l) => `<div class="chat-line"><b style="color:${l.accent ? readable(l.accent) : 'var(--lantern)'}">${escapeHTML(l.who || 'Story')}</b> ${escapeHTML(l.text)}</div>`).join('');
     const news = notes.length ? `<h2>Recent messages</h2>${notes.map((n) => `<div class="chat-line note">${n.html}</div>`).join('')}` : '';
     return `<h2>Recent chats</h2>${chat}${news}`;
   }
@@ -537,6 +553,14 @@ function stepSummary(st) {
   const t = typeof st.text === 'function' ? st.text(0, total, '') : st.text;
   if (st.type === 'crystal') return 'Charge and wake the Aurora Crystal';
   return (t || '').replace(/\s*\(0\/\d+\)$/, '').replace(/\(0\/\d+\)/, '');
+}
+
+// Lessons the child has had, newest first, for the progress report.
+function lessonRows(data) {
+  const rows = Object.entries(data.lessons ?? {}).sort((a, b) => b[1].t - a[1].t)
+    .map(([id, l]) => `<tr><td>${new Date(l.t).toLocaleDateString()}</td><td>${escapeHTML(LESSONS[id]?.title ?? id)}</td><td>${escapeHTML(SKILLS[id]?.cc ?? '')}</td><td>${l.skipped ? 'Skipped' : 'Finished'}</td></tr>`);
+  return rows.length ? `<table><thead><tr><th>Date</th><th>Lesson</th><th>Standard</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`
+    : '<p class="note">No lessons yet. A lesson starts when a new idea above grade level comes up, or after a worked solution.</p>';
 }
 
 // ------------------------------------------------------------ Wardrobe / shop
@@ -751,6 +775,8 @@ export class GrownupsScreen extends Screen {
       el('div', { class: 'gu-days', html: days.length ? days.map((k) => `<div class="day"><div class="num">${st.days[k].problems}</div><div class="bar" style="height:${Math.min(100, st.days[k].problems * 3)}px"></div><div class="lbl">${k.slice(5)}</div></div>`).join('') : '<p class="note">No practice yet.</p>' }),
       el('h2', { text: 'Recent mistakes' }),
       el('div', { class: 'table-wrap', html: mistakes ? `<table><thead><tr><th>Date</th><th>Question</th><th>Answered</th><th>Correct</th></tr></thead><tbody>${mistakes}</tbody></table>` : '<p class="note">No mistakes yet.</p>' }),
+      el('h2', { text: 'Lessons' }),
+      el('div', { class: 'table-wrap', html: lessonRows(data) }),
       el('h2', { text: 'Every skill (Common Core codes)' }),
       el('div', { class: 'table-wrap', html: `<table class="skills"><thead><tr><th>Skill</th><th>Standard</th><th>Grade</th><th>Tries</th><th>First try</th><th>Mastery</th><th>Status</th></tr></thead><tbody>${skillRows}</tbody></table>` }),
       el('h2', { text: 'Settings for grown-ups' }),
