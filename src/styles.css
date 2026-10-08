@@ -657,6 +657,8 @@ tr.dim td { color: var(--frost-dim); }
 /* ------------------------------------------------ lessons */
 .lesson-screen { background: rgba(6, 9, 30, 0.72); }
 .screen > .panel.lesson-panel { width: min(760px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; }
+/* Tall models make the panel scroll rather than squeeze under the footer. */
+.lesson-panel > * { flex-shrink: 0; }
 .lesson-panel::before { background: var(--accent); }
 .lesson-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .lesson-kicker { color: var(--lantern); font-weight: 700; letter-spacing: 0.5px; }
@@ -722,3 +724,13 @@ tr.dim td { color: var(--frost-dim); }
 .step-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; font-size: 2em; font-weight: 800; }
 .step-op { min-width: 64px; min-height: 64px; border-radius: 16px; font-size: 1em; font-weight: 800; color: #0b1033; cursor: pointer; background: var(--lantern); border: none; box-shadow: 0 4px 0 var(--lantern-deep); }
 .step-op.no { animation: shake 0.4s ease; }
+
+/* ------------------------------------------------ grade 5 models */
+.paren { font-size: 1.25em; font-weight: 800; color: var(--lantern); }
+.step-op.num { background: rgba(255, 255, 255, 0.12); color: var(--ice); border: 2px solid rgba(169, 196, 255, 0.45); box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); }
+.step-op.num.picked { border-color: var(--lantern); background: rgba(255, 209, 102, 0.25); }
+.place-row.slide .place-cell { cursor: default; min-width: 66px; transition: background 0.2s ease, border-color 0.2s ease; }
+.tag-row .btn { min-width: 0; }
+.cmp-grid { display: grid; gap: 6px; align-items: stretch; justify-content: center; }
+.cmp-grid .place-cell.added .pd { color: var(--frost-dim); }
+.cmp-grid .place-dot { grid-row: span 1; }

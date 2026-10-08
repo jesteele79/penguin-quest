@@ -43,7 +43,7 @@ export class LessonActivity {
     G.player.frozen = true;
     G.hud.setPrompt(null);
     G.audio.play('open');
-    const mentor = NPCS[this.lesson.mentor];
+    const mentor = NPCS[this.lesson.mentor] ?? NPCS.professor;
     this.say = el('div', { class: 'lesson-say' });
     this.speakBtn = el('button', { class: 'btn ghost lesson-speak', type: 'button', 'aria-label': 'Read this aloud', html: ICON.speaker });
     this.speakBtn.addEventListener('click', () => speak(this.sayText));
@@ -96,7 +96,7 @@ export class LessonActivity {
       const Model = MODELS[L.explore.model];
       const cfg = { ...L.explore.cfg };
       // Rows are copied so a replay starts fresh.
-      if (cfg.rows) cfg.rows = cfg.rows.map((r) => ({ ...r }));
+      if (Array.isArray(cfg.rows)) cfg.rows = cfg.rows.map((r) => ({ ...r }));
       if (L.explore.solve) cfg.solution = L.explore.solve;
       this.model = new Model(this.stageEl, cfg, () => this.explored());
       this.setNext(false);

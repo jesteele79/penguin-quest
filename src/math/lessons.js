@@ -6,8 +6,8 @@
 //   watch     a worked example, revealed one step at a time
 //   practice  a fresh example with its last step left for the child (a faded worked example)
 // Markup: {3/4} is a fraction, {2 1/4} a mixed number, **bold** is a key word.
-import { num } from './build.js';
-import { lcm } from './frac.js';
+import { num, frac } from './build.js';
+import { lcm, Frac } from './frac.js';
 
 const same = (a, b) => a[0] * b[1] === b[0] * a[1] && a[0] > 0;
 
@@ -326,6 +326,564 @@ export const LESSONS = {
     practice(rng) {
       const a = rng.int(2, 12), b = rng.int(2, 9), c = rng.int(2, 9);
       return { steps: [`${a} + ${b} × ${c}`, `Multiply first: ${b} × ${c} = ${b * c}.`], prompt: `${a} + ${b * c} = ?`, answer: num(a + b * c) };
+    },
+  },
+  // ================================================================== grade 5 (Book 2: The Ember Isles)
+  // ------------------------------------------------------------------ fractions (Isa, the reef keeper)
+  frac_as_div: {
+    title: 'Fractions are division', mentor: 'isa',
+    hook: 'Three coconut pies and four hungry friends. How much pie does each friend get?',
+    explore: {
+      model: 'strips', prompt: 'Give one friend a fair share: tap one quarter from each pie.', success: 'One quarter from each of 3 pies: that friend gets {3/4} of a pie!',
+      cfg: { rows: [{ parts: 4, name: 'Pie 1' }, { parts: 4, name: 'Pie 2' }, { parts: 4, name: 'Pie 3' }], goal: (v) => v.every(([f]) => f === 1) },
+      solve: (rows) => { for (const r of rows) r.filled = 1; },
+    },
+    see: { text: 'Sharing 3 pies among 4 friends gives each friend {3/4} of a pie. So **3 ÷ 4 = {3/4}**. Every fraction is a division!', visual: { kind: 'bars', bars: [{ parts: 4, shaded: 1 }, { parts: 4, shaded: 1 }, { parts: 4, shaded: 1 }] } },
+    watch: {
+      text: 'The top number is what is shared. The bottom number is how many shares.',
+      steps: ['Share 5 pizzas among 2 friends.', 'Each friend gets 5 ÷ 2 = {5/2} of a pizza.', '{5/2} is 2 whole pizzas and {1/2} more.', 'So each friend gets {2 1/2} pizzas.'],
+    },
+    practice(rng) {
+      const [a, b] = rng.pick([[2, 3], [3, 5], [4, 5], [5, 6], [3, 8], [5, 8], [7, 10], [2, 7]]);
+      return {
+        steps: [`Share ${a} pies among ${b} friends.`, `Each friend gets ${a} ÷ ${b} of a pie.`],
+        prompt: `Write ${a} ÷ ${b} as a fraction.`,
+        answer: frac(new Frac(a, b)),
+      };
+    },
+  },
+
+  frac_of_whole: {
+    title: 'A fraction of a number', mentor: 'isa',
+    hook: 'Isa counted 12 sea stars on the reef. {2/3} of them are orange. How many orange sea stars is that?',
+    explore: {
+      model: 'share', prompt: 'Split the 12 sea stars into 3 equal groups.', success: 'Each group has 4. Two of the three groups make {2/3}: 8 sea stars!',
+      cfg: { total: 12, groups: 3, thing: 'sea star', groupName: 'Group' },
+    },
+    see: { text: '{1/3} of 12 means split 12 into 3 equal groups: 4 in each. {2/3} is 2 of those groups: **8**.', visual: { kind: 'tape', rows: [{ segs: [{ v: 4, label: '4' }, { v: 4, label: '4' }, { v: 4, label: '4', alt: true }], totalLabel: '12' }] } },
+    watch: {
+      text: 'To find a fraction of a number: **divide by the bottom**, then **multiply by the top**.',
+      steps: ['Find {3/4} of 20.', 'Divide by the bottom: 20 ÷ 4 = 5. That is {1/4} of 20.', 'Multiply by the top: 3 × 5 = 15.', 'So {3/4} of 20 is 15.'],
+    },
+    practice(rng) {
+      const b = rng.int(3, 6), a = rng.int(2, b - 1), unit = rng.int(2, 9), n = b * unit;
+      return {
+        steps: [`Find {${a}/${b}} of ${n}.`, `Divide by the bottom: ${n} ÷ ${b} = ${unit}.`],
+        prompt: `Now multiply by the top. What is {${a}/${b}} of ${n}?`,
+        answer: num(a * unit),
+      };
+    },
+  },
+
+  frac_scale: {
+    title: 'Does it grow or shrink?', mentor: 'isa',
+    hook: 'When you multiply, does the answer always get bigger? Not always! Let us test it with jumps.',
+    explore: {
+      model: 'jumps', prompt: 'Each jump is {3/4}. Jump 8 times. Do you land before 8 or after it?', success: '8 jumps of {3/4} land on 6, before 8. Multiplying 8 by less than 1 made it smaller!',
+      cfg: { max: 9, den: 4, jump: [3, 4], target: [6, 1] },
+    },
+    see: { text: 'Multiplying by a number **less than 1** makes it smaller. By **more than 1**, bigger. By exactly 1, it stays the same.', visual: { kind: 'numline', min: 0, max: 12, step: 1, marks: [{ v: 6, label: '¾ × 8' }, { v: 10, label: '1¼ × 8' }] } },
+    watch: {
+      text: 'You can tell before you multiply: just compare the fraction with 1.',
+      steps: ['Look at {5/4} × 8.', '{5/4} is more than 1 (it is 1 and {1/4}).', 'So {5/4} × 8 is more than 8.', 'Check: {5/4} × 8 = 10, and 10 is more than 8.'],
+    },
+    practice(rng) {
+      const b = rng.pick([3, 4, 5, 6]), a = rng.int(1, b - 1), k = rng.int(2, 6), n = b * k;
+      return {
+        steps: [`{${a}/${b}} is less than 1, so {${a}/${b}} × ${n} is less than ${n}.`, `${n} ÷ ${b} = ${k}.`],
+        prompt: `Now multiply by ${a}. What is {${a}/${b}} × ${n}?`,
+        answer: num(a * k),
+      };
+    },
+  },
+
+  frac_mult: {
+    title: 'Multiplying fractions', mentor: 'isa',
+    hook: 'Isa plants new coral in {2/3} of her garden, and puts sea fans in {3/4} of that part. How much of the whole garden has both?',
+    explore: {
+      model: 'fracgrid', prompt: 'Shade {2/3} of the rows (left bar) and {3/4} of the columns (top bar).', success: 'They overlap in 6 of 12 boxes: {2/3} × {3/4} = {6/12}!',
+      cfg: { rows: 3, cols: 4, goalRows: 2, goalCols: 3 },
+    },
+    see: { text: 'The overlap is the answer: 2 × 3 = 6 boxes are shaded twice, out of 3 × 4 = 12. So {2/3} × {3/4} = {6/12}, which is {1/2}.', visual: { kind: 'fracgrid', rows: 3, cols: 4, rowsShaded: 2, colsShaded: 3 } },
+    watch: {
+      text: 'No picture needed: **multiply the tops**, then **multiply the bottoms**.',
+      steps: ['Find {1/2} × {3/5}.', 'Tops: 1 × 3 = 3.', 'Bottoms: 2 × 5 = 10.', 'So {1/2} × {3/5} = {3/10}.'],
+    },
+    practice(rng) {
+      const [a, b, c, d] = rng.pick([[1, 2, 3, 4], [2, 3, 1, 5], [3, 4, 2, 5], [1, 3, 5, 6], [2, 5, 3, 4], [3, 5, 1, 2]]);
+      return {
+        steps: [`Find {${a}/${b}} × {${c}/${d}}.`, `Tops: ${a} × ${c} = ${a * c}.`],
+        prompt: `Now the bottoms. {${a}/${b}} × {${c}/${d}} = {${a * c}/?}. What is the bottom number?`,
+        answer: num(b * d),
+      };
+    },
+  },
+
+  frac_div_unit: {
+    title: 'Dividing by a unit fraction', mentor: 'isa',
+    hook: 'Each scoop holds {1/3} of a cup of seaweed seeds. How many scoops fill 2 cups?',
+    explore: {
+      model: 'jumps', prompt: 'Jump {1/3} at a time. How many jumps reach 2?', success: '6 jumps! 2 ÷ {1/3} = 6.',
+      cfg: { max: 3, den: 3, jump: [1, 3], target: [2, 1] },
+    },
+    see: { text: 'Dividing by {1/3} asks: **how many thirds fit?** Each whole holds 3 thirds, so 2 wholes hold 6. 2 ÷ {1/3} = 6.', visual: { kind: 'bars', bars: [{ parts: 3, shaded: 3 }, { parts: 3, shaded: 3 }] } },
+    watch: {
+      text: 'Going the other way, dividing a fraction by a whole number shares it out.',
+      steps: ['Find {1/4} ÷ 2: share {1/4} of a pan between 2 friends.', 'Cut the quarter into 2 equal pieces.', 'Each piece is {1/8} of the whole pan.', 'So {1/4} ÷ 2 = {1/8}.'],
+      visual: { kind: 'bars', bars: [{ parts: 4, shaded: 1 }, { parts: 8, shaded: 1 }] },
+    },
+    practice(rng) {
+      const w = rng.int(2, 5), k = rng.int(2, 5);
+      return {
+        steps: [`Find ${w} ÷ {1/${k}}.`, `Each whole holds ${k} pieces that are {1/${k}}.`],
+        prompt: `How many {1/${k}} pieces fit in ${w} wholes?`,
+        answer: num(w * k),
+      };
+    },
+  },
+
+  frac_div: {
+    title: 'Dividing fractions', mentor: 'isa',
+    hook: 'How many {1/4}-cup scoops of rice are in {3/2} cups? Fractions can divide fractions too!',
+    explore: {
+      model: 'jumps', prompt: 'Jump {1/4} at a time until you reach {3/2}. Count the jumps.', success: '6 jumps of {1/4} make {3/2}. So {3/2} ÷ {1/4} = 6.',
+      cfg: { max: 2, den: 4, jump: [1, 4], target: [3, 2] },
+    },
+    see: { text: 'Dividing by a fraction asks how many of it fit. A shortcut: **flip the second fraction and multiply**. {3/2} × {4/1} = {12/2} = 6.' },
+    watch: {
+      text: 'Keep the first fraction, flip the second, multiply.',
+      steps: ['Find {2/3} ÷ {1/6}.', 'Flip the second fraction: {1/6} becomes {6/1}.', 'Multiply: {2/3} × {6/1} = {12/3}.', '{12/3} = 4, so {2/3} ÷ {1/6} = 4.'],
+    },
+    practice(rng) {
+      const [a, b, c, d] = rng.pick([[1, 2, 1, 4], [3, 4, 1, 8], [2, 3, 1, 6], [5, 6, 1, 12], [3, 2, 1, 4], [4, 3, 1, 6]]);
+      const top = a * d, bottom = b * c;
+      return {
+        steps: [`Find {${a}/${b}} ÷ {${c}/${d}}.`, `Flip and multiply: {${a}/${b}} × {${d}/${c}} = {${top}/${bottom}}.`],
+        prompt: `What is {${top}/${bottom}} as a whole number?`,
+        answer: num(top / bottom),
+      };
+    },
+  },
+
+  // ------------------------------------------------------------------ decimals and place value (Chef Marlo)
+  place_ten: {
+    title: 'Each place is ten times the next', mentor: 'marlo',
+    hook: 'Chef Marlo pours mango juice into bottles that hold 0.35 liters. How much do ten bottles hold?',
+    explore: {
+      model: 'slide', prompt: 'Press × 10 to find ten bottles of 0.35 liters.', success: '0.35 × 10 = 3.5. Every digit slid one place to the left!',
+      cfg: { start: '0.35', target: '3.5' },
+    },
+    see: { text: 'Each place is worth **10 times** the place to its right. So × 10 slides every digit one place left, and ÷ 10 slides it one place right.' },
+    watch: {
+      text: 'Look at the same digit in different places.',
+      steps: ['In 444, the first 4 is worth 400.', 'The next 4 is worth 40: that is {1/10} of 400.', 'The last 4 is worth 4: that is {1/10} of 40.', 'Each place is worth 10 times the place to its right.'],
+    },
+    practice(rng) {
+      const n = rng.int(11, 99);
+      const x = (n / 100).toFixed(2);
+      return {
+        steps: [`Start with ${x}.`, '× 10 slides every digit one place to the left.'],
+        prompt: `What is 10 × ${x}?`,
+        answer: num(new Frac(n, 10)),
+      };
+    },
+  },
+
+  pow10: {
+    title: 'Multiplying by 10, 100 and 1,000', mentor: 'marlo',
+    hook: 'Chef Marlo is making 1,000 times her salt recipe of 0.004 kilograms. The place-value slide makes it easy.',
+    explore: {
+      model: 'slide', prompt: 'Press × 10 until you have 1,000 times as much. How many presses does it take?', success: 'Three presses! × 1,000 slides each digit 3 places, because 1,000 = 10 × 10 × 10.',
+      cfg: { start: '0.004', target: '4' },
+    },
+    see: { text: '× 100 slides the digits 2 places left. × 1,000 slides them 3 places. **Count the zeros**: that is how many places to slide.' },
+    watch: {
+      text: 'Dividing slides the other way.',
+      steps: ['Find 2.5 ÷ 100.', '100 has 2 zeros, so slide 2 places to the right.', '2.5 → 0.25 → 0.025.', 'So 2.5 ÷ 100 = 0.025.'],
+    },
+    practice(rng) {
+      const n = rng.int(11, 99);
+      const x = (n / 10).toFixed(1);
+      return {
+        steps: [`Find ${x} × 100.`, '100 has 2 zeros: slide the digits 2 places to the left.'],
+        prompt: `What is ${x} × 100?`,
+        answer: num(n * 10),
+      };
+    },
+  },
+
+  dec_round: {
+    title: 'Rounding decimals', mentor: 'marlo',
+    hook: 'A coconut weighs 2.37 kilograms. Is that closer to 2.3 or to 2.4?',
+    explore: {
+      model: 'numberline', prompt: 'Drag the marker to 2.37. Which end is it closer to?', success: '2.37 is past the halfway point, 2.35. It rounds up to 2.4!',
+      cfg: { min: 2.3, max: 2.4, den: 100, decimal: true, major: 5, target: [237, 100] },
+    },
+    see: { text: 'To round to the nearest tenth, look at the **hundredths** digit. 5 or more rounds up; less than 5 stays.', visual: { kind: 'numline', min: 2.3, max: 2.4, step: 0.01, places: 2, marks: [{ v: 2.37, label: '2.37' }] } },
+    watch: {
+      text: 'The next digit to the right decides.',
+      steps: ['Round 6.82 to the nearest tenth.', 'It is between 6.8 and 6.9.', 'The hundredths digit is 2, which is less than 5.', 'So 6.82 rounds to 6.8.'],
+    },
+    practice(rng) {
+      const w = rng.int(1, 9), t = rng.int(0, 8), h = rng.int(1, 9);
+      const x = `${w}.${t}${h}`;
+      const lo = `${w}.${t}`, hi = (w + (t + 1) / 10).toFixed(1);
+      return {
+        steps: [`Round ${x} to the nearest tenth.`, `It is between ${lo} and ${hi}.`, `The hundredths digit is ${h}.`],
+        prompt: `What is ${x} rounded to the nearest tenth?`,
+        answer: num(new Frac(w * 10 + t + (h >= 5 ? 1 : 0), 10)),
+      };
+    },
+  },
+
+  dec_addsub: {
+    title: 'Adding and subtracting decimals', mentor: 'marlo',
+    hook: 'Chef Marlo pours 0.45 liters of juice, then 0.3 liters more. How much juice is that?',
+    explore: {
+      model: 'hundred', prompt: '45 hundredths are shaded. Shade 3 more tenths: that is 3 more whole columns.', success: '0.45 + 0.3 = 0.75!',
+      cfg: { start: 45, target: 75 },
+    },
+    see: { text: 'Tenths add to tenths, hundredths to hundredths. **Line up the decimal points**: 0.45 + 0.30 = 0.75.', visual: { kind: 'hundred', tenths: 7, hundredths: 5 } },
+    watch: {
+      text: 'Write zeros so both numbers have the same number of places, then work like whole numbers.',
+      steps: ['Find 3.6 − 1.25.', 'Line up the points: 3.60 − 1.25.', 'Subtract like whole numbers: 360 − 125 = 235.', 'Put the point back: 2.35.'],
+    },
+    practice(rng) {
+      const A = rng.int(12, 99), B = rng.int(11, 99);
+      const a = (A / 10).toFixed(1), b = (B / 100).toFixed(2);
+      return {
+        steps: [`Find ${a} + ${b}.`, `Line up the points: ${(A / 10).toFixed(2)} + ${b}.`],
+        prompt: `What is ${a} + ${b}?`,
+        answer: num(new Frac(A * 10 + B, 100)),
+      };
+    },
+  },
+
+  dec_compare3: {
+    title: 'Comparing to thousandths', mentor: 'marlo',
+    hook: 'Two shells weigh 0.45 kilograms and 0.405 kilograms. The second number is longer. Is it heavier?',
+    explore: {
+      model: 'rows2', prompt: 'Tap the first place, from the left, where the digits are different.', success: 'In the hundredths place, 5 beats 0. So 0.45 is heavier, even though 0.405 has more digits!',
+      cfg: { a: '0.45', b: '0.405' },
+    },
+    see: { text: 'Give both numbers the same number of places: 0.450 and 0.405. Then compare place by place **from the left**. More digits does not mean bigger!' },
+    watch: {
+      text: 'Compare the biggest places first.',
+      steps: ['Compare 3.09 and 3.1.', 'Write them as 3.09 and 3.10.', 'The ones match (3 and 3). Tenths: 0 and 1.', '1 tenth is more than 0 tenths, so 3.1 is greater.'],
+    },
+    practice(rng) {
+      const a = rng.int(1, 9), b = rng.int(1, 9);
+      return {
+        steps: [`Compare 0.${a}${b} and 0.${a}0${b}.`, `Write them with three places: 0.${a}${b}0 and 0.${a}0${b}.`],
+        prompt: `Which is greater: 0.${a}${b} or 0.${a}0${b}? Type it.`,
+        answer: num(new Frac(a * 10 + b, 100)),
+      };
+    },
+  },
+
+  // ------------------------------------------------------------------ multiply and divide (Rocco, at the Lava Forge)
+  div_2digit: {
+    title: 'Dividing by 2-digit numbers', mentor: 'rocco',
+    hook: 'Rocco has 816 glass beads to pack in bags of 24. How many bags? Big division gets easy in friendly chunks.',
+    explore: {
+      model: 'area', prompt: 'Rocco guesses 30 bags, then 4 more. Fill in each box to check that they use all 816 beads.', success: '720 + 96 = 816. So 816 ÷ 24 = 30 + 4 = 34 bags!',
+      cfg: { a: [30, 4], b: [24] },
+    },
+    see: { text: 'Division undoes multiplication. Build the answer in chunks: 30 bags use 720 beads, 4 more bags use 96. **30 + 4 = 34**.' },
+    watch: {
+      text: 'Try a friendly multiple of 10 first, then use up the rest.',
+      steps: ['Find 672 ÷ 16.', 'Try 16 × 40 = 640. That leaves 672 − 640 = 32.', '16 × 2 = 32 uses up the rest.', '40 + 2 = 42, so 672 ÷ 16 = 42.'],
+    },
+    practice(rng) {
+      const d = rng.int(12, 25), t = rng.int(2, 4), o = rng.int(1, 9), q = t * 10 + o, n = d * q;
+      return {
+        steps: [`Find ${n} ÷ ${d}.`, `Try ${d} × ${t * 10} = ${d * t * 10}. That leaves ${n - d * t * 10}.`, `${d} × ${o} = ${d * o} uses up the rest.`],
+        prompt: `So what is ${n} ÷ ${d}?`,
+        answer: num(q),
+      };
+    },
+  },
+
+  long_div: {
+    title: 'Long division', mentor: 'rocco',
+    hook: 'The forge made 1,722 bolts for crates of 14. Long division handles big numbers one place at a time.',
+    explore: {
+      model: 'area', prompt: 'Rocco fills 100 crates, then 20, then 3. Fill in each box to check they hold all 1,722 bolts.', success: '1,400 + 280 + 42 = 1,722. So 1,722 ÷ 14 = 123!',
+      cfg: { a: [100, 20, 3], b: [14] },
+    },
+    see: { text: 'Long division does the same chunks in order, biggest place first: **divide, multiply, subtract, bring down**.' },
+    watch: {
+      text: 'One place at a time, from the left.',
+      steps: ['Find 1,722 ÷ 14.', '17 ÷ 14 = 1. 17 − 14 = 3. Bring down the 2: 32.', '32 ÷ 14 = 2. 32 − 28 = 4. Bring down the 2: 42.', '42 ÷ 14 = 3. Nothing left, so 1,722 ÷ 14 = 123.'],
+    },
+    practice(rng) {
+      const d = rng.int(12, 19), q = rng.int(112, 299), n = d * q;
+      const h = Math.floor(q / 100), rest = q - h * 100;
+      return {
+        steps: [`Find ${n.toLocaleString('en-US')} ÷ ${d}.`, `${d} × ${h * 100} = ${(d * h * 100).toLocaleString('en-US')}. That leaves ${(n - d * h * 100).toLocaleString('en-US')}.`, `${d} × ${rest} = ${(d * rest).toLocaleString('en-US')} uses up the rest.`],
+        prompt: `So what is ${n.toLocaleString('en-US')} ÷ ${d}?`,
+        answer: num(q),
+      };
+    },
+  },
+
+  mul_dec: {
+    title: 'Multiplying decimals', mentor: 'rocco',
+    hook: 'A glass tile is 0.3 meters by 0.4 meters. What is its area? Tenths times tenths make something smaller.',
+    explore: {
+      model: 'fracgrid', prompt: 'Shade 0.3 of the rows (left bar) and 0.4 of the columns (top bar).', success: 'The overlap is 12 of 100 squares: 0.3 × 0.4 = 0.12!',
+      cfg: { rows: 10, cols: 10, goalRows: 3, goalCols: 4, decimal: true },
+    },
+    see: { text: 'Tenths times tenths make **hundredths**. 3 × 4 = 12, so the answer is 12 hundredths: 0.12.', visual: { kind: 'fracgrid', rows: 10, cols: 10, rowsShaded: 3, colsShaded: 4 } },
+    watch: {
+      text: 'Multiply like whole numbers, then count the decimal places.',
+      steps: ['Find 2.4 × 0.3.', 'Multiply like whole numbers: 24 × 3 = 72.', '2.4 has 1 decimal place and 0.3 has 1: that makes 2.', 'Put 2 places back: 0.72.'],
+    },
+    practice(rng) {
+      let A = rng.int(11, 49);
+      if (A % 10 === 0) A += 1;
+      const B = rng.int(2, 9);
+      const a = (A / 10).toFixed(1), b = (B / 10).toFixed(1);
+      return {
+        steps: [`Find ${a} × ${b}.`, `${A} × ${B} = ${A * B}.`, 'Count the decimal places: 1 + 1 = 2.'],
+        prompt: `What is ${a} × ${b}?`,
+        answer: num(new Frac(A * B, 100)),
+      };
+    },
+  },
+
+  div_dec: {
+    title: 'Dividing by a decimal', mentor: 'rocco',
+    hook: 'A glass rod 1.2 meters long is cut into pieces 0.3 meters long. How many pieces?',
+    explore: {
+      model: 'jumps', prompt: 'Jump 0.3 at a time. How many jumps reach 1.2?', success: '4 jumps! 1.2 ÷ 0.3 = 4.',
+      cfg: { max: 2, den: 10, jump: [3, 10], target: [12, 10], decimal: true },
+    },
+    see: { text: 'Dividing by 0.3 asks how many 0.3s fit. Multiply **both** numbers by 10 and it becomes 12 ÷ 3 = 4. Same answer!' },
+    watch: {
+      text: 'Make the number you divide by a whole number.',
+      steps: ['Find 4.5 ÷ 0.5.', 'Multiply both numbers by 10: 45 ÷ 5.', '45 ÷ 5 = 9.', 'So 4.5 ÷ 0.5 = 9.'],
+    },
+    practice(rng) {
+      const dv = rng.int(2, 5), q = rng.int(2, 9);
+      const top = ((dv * q) / 10).toFixed(1), bottom = (dv / 10).toFixed(1);
+      return {
+        steps: [`Find ${top} ÷ ${bottom}.`, `Multiply both by 10: ${dv * q} ÷ ${dv}.`],
+        prompt: `What is ${top} ÷ ${bottom}?`,
+        answer: num(q),
+      };
+    },
+  },
+
+  // ------------------------------------------------------------------ geometry (Tortuga, the old navigator)
+  coord: {
+    title: 'Coordinates', mentor: 'tortuga',
+    hook: 'Tortuga reads the sea like a map. Every spot has two numbers: how far across, then how far up.',
+    explore: {
+      model: 'plot', prompt: 'Mark the sunken chest at (3, 5): go 3 across, then 5 up.', success: '(3, 5): across first, then up!',
+      cfg: { n: 8, targets: [[3, 5]] },
+    },
+    see: { text: 'In **(3, 5)**, the first number is x (across) and the second is y (up). (5, 3) is a different place!', visual: { kind: 'grid', lo: 0, hi: 6, points: [{ x: 3, y: 5, icon: 'star' }, { x: 5, y: 3, icon: 'fish' }] } },
+    watch: {
+      text: 'Always start at (0, 0), the corner where the lines meet.',
+      steps: ['Find the shell at (4, 2).', 'Start at (0, 0).', 'Go 4 across.', 'Go 2 up. That is where the shell is.'],
+    },
+    practice(rng) {
+      const x = rng.int(1, 6), y = rng.int(1, 6), k = rng.int(2, 4);
+      return {
+        steps: [`Buoy A is at (${x}, ${y}).`, `Buoy B is ${k} squares to the right of A, so B goes ${k} further across.`],
+        prompt: `What is the first number (x) for buoy B?`,
+        answer: num(x + k),
+      };
+    },
+  },
+
+  volume_composite: {
+    title: 'Volume of joined boxes', mentor: 'tortuga',
+    hook: 'The temple steps are two stone boxes joined together. How much stone is in them?',
+    explore: {
+      model: 'cubes', prompt: 'Build box A first: 4 long, 2 wide and 2 tall.', success: 'Box A holds 16 cubes. Find box B the same way, then add the two!',
+      cfg: { l: 4, w: 2, h: 2 },
+    },
+    see: { text: 'Split the shape into boxes. **Find each volume, then add**: 16 + 12 = 28 cubic meters.', visual: { kind: 'boxes', a: { l: 4, h: 2 }, b: { l: 2, h: 3 }, w: 2, unit: 'm' } },
+    watch: {
+      text: 'Each box is length × width × height.',
+      steps: ['Box A is 3 × 2 × 4 = 24 cubic meters.', 'Box B is 5 × 2 × 2 = 20 cubic meters.', 'Add them: 24 + 20 = 44 cubic meters.'],
+    },
+    practice(rng) {
+      const w = rng.int(2, 3), la = rng.int(2, 5), ha = rng.int(2, 5), lb = rng.int(2, 5), hb = rng.int(1, 4);
+      const Va = la * w * ha, Vb = lb * w * hb;
+      return {
+        steps: [`Box A: ${la} × ${w} × ${ha} = ${Va}.`, `Box B: ${lb} × ${w} × ${hb} = ${Vb}.`],
+        prompt: 'What is the total volume?',
+        answer: num(Va + Vb),
+      };
+    },
+  },
+
+  convert5: {
+    title: 'Metric conversions', mentor: 'tortuga',
+    hook: 'Tortuga swam 2.5 kilometers today. How many meters is that?',
+    explore: {
+      model: 'slide', prompt: '1 kilometer is 1,000 meters. Press × 10 three times.', success: '2.5 kilometers = 2,500 meters. Three slides for 1,000!',
+      cfg: { start: '2.5', target: '2500' },
+    },
+    see: { text: 'Metric units grow by 10, 100 or 1,000. Big units to small: **multiply** (slide left). Small units to big: **divide** (slide right).' },
+    watch: {
+      text: 'Ask: are you going to bigger units or smaller ones?',
+      steps: ['Change 450 centimeters to meters.', '100 centimeters make 1 meter.', 'Small units to big units: divide by 100.', '450 ÷ 100 = 4.5 meters.'],
+    },
+    practice(rng) {
+      const n = rng.int(11, 99);
+      const x = (n / 10).toFixed(1);
+      return {
+        steps: [`Change ${x} meters to centimeters.`, '1 meter is 100 centimeters, so multiply by 100.'],
+        prompt: `How many centimeters is ${x} meters?`,
+        answer: num(n * 10),
+      };
+    },
+  },
+
+  shape_hierarchy: {
+    title: 'Shape families', mentor: 'tortuga',
+    hook: 'Shapes come in families, like turtles and tortoises. A square belongs to more than one!',
+    explore: {
+      model: 'tags', prompt: 'Tap every family name this square belongs to.', success: 'A square is a quadrilateral, a parallelogram, a rectangle, a rhombus AND a square!',
+      cfg: { shape: 'square', tags: ['quadrilateral', 'parallelogram', 'rectangle', 'rhombus', 'square', 'trapezoid', 'triangle'], correct: ['quadrilateral', 'parallelogram', 'rectangle', 'rhombus', 'square'] },
+    },
+    see: { text: 'Each family has rules. A square follows them all: 4 sides (**quadrilateral**), 2 pairs of parallel sides (**parallelogram**), 4 right angles (**rectangle**) and 4 equal sides (**rhombus**).', visual: { kind: 'shape', name: 'square' } },
+    watch: {
+      text: 'Check the rules one family at a time.',
+      steps: ['Is every rectangle a square?', 'A square needs 4 equal sides.', 'A long, thin rectangle does not have 4 equal sides.', 'So a rectangle is only SOMETIMES a square.'],
+    },
+    practice(rng) {
+      const q = rng.pick([
+        { s: 'rhombus', n: 3, steps: ['A rhombus has 4 sides: a quadrilateral.', 'Its opposite sides are parallel: a parallelogram.', 'It has 4 equal sides: a rhombus. It does not need right angles.'] },
+        { s: 'rectangle', n: 3, steps: ['A rectangle has 4 sides: a quadrilateral.', 'Its opposite sides are parallel: a parallelogram.', 'It has 4 right angles: a rectangle. Its sides do not all need to be equal.'] },
+        { s: 'square', n: 4, steps: ['A square has 4 sides, parallel opposite sides, 4 right angles and 4 equal sides.'] },
+      ]);
+      return {
+        steps: q.steps,
+        prompt: `How many of these families does a ${q.s} always belong to: quadrilateral, parallelogram, rectangle, rhombus?`,
+        answer: num(q.n),
+      };
+    },
+  },
+
+  // ------------------------------------------------------------------ expressions and patterns (Keeper Lumi)
+  expr_read: {
+    title: 'Writing expressions', mentor: 'lumi',
+    hook: 'The lighthouse lamps flash in codes. Keeper Lumi writes the codes as expressions, and the parentheses matter!',
+    explore: {
+      model: 'paren', prompt: 'Lumi wants to "add 8 and 7, then multiply by 2". Tap 8, then 7, to put them in parentheses.', success: '(8 + 7) × 2 = 30. Without parentheses, 8 + 7 × 2 would be 22!',
+      cfg: { tokens: [8, '+', 7, '×', 2], target: [0, 2] },
+    },
+    see: { text: 'Parentheses say **do this first**. "Add 8 and 7, then multiply by 2" is written (8 + 7) × 2.' },
+    watch: {
+      text: 'The step the words do first goes in parentheses.',
+      steps: ['Write: subtract 3 from 10, then multiply by 4.', 'Subtracting comes first, so it goes in parentheses: (10 − 3).', 'Then multiply: (10 − 3) × 4.', 'Its value is 7 × 4 = 28.'],
+    },
+    practice(rng) {
+      const a = rng.int(3, 12), b = rng.int(2, 9), c = rng.int(2, 5);
+      return {
+        steps: [`Write: add ${a} and ${b}, then multiply by ${c}.`, `The expression is (${a} + ${b}) × ${c}.`],
+        prompt: 'What is its value?',
+        answer: num((a + b) * c),
+      };
+    },
+  },
+
+  patterns2: {
+    title: 'Two patterns side by side', mentor: 'lumi',
+    hook: 'Two lamps blink in patterns. Lamp A adds 2 each night and lamp B adds 4. How are they related?',
+    explore: {
+      model: 'plot', prompt: 'Plot the pairs (A, B): (0, 0), (2, 4), (4, 8) and (6, 12).', success: 'They line up! Each B is 2 times its A.',
+      cfg: { n: 12, targets: [[0, 0], [2, 4], [4, 8], [6, 12]], line: true },
+    },
+    see: { text: 'Pair the matching terms as (A, B). Each B is **2 times** its A, so the points make a straight line.' },
+    watch: {
+      text: 'Line the patterns up and compare matching terms.',
+      steps: ['Pattern A: 0, 3, 6, 9.', 'Pattern B: 0, 6, 12, 18.', 'Pairs: (0, 0), (3, 6), (6, 12), (9, 18).', 'Each B is 2 times its A.'],
+    },
+    practice(rng) {
+      const a = rng.int(2, 5), m = rng.int(2, 4), b = a * m;
+      return {
+        steps: [`A: 0, ${a}, ${2 * a}, ${3 * a}.`, `B: 0, ${b}, ${2 * b}, ${3 * b}.`],
+        prompt: 'Each B number is how many times its A number?',
+        answer: num(m),
+      };
+    },
+  },
+
+  exponents: {
+    title: 'Exponents', mentor: 'lumi',
+    hook: 'Lumi\'s lamp doubles its brightness every second: 2 × 2 × 2 × 2... There is a short way to write that!',
+    explore: {
+      model: 'steptap', prompt: '3^4 means four 3s multiplied together. Tap each × to multiply.', success: '3 × 3 × 3 × 3 = 81, so 3^4 = 81!',
+      cfg: { tokens: [3, '×', 3, '×', 3, '×', 3] },
+    },
+    see: { text: '**3^4** means 3 × 3 × 3 × 3. The small number says how many times to use 3 as a factor. It is NOT 3 × 4.' },
+    watch: {
+      text: 'Multiply one factor at a time.',
+      steps: ['Find 2^5.', '2 × 2 = 4.', '4 × 2 = 8, then 8 × 2 = 16.', '16 × 2 = 32, so 2^5 = 32.'],
+    },
+    practice(rng) {
+      const b = rng.int(2, 5), e = b === 2 ? rng.int(3, 5) : rng.int(2, 3);
+      const sq = b * b;
+      return {
+        steps: [`Find ${b}^${e}.`, `${b} × ${b} = ${sq}.`],
+        prompt: `Keep multiplying by ${b}. What is ${b}^${e}?`,
+        answer: num(b ** e),
+      };
+    },
+  },
+
+  // ------------------------------------------------------------------ data (the Professor)
+  line_plot_frac: {
+    title: 'Sharing it out evenly', mentor: 'professor',
+    hook: 'The Professor has 4 cups of juice: {1/4}, {1/2}, {1/4} and 1 liter. If he pours them out evenly, how much is in each cup?',
+    explore: {
+      model: 'level', prompt: 'Each block is {1/4} liter. Move blocks until every cup has the same.', success: 'Every cup gets 2 quarters: {1/2} liter each!',
+      cfg: { heights: [1, 2, 1, 4], unit: 'quarter-liters', names: ['¼ L', '½ L', '¼ L', '1 L'] },
+    },
+    see: { text: 'Leveling out is **sharing equally**: add up all the juice (2 liters), then divide by the number of cups (4). Each cup gets {1/2} liter.' },
+    watch: {
+      text: 'Add everything, then divide by how many.',
+      steps: ['Cups hold {1/8}, {3/8}, {3/8} and {5/8} liter.', 'Total: {12/8} liters.', 'Share among 4 cups: {12/8} ÷ 4 = {3/8}.', 'Each cup would hold {3/8} liter.'],
+    },
+    practice(rng) {
+      const each = rng.int(2, 5), n = 4;
+      const xs = [each - 1, each + 1, each - 1, each + 1].map((v, i) => v + (i === 0 ? rng.int(0, 1) : 0));
+      const total = xs.reduce((a, b) => a + b, 0);
+      return {
+        steps: [`Cups hold ${xs.map((v) => `{${v}/8}`).join(', ')} liter.`, `Total: {${total}/8} liters.`],
+        prompt: `Share it among ${n} cups. How much is in each cup?`,
+        answer: frac(new Frac(total, 8 * n)),
+      };
+    },
+  },
+
+  mean: {
+    title: 'The mean is a fair share', mentor: 'professor',
+    hook: 'Four friends caught 3, 7, 4 and 6 fish. If they shared them all evenly, how many would each get?',
+    explore: {
+      model: 'level', prompt: 'Move fish from the tall towers to the short ones until every tower is the same.', success: 'Every friend gets 5. The mean is 5!',
+      cfg: { heights: [3, 7, 4, 6], unit: 'fish', names: ['Isa', 'Kai', 'Nori', 'Rocco'] },
+    },
+    see: { text: 'The **mean** is the fair share: add them all up, then divide by how many. (3 + 7 + 4 + 6) ÷ 4 = 20 ÷ 4 = 5.' },
+    watch: {
+      text: 'Add, then divide.',
+      steps: ['Find the mean of 8, 2, 6 and 4.', 'Add them: 8 + 2 + 6 + 4 = 20.', 'There are 4 numbers.', '20 ÷ 4 = 5, so the mean is 5.'],
+    },
+    practice(rng) {
+      const m = rng.int(4, 9), d = rng.int(1, 2);
+      const xs = [m - d, m + d, m - 2 * d + 1, m + 2 * d - 1];
+      const sum = xs.reduce((a, b) => a + b, 0);
+      return {
+        steps: [`Find the mean of ${xs.join(', ')}.`, `Add them: ${xs.join(' + ')} = ${sum}.`],
+        prompt: `Divide by how many numbers there are. What is the mean?`,
+        answer: num(sum / xs.length),
+      };
     },
   },
 };

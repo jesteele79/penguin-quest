@@ -2,6 +2,7 @@
 // Every model: new Model(host, cfg, onChange) renders into host; `.done` says the goal is met; `.solve()`
 // shows the answer (the "Show me" button); `.describe()` says what the model shows now, for read-aloud.
 import { el } from './dom.js';
+import { renderVisual } from '../math/visuals.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const svgEl = (tag, attrs = {}) => {
@@ -56,12 +57,12 @@ export class Strips extends Model {
   describe() { return this.rows.map((r) => `${r.name ? `${r.name}: ` : ''}${r.filled} of ${r.parts} parts${r.wholes > 1 ? ' in each whole' : ''} shaded`).join('. '); }
 
   render() {
-    const W = 560, left = 10, labelW = 96, rowH = 46, gap = 20;
+    const W = 560, left = 10, labelW = 96, rowH = 46, gap = 20, top = this.rows.some((r) => r.name) ? 20 : 4;
     const maxWholes = Math.max(...this.rows.map((r) => r.wholes));
     const unit = (W - left - labelW - 12 - (maxWholes - 1) * 10) / maxWholes;
-    const svg = svgRoot(W, this.rows.length * (rowH + gap) + 4, 'fraction strips');
+    const svg = svgRoot(W, this.rows.length * (rowH + gap) + top, 'fraction strips');
     this.rows.forEach((r, ri) => {
-      const y = 4 + ri * (rowH + gap);
+      const y = top + ri * (rowH + gap);
       for (let w = 0; w < r.wholes; w++) {
         const x0 = left + w * (unit + 10);
         const segW = unit / r.parts;
@@ -137,16 +138,18 @@ export class NumberLine extends Model {
     this.render();
   }
 
-  get ticks() { return (this.cfg.max - this.cfg.min) * this.cfg.den; }
+  get base() { return Math.round(this.cfg.min * this.cfg.den); }
 
-  get value() { return [this.cfg.min * this.cfg.den + this.k, this.cfg.den]; }
+  get ticks() { return Math.round((this.cfg.max - this.cfg.min) * this.cfg.den); }
+
+  get value() { return [this.base + this.k, this.cfg.den]; }
 
   get done() { const [n, d] = this.value; const [tn, td] = this.cfg.target; return n * td === tn * d; }
 
-  solve() { const [tn, td] = this.cfg.target; this.k = (tn * this.cfg.den) / td - this.cfg.min * this.cfg.den; this.changed(); }
+  solve() { const [tn, td] = this.cfg.target; this.k = Math.round((tn * this.cfg.den) / td) - this.base; this.changed(); }
 
   label(n, d) {
-    if (this.cfg.decimal) return (n / d).toFixed(String(d).length - 1);
+    if (this.cfg.decimal) return (n / d).toFixed(this.cfg.places ?? String(d).length - 1);
     if (n % d === 0) return String(n / d);
     return fracLabel(n, d);
   }
@@ -162,10 +165,11 @@ export class NumberLine extends Model {
     for (let k = 0; k <= n; k++) {
       const whole = k % this.cfg.den === 0;
       svg.append(svgEl('line', { x1: X(k), y1: y - (whole ? 13 : 8), x2: X(k), y2: y + (whole ? 13 : 8), class: 'v-tick' }));
-      if (whole || this.cfg.labelAll) svg.append(txt(X(k), y + 32, this.label(this.cfg.min * this.cfg.den + k, this.cfg.den), whole ? 'v-t v-strong' : 'v-t2', whole ? 17 : 13));
+      const major = whole || (this.cfg.major && k % this.cfg.major === 0);
+      if (major || this.cfg.labelAll) svg.append(txt(X(k), y + 32, this.label(this.base + k, this.cfg.den), major ? 'v-t v-strong' : 'v-t2', major ? 17 : 13));
     }
     for (const m of this.cfg.marks ?? []) {
-      const km = (m.n * this.cfg.den) / m.d - this.cfg.min * this.cfg.den;
+      const km = Math.round((m.n * this.cfg.den) / m.d) - this.base;
       svg.append(svgEl('circle', { cx: X(km), cy: y, r: 7, class: 'v-fill2' }));
       svg.append(txt(X(km), y + 52, m.label, 'v-t2 v-strong', 14));
     }
@@ -445,18 +449,18 @@ export class Share extends Model {
 
   solve() { this.each = Math.floor(this.cfg.total / this.cfg.groups); this.changed(); }
 
-  describe() { return `Each penguin has ${this.each}. ${this.left} left in the pile.`; }
+  describe() { return `Each ${(this.cfg.groupName ?? 'penguin').toLowerCase()} has ${this.each}. ${this.left} left in the pile.`; }
 
   render() {
     const { groups, thing } = this.cfg;
     const pile = el('div', { class: 'share-pile' }, ...Array.from({ length: this.left }, () => el('span', { class: 'share-item' })));
     const bowls = el('div', { class: 'share-bowls' }, ...Array.from({ length: groups }, (_, i) => el('div', { class: 'share-bowl' },
       el('div', { class: 'share-items' }, ...Array.from({ length: this.each }, () => el('span', { class: 'share-item' }))),
-      el('div', { class: 'share-name', text: `Penguin ${i + 1}` }))));
-    const give = el('button', { class: 'btn primary', type: 'button', text: this.done ? 'Not enough for everyone!' : `Give one ${thing} to each penguin` });
+      el('div', { class: 'share-name', text: `${this.cfg.groupName ?? 'Penguin'} ${i + 1}` }))));
+    const give = el('button', { class: 'btn primary', type: 'button', text: this.done ? 'Not enough for everyone!' : `Give one ${thing} to each ${(this.cfg.groupName ?? 'penguin').toLowerCase()}` });
     give.disabled = this.done;
     give.addEventListener('click', () => { if (!this.done) { this.each += 1; this.changed(); } });
-    const readout = el('div', { class: 'manip-readout', html: `Each penguin: <b>${this.each}</b> · left over: <b>${this.left}</b>` });
+    const readout = el('div', { class: 'manip-readout', html: `Each ${(this.cfg.groupName ?? 'penguin').toLowerCase()}: <b>${this.each}</b> · left over: <b>${this.left}</b>` });
     this.root.replaceChildren(el('div', { class: 'share-label', text: `The pile (${this.left})` }), pile, bowls, give, readout);
   }
 }
@@ -572,5 +576,433 @@ export class TapeBuild extends Model {
   }
 }
 
-export const MODELS = { strips: Strips, hundred: Hundred, numberline: NumberLine, area: AreaModel, protractor: Protractor, place: PlaceChart, cubes: Cubes, share: Share, steptap: StepTap, tape: TapeBuild };
+// ------------------------------------------------------------ fraction grid
+// A square cut into rows and columns. Shade rows for one fraction and columns for the other: the overlap is
+// their product. cfg: { rows, cols, goalRows, goalCols, rowName, colName, decimal }
+export class FracGrid extends Model {
+  static kind = 'fracgrid';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.r = 0;
+    this.c = 0;
+    this.render();
+  }
+
+  get done() { return this.r === this.cfg.goalRows && this.c === this.cfg.goalCols; }
+
+  solve() { this.r = this.cfg.goalRows; this.c = this.cfg.goalCols; this.changed(); }
+
+  frac(n, d) { return this.cfg.decimal ? (n / d).toFixed(String(d).length - 1) : fracLabel(n, d); }
+
+  describe() {
+    const { rows, cols } = this.cfg;
+    return `${this.frac(this.r, rows)} of the rows and ${this.frac(this.c, cols)} of the columns are shaded. They overlap in ${this.r * this.c} of ${rows * cols} small boxes.`;
+  }
+
+  render() {
+    const { rows, cols, rowName = 'rows', colName = 'columns' } = this.cfg;
+    const S = Math.min(300 / rows, 300 / cols), bar = 30, gap = 10;
+    const x0 = bar + gap + 8, y0 = bar + gap + 8, Wg = cols * S, Hg = rows * S;
+    const svg = svgRoot(x0 + Wg + 12, y0 + Hg + 12, 'fraction grid');
+    svg.style.maxWidth = 'min(400px, 52vh)';
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const inR = i < this.r, inC = j < this.c;
+        svg.append(svgEl('rect', { x: x0 + j * S, y: y0 + i * S, width: S, height: S, class: `${inR && inC ? 'v-fill' : inR ? 'v-top' : inC ? 'v-fill2 v-soft' : 'v-empty'} v-edge` }));
+      }
+    }
+    svg.append(svgEl('rect', { x: x0, y: y0, width: Wg, height: Hg, class: 'v-outline' }));
+    // Row bar (left) and column bar (top) are the controls.
+    for (let i = 0; i < rows; i++) {
+      const seg = svgEl('rect', { x: 8, y: y0 + i * S, width: bar, height: S, rx: 3, class: `${i < this.r ? 'v-top' : 'v-empty'} v-edge tap` });
+      seg.addEventListener('pointerdown', (e) => { e.preventDefault(); this.r = this.r === i + 1 ? i : i + 1; this.changed(); });
+      svg.append(seg);
+    }
+    for (let j = 0; j < cols; j++) {
+      const seg = svgEl('rect', { x: x0 + j * S, y: 8, width: S, height: bar, rx: 3, class: `${j < this.c ? 'v-fill2' : 'v-empty'} v-edge tap` });
+      seg.addEventListener('pointerdown', (e) => { e.preventDefault(); this.c = this.c === j + 1 ? j : j + 1; this.changed(); });
+      svg.append(seg);
+    }
+    const readout = el('div', { class: 'manip-readout', html: `${rowName}: <b>${this.frac(this.r, rows)}</b> · ${colName}: <b>${this.frac(this.c, cols)}</b> · overlap: <b>${this.r * this.c}</b> of ${rows * cols} = <b>${this.frac(this.r * this.c, rows * cols)}</b>` });
+    this.root.replaceChildren(svg, readout);
+  }
+}
+
+// ------------------------------------------------------------ coordinate plotter
+// Tap grid points to place markers. cfg: { n, targets: [[x, y]], icons } (icons: one label per target)
+export class Plot extends Model {
+  static kind = 'plot';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.pts = [];
+    this.last = null;
+    this.render();
+  }
+
+  has(x, y) { return this.pts.some((p) => p[0] === x && p[1] === y); }
+
+  get done() { return this.cfg.targets.every(([x, y]) => this.has(x, y)) && this.pts.length === this.cfg.targets.length; }
+
+  solve() { this.pts = this.cfg.targets.map((p) => [...p]); this.last = null; this.changed(); }
+
+  describe() { return this.pts.length ? `Points at ${this.pts.map((p) => `(${p[0]}, ${p[1]})`).join(', ')}.` : 'No points yet.'; }
+
+  render() {
+    const n = this.cfg.n, S = Math.min(34, 330 / n), pad = 34;
+    const W = pad * 2 + n * S;
+    const X = (v) => pad + v * S, Y = (v) => pad + (n - v) * S;
+    const svg = svgRoot(W, W, 'coordinate grid');
+    svg.style.maxWidth = 'min(400px, 46vh)';
+    for (let v = 0; v <= n; v++) {
+      svg.append(svgEl('line', { x1: X(v), y1: Y(0), x2: X(v), y2: Y(n), class: 'v-gridline' }));
+      svg.append(svgEl('line', { x1: X(0), y1: Y(v), x2: X(n), y2: Y(v), class: 'v-gridline' }));
+      svg.append(txt(X(v), Y(0) + 16, String(v), 'v-t2', 12));
+      if (v) svg.append(txt(X(0) - 12, Y(v), String(v), 'v-t2', 12));
+    }
+    svg.append(svgEl('line', { x1: X(0), y1: Y(0), x2: X(n) + 10, y2: Y(0), class: 'v-axis' }));
+    svg.append(svgEl('line', { x1: X(0), y1: Y(0), x2: X(0), y2: Y(n) - 10, class: 'v-axis' }));
+    svg.append(txt(X(n) + 18, Y(0), 'x', 'v-t v-strong', 15));
+    svg.append(txt(X(0), Y(n) - 20, 'y', 'v-t v-strong', 15));
+    if (this.cfg.line && this.pts.length > 1) {
+      const sorted = [...this.pts].sort((a, b) => a[0] - b[0]);
+      svg.append(svgEl('polyline', { points: sorted.map(([x, y]) => `${X(x)},${Y(y)}`).join(' '), class: 'v-arc' }));
+    }
+    for (const [x, y] of this.pts) {
+      const good = this.cfg.targets.some((t) => t[0] === x && t[1] === y);
+      svg.append(svgEl('circle', { cx: X(x), cy: Y(y), r: 9, class: good ? 'v-mark' : 'v-fill2' }));
+    }
+    const hit = svgEl('rect', { x: 0, y: 0, width: W, height: W, fill: 'transparent', class: 'tap' });
+    hit.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const p = svgPoint(svg, e);
+      const x = Math.round((p.x - pad) / S), y = Math.round(n - (p.y - pad) / S);
+      if (x < 0 || y < 0 || x > n || y > n) return;
+      if (this.has(x, y)) this.pts = this.pts.filter((q) => q[0] !== x || q[1] !== y);
+      else this.pts.push([x, y]);
+      this.last = [x, y];
+      this.changed();
+    });
+    svg.append(hit);
+    const msg = this.last ? `You tapped <b>(${this.last[0]}, ${this.last[1]})</b>: ${this.last[0]} across, ${this.last[1]} up.` : 'Tap where the lines cross. Go across first, then up.';
+    this.root.replaceChildren(svg, el('div', { class: 'manip-readout', html: msg }));
+  }
+}
+
+// ------------------------------------------------------------ sliding place-value chart
+// Every digit slides one place with each × 10 or ÷ 10. cfg: { start: '0.35', target: '35', lo: -3, hi: 3 }
+// Values are kept as an integer count of thousandths so nothing drifts.
+const PLACE_LABEL = { 3: 'thousands', 2: 'hundreds', 1: 'tens', 0: 'ones', '-1': 'tenths', '-2': 'hundredths', '-3': 'thousandths' };
+const toMilli = (s) => Math.round(Number(s) * 1000);
+export class PlaceSlide extends Model {
+  static kind = 'slide';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.v = toMilli(cfg.start);
+    this.moves = [];
+    this.render();
+  }
+
+  get done() { return this.v === toMilli(this.cfg.target); }
+
+  solve() { this.v = toMilli(this.cfg.target); this.changed(); }
+
+  show() { return fmtMilli(this.v); }
+
+  describe() { return `The number is ${this.show()}.`; }
+
+  render() {
+    const lo = this.cfg.lo ?? -3, hi = this.cfg.hi ?? 3;
+    const row = el('div', { class: 'place-row slide' });
+    const digits = String(this.v).padStart(4, '0');
+    // Digit for place p (p = 0 ones, -1 tenths...): value in thousandths has place p at index len - 4 - p.
+    const digitAt = (p) => { const i = digits.length - 4 - p; return i >= 0 && i < digits.length ? digits[i] : '0'; };
+    const lead = (p) => { // hide leading zeros on the left of the first non-zero whole digit
+      if (p <= 0) return false;
+      for (let q = hi; q >= p; q--) if (digitAt(q) !== '0') return false;
+      return true;
+    };
+    const trail = (p) => { // and trailing zeros after the last non-zero decimal digit
+      if (p >= 0) return false;
+      for (let q = lo; q <= p; q++) if (digitAt(q) !== '0') return false;
+      return true;
+    };
+    for (let p = hi; p >= lo; p--) {
+      if (p === -1) row.append(el('div', { class: 'place-dot', text: '.' }));
+      const d = lead(p) || trail(p) ? '' : digitAt(p);
+      row.append(el('div', { class: `place-cell${d && d !== '0' ? ' ok' : ''}`, html: `<span class="pn">${PLACE_LABEL[p]}</span><span class="pd">${d || '&nbsp;'}</span>` }));
+    }
+    const can10 = this.v * 10 < 10 ** (hi + 4);
+    const canDiv = this.v % 10 === 0;
+    const times = el('button', { class: 'btn small', type: 'button', text: '× 10  (slide left)' });
+    times.disabled = !can10;
+    times.addEventListener('click', () => { if (can10) { this.v *= 10; this.changed(); } });
+    const div = el('button', { class: 'btn small', type: 'button', text: '÷ 10  (slide right)' });
+    div.disabled = !canDiv;
+    div.addEventListener('click', () => { if (canDiv) { this.v /= 10; this.changed(); } });
+    const reset = el('button', { class: 'btn small ghost', type: 'button', text: 'Start over' });
+    reset.addEventListener('click', () => { this.v = toMilli(this.cfg.start); this.changed(); });
+    this.root.replaceChildren(row, el('div', { class: 'manip-buttons' }, times, div, reset), el('div', { class: 'manip-readout', html: `The number is <b>${this.show()}</b>` }));
+  }
+}
+function fmtMilli(m) {
+  const w = Math.floor(m / 1000), f = m % 1000;
+  return f ? `${w.toLocaleString('en-US')}.${String(f).padStart(3, '0').replace(/0+$/, '')}` : w.toLocaleString('en-US');
+}
+
+// ------------------------------------------------------------ jumps on a number line
+// Hop by a fixed amount and count the hops. cfg: { max, den, jump: [n, d], target: [n, d], decimal }
+export class Jumps extends Model {
+  static kind = 'jumps';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.k = 0;
+    this.render();
+  }
+
+  // Positions in ticks (1 / den each).
+  get step() { const [n, d] = this.cfg.jump; return (n * this.cfg.den) / d; }
+
+  get goal() { const [n, d] = this.cfg.target; return (n * this.cfg.den) / d; }
+
+  get done() { return this.k * this.step === this.goal; }
+
+  solve() { this.k = this.goal / this.step; this.changed(); }
+
+  label(t) {
+    const { den, decimal } = this.cfg;
+    if (decimal) { const s = (t / den).toFixed(String(den).length - 1); return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s; }
+    if (t % den === 0) return String(t / den);
+    return fracLabel(t, den);
+  }
+
+  describe() { return `${this.k} jumps, landing on ${this.label(this.k * this.step)}.`; }
+
+  render() {
+    const { max, den } = this.cfg;
+    const n = max * den;
+    const W = 580, x0 = 30, x1 = W - 30, y = 110;
+    const X = (t) => x0 + ((x1 - x0) * t) / n;
+    const svg = svgRoot(W, 160, 'number line with jumps');
+    svg.append(svgEl('line', { x1: x0 - 10, y1: y, x2: x1 + 10, y2: y, class: 'v-axis' }));
+    for (let t = 0; t <= n; t++) {
+      const whole = t % den === 0;
+      svg.append(svgEl('line', { x1: X(t), y1: y - (whole ? 12 : 7), x2: X(t), y2: y + (whole ? 12 : 7), class: 'v-tick' }));
+      if (whole || this.cfg.labelAll) svg.append(txt(X(t), y + 30, this.label(t), whole ? 'v-t v-strong' : 'v-t2', whole ? 16 : 12));
+    }
+    svg.append(svgEl('circle', { cx: X(this.goal), cy: y, r: 8, class: 'v-fill2' }));
+    for (let i = 0; i < this.k; i++) {
+      const a = X(i * this.step), b = X((i + 1) * this.step), h = Math.min(60, 18 + (b - a) * 0.45);
+      svg.append(svgEl('path', { d: `M${a},${y - 4} Q${(a + b) / 2},${y - 4 - h * 2} ${b},${y - 4}`, class: 'v-arc' }));
+      svg.append(txt((a + b) / 2, y - 8 - h, String(i + 1), 'v-t v-strong', 13));
+    }
+    const at = this.k * this.step;
+    const jump = el('button', { class: 'btn primary', type: 'button', text: `Jump ${this.label(this.step)}` });
+    jump.disabled = at + this.step > n;
+    jump.addEventListener('click', () => { if (at + this.step <= n) { this.k += 1; this.changed(); } });
+    const back = el('button', { class: 'btn small ghost', type: 'button', text: 'Start over' });
+    back.addEventListener('click', () => { this.k = 0; this.changed(); });
+    this.root.replaceChildren(svg, el('div', { class: 'manip-buttons' }, jump, back), el('div', { class: 'manip-readout', html: `<b>${this.k}</b> jump${this.k === 1 ? '' : 's'} of ${this.label(this.step)} land on <b>${this.label(at)}</b>` }));
+  }
+}
+
+// ------------------------------------------------------------ level the towers
+// Move blocks from tall towers to short ones until every tower is the same: the fair share (the mean).
+// cfg: { heights: [5, 2, 7, 2], unit: 'fish', names }
+export class Level extends Model {
+  static kind = 'level';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.h = [...cfg.heights];
+    this.sel = null;
+    this.render();
+  }
+
+  get done() { return this.h.every((v) => v === this.h[0]); }
+
+  solve() { const m = this.h.reduce((a, b) => a + b, 0) / this.h.length; this.h = this.h.map(() => m); this.sel = null; this.changed(); }
+
+  describe() { return `Towers: ${this.h.join(', ')}.`; }
+
+  render() {
+    const { names, unit = 'blocks' } = this.cfg;
+    const n = this.h.length, top = Math.max(...this.cfg.heights, ...this.h);
+    const S = Math.min(26, 230 / top), colW = Math.min(90, 520 / n), W = n * colW + 20, base = 20 + top * S + 6;
+    const svg = svgRoot(W, base + 30, 'towers of blocks');
+    this.h.forEach((v, i) => {
+      const x = 10 + i * colW + (colW - S * 1.6) / 2;
+      const col = svgEl('g', { class: 'tap' });
+      col.append(svgEl('rect', { x: 10 + i * colW + 2, y: 10, width: colW - 4, height: base - 8, rx: 8, class: this.sel === i ? 'v-head' : 'v-empty', 'fill-opacity': this.sel === i ? 1 : 0.15 }));
+      for (let k = 0; k < v; k++) col.append(svgEl('rect', { x, y: base - (k + 1) * S, width: S * 1.6, height: S - 2, rx: 3, class: `${this.sel === i && k === v - 1 ? 'v-fill2' : 'v-fill'} v-edge` }));
+      col.append(txt(10 + i * colW + colW / 2, base + 16, names?.[i] ?? String(v), 'v-t2 v-strong', 13));
+      col.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (this.sel === null) { if (v > 0) this.sel = i; }
+        else if (this.sel === i) this.sel = null;
+        else { this.h[this.sel] -= 1; this.h[i] += 1; this.sel = null; }
+        this.changed();
+      });
+      svg.append(col);
+    });
+    const msg = this.done ? `Every tower has <b>${this.h[0]}</b> ${unit}. That is the fair share.` : this.sel === null ? 'Tap a tall tower to pick up a block, then tap a short tower to drop it.' : 'Now tap the tower that should get the block.';
+    this.root.replaceChildren(svg, el('div', { class: 'manip-readout', html: msg }));
+  }
+}
+
+// ------------------------------------------------------------ tag the families
+// Pick every name that fits. cfg: { shape (a SHAPES name for the picture), tags: [names], correct: [names] }
+export class Tagger extends Model {
+  static kind = 'tags';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.on = new Set();
+    this.render();
+  }
+
+  get done() { return this.cfg.correct.length === this.on.size && this.cfg.correct.every((t) => this.on.has(t)); }
+
+  solve() { this.on = new Set(this.cfg.correct); this.changed(); }
+
+  describe() { return this.on.size ? `You picked ${[...this.on].join(', ')}.` : 'Nothing picked yet.'; }
+
+  render() {
+    const pic = renderVisual({ kind: 'shape', name: this.cfg.shape });
+    const tags = el('div', { class: 'manip-buttons tag-row' }, ...this.cfg.tags.map((t) => {
+      const b = el('button', { class: `btn small toggle${this.on.has(t) ? ' on' : ''}`, type: 'button', text: t, 'aria-pressed': String(this.on.has(t)) });
+      b.addEventListener('click', () => { if (this.on.has(t)) this.on.delete(t); else this.on.add(t); this.changed(); });
+      return b;
+    }));
+    const right = this.cfg.correct.filter((t) => this.on.has(t)).length;
+    const wrong = [...this.on].filter((t) => !this.cfg.correct.includes(t)).length;
+    const msg = wrong ? `One of your picks does not fit. Check its rules again.` : `${right} of ${this.cfg.correct.length} names found.`;
+    this.root.replaceChildren(el('div', { class: 'quiz-visual', html: pic }), tags, el('div', { class: 'manip-readout', text: msg }));
+  }
+}
+
+// ------------------------------------------------------------ where do the parentheses go?
+// Tap a number, then another two places away, to wrap that part in parentheses. cfg: { tokens, target: [i, j] }
+export class Paren extends Model {
+  static kind = 'paren';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.wrap = null;
+    this.first = null;
+    this.render();
+  }
+
+  get done() { return !!this.wrap && this.wrap[0] === this.cfg.target[0] && this.wrap[1] === this.cfg.target[1]; }
+
+  solve() { this.wrap = [...this.cfg.target]; this.first = null; this.changed(); }
+
+  value() {
+    const t = [...this.cfg.tokens];
+    if (this.wrap) {
+      const [i, j] = this.wrap;
+      const inner = t.slice(i, j + 1);
+      while (inner.length > 1) collapse(inner);
+      t.splice(i, j - i + 1, inner[0]);
+    }
+    while (t.length > 1) collapse(t);
+    return t[0];
+  }
+
+  text() {
+    return this.cfg.tokens.map((x, i) => `${this.wrap && this.wrap[0] === i ? '(' : ''}${x}${this.wrap && this.wrap[1] === i ? ')' : ''}`).join(' ');
+  }
+
+  describe() { return `${this.text()} = ${this.value()}.`; }
+
+  render() {
+    const row = el('div', { class: 'step-row' });
+    this.cfg.tokens.forEach((x, i) => {
+      if (this.wrap && this.wrap[0] === i) row.append(el('span', { class: 'paren', text: '(' }));
+      if (i % 2 === 1) row.append(el('span', { class: 'step-num', text: String(x) }));
+      else {
+        const b = el('button', { class: `step-op num${this.first === i ? ' picked' : ''}`, type: 'button', text: String(x) });
+        b.addEventListener('click', () => {
+          if (this.first === null) { this.first = i; this.wrap = null; }
+          else {
+            const [a, c] = [Math.min(this.first, i), Math.max(this.first, i)];
+            this.wrap = a === c ? null : [a, c];
+            this.first = null;
+          }
+          this.changed();
+        });
+        row.append(b);
+      }
+      if (this.wrap && this.wrap[1] === i) row.append(el('span', { class: 'paren', text: ')' }));
+    });
+    const msg = this.first !== null ? 'Now tap the last number to go inside the parentheses.' : `${this.text()} = <b>${this.value()}</b>`;
+    this.root.replaceChildren(row, el('div', { class: 'manip-readout', html: msg }));
+  }
+}
+const PREC2 = { '×': 2, '÷': 2, '+': 1, '−': 1 };
+function collapse(t) {
+  let best = 1;
+  for (let i = 1; i < t.length; i += 2) if (PREC2[t[i]] > PREC2[t[best]]) best = i;
+  const a = t[best - 1], b = t[best + 1], op = t[best];
+  t.splice(best - 1, 3, op === '+' ? a + b : op === '−' ? a - b : op === '×' ? a * b : a / b);
+}
+
+// ------------------------------------------------------------ compare decimals place by place
+// Both numbers get the same number of decimal places (added zeros show faintly). Tap the first place where
+// the digits differ: that place decides which number is greater. cfg: { a: '0.45', b: '0.405' }
+const PLACE_OF = (w, i) => (i < w ? ['ones', 'tens', 'hundreds', 'thousands'][w - 1 - i] : ['tenths', 'hundredths', 'thousandths'][i - w]);
+export class CompareRows extends Model {
+  static kind = 'rows2';
+
+  constructor(host, cfg, onChange) {
+    super(host, cfg, onChange);
+    this.picked = null;
+    const parts = [cfg.a, cfg.b].map((x) => x.split('.'));
+    this.w = Math.max(...parts.map((q) => q[0].length));
+    this.p = Math.max(...parts.map((q) => (q[1] ?? '').length));
+    // Each row: [{ d, added }] whole digits right-aligned, decimals padded with zeros.
+    this.rows = parts.map(([whole, dec = '']) => [
+      ...whole.padStart(this.w, ' ').split('').map((d) => ({ d, added: d === ' ' })),
+      ...dec.padEnd(this.p, '_').split('').map((d) => (d === '_' ? { d: '0', added: true } : { d, added: false })),
+    ]);
+    this.render();
+  }
+
+  get first() { return this.rows[0].findIndex((c, i) => c.d !== this.rows[1][i].d); }
+
+  get done() { return this.picked === this.first; }
+
+  solve() { this.picked = this.first; this.changed(); }
+
+  describe() { return `${this.cfg.a} and ${this.cfg.b}.`; }
+
+  render() {
+    const grid = el('div', { class: 'cmp-grid', style: `grid-template-columns: repeat(${this.w}, auto) 18px repeat(${this.p}, auto)` });
+    for (let r = 0; r < 2; r++) {
+      this.rows[r].forEach((c, i) => {
+        if (i === this.w) grid.append(el('div', { class: 'place-dot', text: '.' }));
+        const cell = el('button', { class: `place-cell${this.picked === i ? (i === this.first ? ' ok' : ' no') : ''}${c.added ? ' added' : ''}`, type: 'button', html: `${r === 0 ? `<span class="pn">${PLACE_OF(this.w, i)}</span>` : ''}<span class="pd">${c.d === ' ' ? '&nbsp;' : c.d}</span>` });
+        cell.addEventListener('click', () => { this.picked = i; this.changed(); });
+        grid.append(cell);
+      });
+    }
+    let msg = 'Tap the first place, from the left, where the digits are different.';
+    if (this.picked !== null) {
+      const i = this.picked, f = this.first;
+      if (i === f) {
+        const big = Number(this.rows[0][f].d) > Number(this.rows[1][f].d) ? this.cfg.a : this.cfg.b;
+        msg = `In the ${PLACE_OF(this.w, f)} place, ${this.rows[0][f].d} and ${this.rows[1][f].d} are different. So <b>${big}</b> is greater!`;
+      } else msg = i < f ? 'Those digits match. Keep going to the right.' : 'Go back left: a place before this one is already different.';
+    }
+    this.root.replaceChildren(grid, el('div', { class: 'manip-readout', html: msg }));
+  }
+}
+
+export const MODELS = {
+  strips: Strips, hundred: Hundred, numberline: NumberLine, area: AreaModel, protractor: Protractor, place: PlaceChart, cubes: Cubes,
+  share: Share, steptap: StepTap, tape: TapeBuild, fracgrid: FracGrid, plot: Plot, slide: PlaceSlide, jumps: Jumps, level: Level, tags: Tagger, paren: Paren, rows2: CompareRows,
+};
 export { gcd };

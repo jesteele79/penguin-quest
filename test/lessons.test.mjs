@@ -6,8 +6,8 @@ import { checkAnswer } from '../src/math/check.js';
 import { typedValue } from '../src/math/build.js';
 import { Rng } from '../src/core/rng.js';
 
-const MODELS = ['strips', 'hundred', 'numberline', 'area', 'protractor', 'place', 'cubes', 'share', 'steptap', 'tape'];
-const MENTORS = ['professor', 'captain', 'fern', 'mittens', 'pebble', 'skipper'];
+const MODELS = ['strips', 'hundred', 'numberline', 'area', 'protractor', 'place', 'cubes', 'share', 'steptap', 'tape', 'fracgrid', 'plot', 'slide', 'jumps', 'level', 'tags', 'paren', 'rows2'];
+const MENTORS = ['professor', 'captain', 'fern', 'mittens', 'pebble', 'skipper', 'isa', 'rocco', 'marlo', 'tortuga', 'lumi'];
 const clean = (s) => typeof s === 'string' && s.length > 0 && !/undefined|NaN|Infinity|\[object/.test(s) && !/[{}]/.test(s.replace(/\{-?[\d?]+( [\d?]+)?\/[\d?]+\}/g, ''));
 
 for (const [id, L] of Object.entries(LESSONS)) {
@@ -29,7 +29,23 @@ for (const [id, L] of Object.entries(LESSONS)) {
     if (L.explore.model === 'hundred') assert.ok(cfg.target > 0 && cfg.target <= 100);
     if (L.explore.model === 'place') assert.ok(cfg.target < cfg.number.replace('.', '').length);
     if (L.explore.model === 'cubes') assert.ok(cfg.l * cfg.w * cfg.h <= 60, `${id} too many cubes to draw`);
-    if (L.explore.model === 'share') assert.ok(cfg.total > cfg.groups && cfg.total % cfg.groups > 0);
+    if (L.explore.model === 'share') assert.ok(cfg.total > cfg.groups);
+    if (L.explore.model === 'fracgrid') assert.ok(cfg.goalRows > 0 && cfg.goalRows <= cfg.rows && cfg.goalCols > 0 && cfg.goalCols <= cfg.cols);
+    if (L.explore.model === 'plot') assert.ok(cfg.targets.every(([x, y]) => x >= 0 && y >= 0 && x <= cfg.n && y <= cfg.n));
+    if (L.explore.model === 'slide') {
+      const r = Number(cfg.target) / Number(cfg.start);
+      const k = Math.round(Math.log10(r));
+      assert.ok(Math.abs(r - 10 ** k) < 1e-9 && Number(cfg.target) < 10000 && Number(cfg.start) * 1000 >= 1, `${id} slide unreachable`);
+    }
+    if (L.explore.model === 'jumps') {
+      const step = (cfg.jump[0] * cfg.den) / cfg.jump[1], goal = (cfg.target[0] * cfg.den) / cfg.target[1];
+      assert.ok(Number.isInteger(step) && Number.isInteger(goal / step) && goal <= cfg.max * cfg.den, `${id} jumps never land on the target`);
+    }
+    if (L.explore.model === 'level') assert.ok(cfg.heights.reduce((a, b) => a + b, 0) % cfg.heights.length === 0, `${id} towers cannot level out`);
+    if (L.explore.model === 'tags') assert.ok(cfg.correct.every((t) => cfg.tags.includes(t)));
+    if (L.explore.model === 'paren') assert.ok(cfg.target[0] % 2 === 0 && cfg.target[1] % 2 === 0 && cfg.target[0] < cfg.target[1] && cfg.target[1] < cfg.tokens.length);
+    if (L.explore.model === 'rows2') assert.notEqual(Number(cfg.a), Number(cfg.b));
+    if (L.explore.model === 'numberline') { const v = cfg.target[0] / cfg.target[1]; assert.ok(v >= cfg.min && v <= cfg.max); }
     if (L.explore.model === 'protractor') assert.ok(cfg.target % 5 === 0 && cfg.target > 0 && cfg.target < 180);
 
     // "Your turn": the answer is right, positive and typeable, for many examples.
