@@ -96,6 +96,9 @@ export const HOOKS = {
   // Called every frame of play with the player, for things a world does on its own (Book 2's lava).
   frame() {},
 
+  // Who travels to the other books: Captain Flipper sails anywhere.
+  ferries: { captain: ['book2', 'book3'] },
+
   onRestore(region, ctx) {
     if (region === 'lake') ctx.islandBarrier.setUp(false);
   },

@@ -1,6 +1,6 @@
 // Words the shared game systems use, in each book's own language: the crystals of Glacier Bay are the
 // Ember Vents of the Ember Isles, golden snowflakes are sea glass, Glooms are Sootlings.
-import { isBook2 } from './active.js';
+import { byBook } from './active.js';
 
 const GLACIER_BAY = {
   place: 'Glacier Bay', where: 'around the bay', home: 'the igloo',
@@ -28,4 +28,17 @@ const EMBER_ISLES = {
   swimPlace: 'the sea', fishPlace: 'the harbor pier', stall: "Chef Marlo's stall", slalom: 'Ash Slope Slalom', chart: 'Tide Chart', chartPlace: 'the camp table',
 };
 
-export const T = isBook2 ? EMBER_ISLES : GLACIER_BAY;
+const SKYREACH = {
+  place: 'Skyreach', where: 'around the islands', home: 'Guild Town',
+  crystal: 'anchor', Crystal: 'Anchor', crystals: 'anchors', crystalOf: (name) => `${name} anchor`,
+  shard: 'Star Shard', energy: 'starlight', restored: 'Star Anchor Relit!', glowsAgain: 'shines again',
+  wake: 'Relight', charge: 'Charge',
+  flake: 'sky feather', flakes: 'sky feathers', Flake: 'Sky feather', Flakes: 'Sky feathers', crystalName: 'Star Anchor',
+  gloom: 'Hushling', glooms: 'Hushlings', glimmer: 'Cloudlet', gloomGift: 'a happy hum', gloomColor: '#a8a0e0', gloomHex: 0xc8c0ff, hurtFlash: '#4a4a7a',
+  patrol: 'Sky Patrol', stars: 'Aurora Stars', star: 'Aurora Star', legend: 'Sky Legend', journal: 'Sky Journal',
+  praise: ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Sky-high!', 'Out of this world!', 'Star-tastic!', 'Spot on!', 'Waddle-ful!', 'Soaring!', 'Perfect!'],
+  dataPlace: "Sky charts at the Professor's table",
+  swimPlace: 'the clouds', fishPlace: 'the mooring pier', stall: "Nimbus's stall", slalom: 'Meadow Kite Run', chart: 'Sky Chart', chartPlace: "the Professor's table",
+};
+
+export const T = byBook({ book1: GLACIER_BAY, book2: EMBER_ISLES, book3: SKYREACH });

@@ -13,6 +13,27 @@ const GRAVITY = 30;
 const JUMP_V = 11.5;
 const MAX_SLOPE = 1.05;
 const SWIM_DEPTH = 0.95;
+// Glider wings (Book 3): holding jump while falling turns the fall into a slow glide that keeps moving forward.
+const GLIDE_SINK = 2.5;
+const GLIDE_SPEED = 11;
+
+// A little hang-glider sail that opens over the penguin's back while it glides.
+function buildSail() {
+  const g = new THREE.Group();
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 1.4); shape.lineTo(-2.4, -0.6); shape.lineTo(0, -0.2); shape.lineTo(2.4, -0.6); shape.closePath();
+  const sail = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshLambertMaterial({ color: 0xffb000, side: THREE.DoubleSide }));
+  sail.rotation.x = Math.PI / 2;
+  const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 1.5), new THREE.MeshLambertMaterial({ color: 0xff5c6a, side: THREE.DoubleSide }));
+  stripe.rotation.x = Math.PI / 2;
+  stripe.position.set(0, 0.01, 0.5);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 5), new THREE.MeshLambertMaterial({ color: 0x5a5a64 }));
+  bar.position.set(0, -0.7, 0);
+  g.add(sail, stripe, bar);
+  g.position.set(0, 2.6, 0);
+  g.scale.setScalar(0.001);
+  return g;
+}
 
 export class Player {
   constructor(scene, world, look = {}) {
@@ -35,6 +56,10 @@ export class Player {
     this.safeTimer = 0;
     this.stepAcc = 0;
     this.airAssist = null;
+    this.canGlide = false;
+    this.gliding = false;
+    this.sail = null;
+    this.sailOpen = 0;
     this.platform = null;
     this.groundY = 0;
     this.celebrateT = 0;
@@ -107,8 +132,8 @@ export class Player {
       else this.speed = approach(this.speed, 0, (fwdIn < 0 ? 16 : 2.2) * dt);
       this.speed = clamp(this.speed, -2, SLIDE_MAX);
     } else {
-      const target = fwdIn > 0 ? WALK : fwdIn < 0 ? -BACK : 0;
-      const accel = this.grounded ? (target === 0 ? 34 : 26) : 9;
+      const target = this.gliding ? GLIDE_SPEED : fwdIn > 0 ? WALK : fwdIn < 0 ? -BACK : 0;
+      const accel = this.gliding ? 6 : this.grounded ? (target === 0 ? 34 : 26) : 9;
       this.speed = approach(this.speed, target, accel * dt);
       if (slideKey && this.grounded && this.speed > 2.5) {
         this.sliding = true;
@@ -177,6 +202,8 @@ export class Player {
       }
       if (!this.swimming) {
         this.vy -= GRAVITY * dt;
+        this.gliding = this.canGlide && !this.grounded && this.vy < 0 && !this.frozen && input.down('Space');
+        if (this.gliding) this.vy = Math.max(this.vy, -GLIDE_SINK);
         this.pos.y += this.vy * dt;
         if (this.airAssist && !this.grounded && this.vy < 2) {
           const t = this.airAssist(this.pos.x, this.pos.z, fx * this.speed, fz * this.speed);
@@ -227,12 +254,20 @@ export class Player {
       look = clamp(wrapAngle(want - this.yaw), -1.1, 1.1);
     }
 
+    if (this.grounded || this.swimming) this.gliding = false;
+    if (this.canGlide || this.sail) {
+      if (!this.sail) { this.sail = buildSail(); this.model.root.add(this.sail); }
+      this.sailOpen = damp(this.sailOpen, this.gliding ? 1 : 0, 10, dt);
+      this.sail.scale.setScalar(Math.max(0.001, this.sailOpen));
+      this.sail.visible = this.sailOpen > 0.01;
+    }
+
     this.model.root.rotation.y = this.yaw;
     this.model.animate(dt, {
       idleTime: this.idleTime,
       speed: this.speed,
       grounded: this.grounded,
-      sliding: this.sliding,
+      sliding: this.sliding || this.gliding,
       swimming: this.swimming,
       vy: this.vy,
       celebrate: this.celebrateT > 0,

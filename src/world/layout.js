@@ -1,10 +1,11 @@
 // Where things are in the book being played. Shared systems import from here; each book's own content
 // imports its layout directly. Both books use the same names wherever the meaning is the same.
-import { isBook2 } from '../books/active.js';
+import { byBook } from '../books/active.js';
 import * as glacierBay from '../books/book1/layout.js';
 import * as emberIsles from '../books/book2/layout.js';
+import * as skyreach from '../books/book3/layout.js';
 
-const L = isBook2 ? emberIsles : glacierBay;
+const L = byBook({ book1: glacierBay, book2: emberIsles, book3: skyreach });
 
 export const WATER_Y = L.WATER_Y;
 export const WORLD_HALF = L.WORLD_HALF;

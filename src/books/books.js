@@ -6,15 +6,15 @@ export const UNLOCK_MASTERY = 0.8;
 
 export const BOOKS = [
   {
-    id: 'book1', n: 1, title: 'Aurora Rescue', grade: 4, world: 'Glacier Bay', final: 'ch7', ready: true,
+    id: 'book1', n: 1, title: 'Aurora Rescue', grade: 4, world: 'Glacier Bay', final: 'ch7', ready: true, travel: 'sail',
     blurb: 'Bring the fading aurora back to a snowy island.', colors: ['#1e2a78', '#38f0d2', '#b483ff'], icon: 'flake',
   },
   {
-    id: 'book2', n: 2, title: 'The Ember Isles', grade: 5, world: 'The Ember Isles', final: 'ch7', ready: true,
+    id: 'book2', n: 2, title: 'The Ember Isles', grade: 5, world: 'The Ember Isles', final: 'ch7', ready: true, travel: 'sail',
     blurb: 'Sail to a warm volcanic archipelago where the Heart-Ember is cooling.', colors: ['#5a1e3a', '#ff6b35', '#2ec4b6'], icon: 'flame',
   },
   {
-    id: 'book3', n: 3, title: 'Skyreach', grade: 6, world: 'The sky islands', final: null, ready: false,
+    id: 'book3', n: 3, title: 'Skyreach', grade: 6, world: 'Skyreach', final: 'ch7', ready: false, travel: 'fly',
     blurb: 'Glide between floating islands and rebuild the Star Map.', colors: ['#2d2a6e', '#c9b6ff', '#ffb38a'], icon: 'star',
   },
 ];

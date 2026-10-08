@@ -78,7 +78,8 @@ export class Collision {
     return hit;
   }
 
-  // platform: { kind: 'box'|'circle', x, z, hw, hd, r, top, active }
+  // platform: { kind: 'box'|'circle', x, z, hw, hd, r, top, active }. A box with top1 is a ramp: it rises
+  // from top at its local -z end to top1 at its +z end (rope bridges between islands).
   addPlatform(p) { p.active = p.active !== false; this.platforms.push(p); return p; }
   removePlatform(p) { const i = this.platforms.indexOf(p); if (i >= 0) this.platforms.splice(i, 1); }
 
@@ -86,15 +87,16 @@ export class Collision {
     let best = -Infinity, which = null;
     for (const p of this.platforms) {
       if (!p.active) continue;
-      let inside;
+      let inside, top = p.top;
       if (p.kind === 'circle') inside = (x - p.x) ** 2 + (z - p.z) ** 2 <= p.r * p.r;
       else {
         // Inverse of Object3D's Y rotation: local = R(-rot) * (world - center).
         const c = Math.cos(p.rot || 0), s = Math.sin(p.rot || 0);
         const lx = (x - p.x) * c - (z - p.z) * s, lz = (x - p.x) * s + (z - p.z) * c;
         inside = Math.abs(lx) <= p.hw && Math.abs(lz) <= p.hd;
+        if (inside && p.top1 !== undefined) top = p.top + (p.top1 - p.top) * ((lz + p.hd) / (2 * p.hd));
       }
-      if (inside && p.top <= y + stepUp && p.top > best) { best = p.top; which = p; }
+      if (inside && top <= y + stepUp && top > best) { best = top; which = p; }
     }
     return { top: best, platform: which };
   }

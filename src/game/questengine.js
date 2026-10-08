@@ -13,6 +13,7 @@ import { cocoaOrder } from '../math/skills/decimals.js';
 import { bookById, voyages, placeName } from '../books/books.js';
 import { ShopScreen, VoyageScreen } from './screens.js';
 import { ACTIVE } from '../books/active.js';
+import { domainOf, regionOf } from '../books/regions.js';
 import { orbitShot, angleToPlayer } from './minigames/common.js';
 
 const V = (x, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -195,7 +196,7 @@ export class QuestEngine {
   }
 
   onSolve(problem, result) {
-    const region = problem.domain;
+    const region = regionOf(problem.domain);
     if (!REGIONS.includes(region)) return;
     const add = result.firstTry ? (result.hintUsed ? 0.7 : 1) : result.solved ? 0.5 : 0.25;
     this.s.resonance[region] = Math.min(RESONANCE_NEED * 3, (this.s.resonance[region] || 0) + add);
@@ -235,7 +236,10 @@ export class QuestEngine {
     }
     if (!next) {
       const onward = this.onwardVoyage();
-      if (onward) return { text: `Sail to ${placeName(onward.world)} with Captain Flipper`, target: G.npcs.get('captain')?.pos ?? null, npc: 'captain' };
+      if (onward) {
+        const npc = this.ferryFor(onward.id);
+        return { text: `${onward.travel === 'fly' ? 'Fly' : 'Sail'} to ${placeName(onward.world)} with ${NPCS[npc]?.name ?? 'a friend'}`, target: G.npcs.get(npc)?.pos ?? null, npc };
+      }
       const offer = SIDE.find((d) => this.sideOpen(d));
       if (offer) return { text: `New side quest: talk to ${NPCS[offer.giver].name}`, target: G.npcs.get(offer.giver).pos, npc: offer.giver };
       return { text: `Free play: ${T.patrol}, collections and practice`, target: null };
@@ -331,11 +335,18 @@ export class QuestEngine {
     }
     // 4. Special friends
     if (npcId === BOOK.nursery && this.active('sq_chicks') && G.chicks.following() > 0) return G.chicks.deliver();
-    // 5. Captain Flipper sails to the next open book (or back to another), until told "not yet" this visit.
-    if (npcId === 'captain' && this.done('ch0') && !this.voyageDeclined) {
-      const to = this.onwardVoyage() ?? voyages(G.save.data, G.tutor, ACTIVE)[0];
+    // 5. A ferry friend (Captain Flipper's boat, Cinder's airship) carries the penguin to another open book,
+    // the next one first, until told "not yet" this visit.
+    const dests = BOOK.ferries?.[npcId];
+    if (dests && this.done('ch0') && !this.voyageDeclined) {
+      const open = voyages(G.save.data, G.tutor, ACTIVE).filter((b) => dests.includes(b.id));
+      const here = bookById(ACTIVE);
+      const to = open.find((b) => b.n > here.n) ?? open[0];
       if (to) {
-        const line = to.n < bookById(ACTIVE).n ? `Homesick for ${placeName(to.world)}, matey? My boat is ready whenever you are.` : `${to.world} ${to.world.endsWith('s') ? 'are' : 'is'} waiting, matey! Shall we set sail?`;
+        const sailor = npcId === 'captain';
+        const line = to.n < here.n
+          ? (sailor ? `Homesick for ${placeName(to.world)}, matey? My boat is ready whenever you are.` : `Want to fly down to ${placeName(to.world)}? Hop in, the airship is ready!`)
+          : (sailor ? `${to.world} ${to.world.endsWith('s') ? 'are' : 'is'} waiting, matey! Shall we set sail?` : `Ready to fly up to ${placeName(to.world)}? The airship is all fueled up!`);
         return this.say([[npcId, line]], npcId).then(() => pushActivity(new VoyageScreen(to.id, () => { this.voyageDeclined = true; })));
       }
     }
@@ -417,7 +428,7 @@ export class QuestEngine {
   siteQuiz(setName, index, set, onFinish) {
     const domain = set.domains ? set.domains[index] : set.domain;
     const count = set.picks ? set.picks.length : set.count;
-    const color = REGION_COLORS[domain]?.css ?? '#ffd166';
+    const color = REGION_COLORS[regionOf(domain)]?.css ?? '#ffd166';
     const hooks = G.sites.hooks(setName, index);
     // Legend mode: the upper half of the subject's open skills, at the hardest tier.
     const hardSkills = set.hard
@@ -426,7 +437,7 @@ export class QuestEngine {
       : null;
     pushActivity(new QuizActivity({
       title: set.title,
-      subtitle: set.hard ? `${REGION_INFO[domain].subject} · Legend mode: extra hard` : `${count} puzzle${count > 1 ? 's' : ''}`,
+      subtitle: set.hard ? `${REGION_INFO[regionOf(domain)]?.subject ?? DOMAINS[domain].name} · Legend mode: extra hard` : `${count} puzzle${count > 1 ? 's' : ''}`,
       color, count, closable: true,
       pick: (i) => (set.story === 'cocoa' ? { problem: this.cocoaProblem(set.npcs[index]) }
         : set.picks ? set.picks[i] : { domain, skills: hardSkills ?? set.skills, minTier: set.hard ? 3 : undefined }),
@@ -469,10 +480,10 @@ export class QuestEngine {
     if (this.s.crystals[region]) {
       // Practice goes to this subject's grade-level skills that are not mastered yet, if there are any.
       const grade = bookById(this.s.active).grade;
-      const todo = DOMAINS[region].skills.filter((s) => s.grade === grade && G.tutor.isUnlocked(s) && !G.tutor.isMastered(s.id)).map((s) => s.id);
+      const todo = DOMAINS[domainOf(region)].skills.filter((s) => s.grade === grade && G.tutor.isUnlocked(s) && !G.tutor.isMastered(s.id)).map((s) => s.id);
       return pushActivity(new QuizActivity({
         title: `${T.Crystal} Practice`, subtitle: `${info.subject} · ${todo.length ? 'skills to master' : '5 puzzles'} for fish coins`, color, count: 5,
-        pick: () => ({ domain: region, skills: todo.length ? todo : undefined }), shot: this.crystalShot(c.base),
+        pick: () => ({ domain: domainOf(region), skills: todo.length ? todo : undefined }), shot: this.crystalShot(c.base),
         onCorrect: () => { c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 20); },
         onFinish: () => { G.addCoins(15); G.toasts.toast('Practice complete! +15 bonus'); },
       }));
@@ -490,7 +501,7 @@ export class QuestEngine {
     if (res < RESONANCE_NEED) {
       return pushActivity(new QuizActivity({
         title: `${T.charge} the ${T.Crystal}`, subtitle: `Every puzzle adds ${T.energy} (${Math.floor(res)}/${RESONANCE_NEED})`, color,
-        count: Math.max(2, Math.min(5, Math.ceil(RESONANCE_NEED - res))), domain: region, shot: this.crystalShot(c.base),
+        count: Math.max(2, Math.min(5, Math.ceil(RESONANCE_NEED - res))), domain: domainOf(region), shot: this.crystalShot(c.base),
         onCorrect: () => { c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 25); },
         onFinish: () => {
           const now = Math.floor(this.s.resonance[region]);
@@ -500,7 +511,7 @@ export class QuestEngine {
     }
     return pushActivity(new QuizActivity({
       title: `${T.Crystal} Challenge`, subtitle: `${info.name} · ${info.subject}`, color,
-      count: CRYSTAL_GOAL, done: this.s.progress.charge[region] || 0, domain: region, shot: this.crystalShot(c.base),
+      count: CRYSTAL_GOAL, done: this.s.progress.charge[region] || 0, domain: domainOf(region), shot: this.crystalShot(c.base),
       onCorrect: (p, n) => { this.s.progress.charge[region] = n; c.setCharge(0.75 + (0.25 * n) / CRYSTAL_GOAL); c.flash(); G.world.effects.sparkle(c.mesh.position, REGION_COLORS[region].a, 30); },
       onFinish: () => this.restoreCrystal(region, id),
       onClose: (n) => { this.s.progress.charge[region] = n; G.saveSoon(); },
@@ -584,6 +595,9 @@ export class QuestEngine {
     return voyages(G.save.data, G.tutor, ACTIVE).find((b) => b.n > here.n) ?? null;
   }
 
+  // Who in this book carries a penguin to that book.
+  ferryFor(bookId) { return Object.keys(BOOK.ferries ?? {}).find((npc) => BOOK.ferries[npc].includes(bookId)) ?? 'captain'; }
+
   // A book that has just opened is announced once (mastery can tip it over at any time, not only at the end).
   announceVoyage() {
     const d = G.save.data;
@@ -591,7 +605,8 @@ export class QuestEngine {
     if (!book || d.flags.announced?.includes(book.id)) return;
     d.flags.announced = [...(d.flags.announced ?? []), book.id];
     G.audio.play('fanfare');
-    G.toasts.showBanner(`Book ${book.n} unlocked: ${book.title}!`, 'Captain Flipper is ready to sail you there', book.colors[1], 5600);
+    const npc = this.ferryFor(book.id);
+    G.toasts.showBanner(`Book ${book.n} unlocked: ${book.title}!`, `${NPCS[npc]?.name ?? 'A friend'} is ready to ${book.travel === 'fly' ? 'fly' : 'sail'} you there`, book.colors[1], 5600);
     G.saveSoon();
   }
 

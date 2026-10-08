@@ -1,9 +1,10 @@
 // The story of the book being played: chapters, side quests, quest sites and chatter.
-import { isBook2 } from '../books/active.js';
+import { byBook } from '../books/active.js';
 import * as auroraRescue from '../books/book1/story.js';
 import * as emberIsles from '../books/book2/story.js';
+import * as skyreach from '../books/book3/story.js';
 
-const S = isBook2 ? emberIsles : auroraRescue;
+const S = byBook({ book1: auroraRescue, book2: emberIsles, book3: skyreach });
 
 export const MAIN = S.MAIN;
 export const SIDE = S.SIDE;

@@ -208,6 +208,38 @@ Object.assign(HATS, {
     g.add(flower);
     return g;
   },
+  // A glider pilot's leather cap with ear flaps, goggles up on the front.
+  aviator(color = 0x8a5a3a) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.SphereGeometry(0.86, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), solid(color), 0, 0.1, -0.02, 0, 0, 0, 1, 0.92, 1));
+    for (const s of [-1, 1]) g.add(mesh(new THREE.SphereGeometry(0.3, 12, 8), solid(color), s * 0.74, -0.18, 0.02, 0, 0, 0, 0.45, 1, 0.8));
+    g.add(mesh(new THREE.TorusGeometry(0.83, 0.05, 6, 28), solid(0x3a2a20), 0, 0.2, 0, Math.PI / 2 - 0.1));
+    for (const s of [-1, 1]) {
+      const x = s * 0.26, y = 0.5;
+      const z = faceZ(x * 0.9, y - HAT_LIFT - 0.1) + 0.06;
+      g.add(mesh(new THREE.CylinderGeometry(0.19, 0.2, 0.14, 16), solid(0x9a9aa8), x, y, z, Math.PI / 2 - 0.7, 0, 0));
+      g.add(mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.15, 16), basic(0xbfe8ff), x, y + 0.01, z + 0.02, Math.PI / 2 - 0.7, 0, 0));
+    }
+    return g;
+  },
+  // A soft midnight hood speckled with stars, its tip flopping over.
+  starhood(color = 0x2a2f7a) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.SphereGeometry(0.9, 20, 12, 0, Math.PI * 2, 0, Math.PI / 1.9), solid(color), 0, 0.06, -0.06, 0, 0, 0, 1.02, 1.05, 1));
+    g.add(mesh(new THREE.ConeGeometry(0.42, 0.9, 14), solid(color), 0.12, 1.02, -0.18, -0.5, 0, -0.6));
+    g.add(mesh(new THREE.SphereGeometry(0.12, 8, 6), basic(0xffe27a), 0.55, 1.18, -0.32));
+    for (const [x, y, z] of [[0.3, 0.7, 0.55], [-0.42, 0.55, 0.5], [0.0, 0.88, 0.3], [-0.6, 0.3, 0.42], [0.62, 0.36, 0.38]]) g.add(mesh(new THREE.SphereGeometry(0.05, 6, 4), basic(0xfff1b0), x, y, z));
+    return g;
+  },
+  // A beanie with a little propeller on top.
+  propeller(color = 0x5aa9e6) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.SphereGeometry(0.84, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), solid(color), 0, 0.12, 0, 0, 0, 0, 1, 0.82, 1));
+    g.add(mesh(new THREE.CylinderGeometry(0.86, 0.86, 0.14, 22), solid(0xffd23d), 0, 0.14, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6), solid(0x3a3a48), 0, 0.92, 0));
+    for (const s of [-1, 1]) g.add(mesh(new THREE.BoxGeometry(0.62, 0.03, 0.14), solid(s < 0 ? 0xff5c5c : 0x39d98a), s * 0.32, 1.08, 0, 0, 0, s * 0.15));
+    return g;
+  },
   sunhat(color = 0xe8c77a) {
     const g = new THREE.Group();
     g.add(mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.06, 28), solid(color), 0, 0.42, 0));

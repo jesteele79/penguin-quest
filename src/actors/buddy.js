@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { Penguin } from './penguin.js';
 import { Gloom } from './gloom.js';
-import { Turtle } from './critters.js';
+import { Turtle, Puffin } from './critters.js';
 import { WATER_Y } from '../world/layout.js';
 
 export class Buddy {
@@ -24,8 +24,10 @@ export class Buddy {
       this.model = new Penguin(this.scene, { name: 'buddy', scale: 0.42, body: 0x7d869f, belly: 0xe6e9f2, scarf: 0xff5a4e });
     } else if (kind === 'hatchling') {
       this.model = new Turtle(this.scene, { name: 'buddy', scale: 0.42, shell: 0x6f8f46, plate: 0x9ab866, skin: 0x9ad0b0 });
-    } else if (kind === 'glimmer' || kind === 'sparkle') {
-      this.model = new Gloom(this.scene, { scale: 0.4, soot: kind === 'sparkle' });
+    } else if (kind === 'puffling') {
+      this.model = new Puffin(this.scene, { name: 'buddy', scale: 0.45, baby: true });
+    } else if (kind === 'glimmer' || kind === 'sparkle' || kind === 'cloudlet') {
+      this.model = new Gloom(this.scene, { scale: 0.4, soot: kind === 'sparkle', hush: kind === 'cloudlet' });
       this.model.cheerUp();
       this.model.happy = 1;
     }
@@ -58,13 +60,13 @@ export class Buddy {
     }
     if (d > 40) root.position.copy(target);
     const ground = Math.max(this.terrain.heightAt(root.position.x, root.position.z), WATER_Y - 0.25);
-    if (this.kind === 'glimmer' || this.kind === 'sparkle') {
+    if (this.kind === 'glimmer' || this.kind === 'sparkle' || this.kind === 'cloudlet') {
       root.position.y = Math.max(ground, player.pos.y) + 1.6 + Math.sin(this.t * 2.4) * 0.3;
       this.model.update(dt, null);
-    } else if (this.kind === 'hatchling') {
+    } else if (this.kind === 'hatchling' || this.kind === 'puffling') {
       root.position.y = ground;
       root.rotation.y = this.yaw;
-      this.model.animate(dt, { talking: speed > 1 });
+      this.model.animate(dt, { talking: this.kind === 'hatchling' && speed > 1, speed });
       this.model.updateAttachments(dt, ground);
     } else {
       root.position.y = ground;

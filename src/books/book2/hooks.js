@@ -80,6 +80,9 @@ export const HOOKS = {
 
   frame: lavaFrame,
 
+  // Captain Flipper sails home to Glacier Bay; Cinder's airship flies up to Skyreach.
+  ferries: { captain: ['book1'], cinder: ['book3'] },
+
   // Cinder hides until he is found at the crater, then stays a friend at his camp.
   update(q) {
     const here = q.done('ch6') || (q.active('ch6') && q.st('ch6').step >= 2);

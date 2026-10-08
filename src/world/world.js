@@ -56,7 +56,7 @@ export class World {
     this.terrainMesh.userData.uniforms.uGloomGlow.value.setRGB(...BIOME.gloomGlow);
     scene.add(this.terrainMesh);
     this.glow = new GlowField(scene, 1500);
-    this.water = new Water(scene, this.terrain, BIOME.water);
+    this.water = new (BIOME.Sea ?? Water)(scene, this.terrain, BIOME.water);
     this.roads = new Roads(scene, this.terrain);
     this.effects = new Effects(scene, this.terrain, BIOME.effects);
 

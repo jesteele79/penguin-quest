@@ -43,7 +43,7 @@ export function palmGeometry(seed) {
   return mergeColored(parts);
 }
 
-function canopyTreeGeometry(seed, leaf, leaf2) {
+export function canopyTreeGeometry(seed, leaf, leaf2) {
   const rng = new Rng(seed);
   const H = rng.float(3.2, 4.4);
   const parts = [{ geo: new THREE.CylinderGeometry(0.2, 0.34, H, 6), color: 0x6b4a32, matrix: mat(0, H / 2, 0) }];
@@ -60,7 +60,7 @@ function canopyTreeGeometry(seed, leaf, leaf2) {
   return mergeColored(parts);
 }
 
-function bushGeometry(seed, flowers) {
+export function bushGeometry(seed, flowers) {
   const rng = new Rng(seed);
   const parts = [];
   for (let k = 0; k < 3; k++) {
@@ -77,7 +77,7 @@ function bushGeometry(seed, flowers) {
   return mergeColored(parts);
 }
 
-function fernGeometry(seed) {
+export function fernGeometry(seed) {
   const rng = new Rng(seed);
   const parts = [];
   for (let k = 0; k < 7; k++) {
@@ -90,7 +90,7 @@ function fernGeometry(seed) {
   return mergeColored(parts);
 }
 
-function rockGeometry(seed, top, side) {
+export function rockGeometry(seed, top, side) {
   let g = new THREE.IcosahedronGeometry(1, 1);
   jitter(g, 0.42, seed);
   g.scale(1, 0.7, 1);

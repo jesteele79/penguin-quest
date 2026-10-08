@@ -32,11 +32,12 @@ const HAPPY_EYE = new THREE.TorusGeometry(0.15, 0.045, 6, 12, Math.PI);
 const LOOKS = {
   gloom: { body: 0x2c2152, emissive: 0x1a0f38, rim: 0x9a6bff, horn: 0x241a44, eye: 0xffe27a, brow: 0x120a24, glow: 0x7a4ad8, happy: [0x4dffa0, 0x45e2ff, 0xff78d2, 0xffd166, 0xb483ff], horns: true },
   soot: { body: 0x3a3436, emissive: 0x1a1214, rim: 0xff8a3d, horn: 0x2a2426, eye: 0xffa040, brow: 0x140e10, glow: 0xff6a2a, happy: [0xffd166, 0xff9a3c, 0xff5c8a, 0x7fe0d0, 0xfff1d6], horns: false },
+  hush: { body: 0x8c88b8, emissive: 0x24223e, rim: 0xe0d8ff, horn: 0x6a6694, eye: 0xfff4c8, brow: 0x4a4670, glow: 0xb8b0ff, happy: [0xfff1d6, 0xffd6f0, 0xd6f0ff, 0xe8ffe0, 0xfff4b0], horns: false },
 };
 
 export class Gloom {
-  constructor(scene, { scale = 1, king = false, soot = false } = {}) {
-    const L = LOOKS[soot ? 'soot' : 'gloom'];
+  constructor(scene, { scale = 1, king = false, soot = false, hush = false } = {}) {
+    const L = LOOKS[hush ? 'hush' : soot ? 'soot' : 'gloom'];
     this.scene = scene;
     this.root = new THREE.Group();
     this.root.scale.setScalar(scale);

@@ -337,6 +337,22 @@ export function scarfTexture(kind) {
         g.fillStyle = '#3a4a6a';
         g.beginPath(); g.moveTo(x - 11, y); g.lineTo(x, y + 3); g.lineTo(x + 11, y); g.lineTo(x, y - 3); g.closePath(); g.fill();
       }
+    } else if (kind === 'twilight') {
+      const grd = g.createLinearGradient(0, 0, 128, 0);
+      grd.addColorStop(0, '#2a2f7a'); grd.addColorStop(0.55, '#7a6ad8'); grd.addColorStop(1, '#ffa98c');
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 32);
+    } else if (kind === 'constellation') {
+      g.fillStyle = '#2a2f7a'; g.fillRect(0, 0, 128, 32);
+      g.strokeStyle = 'rgba(255,230,150,0.7)'; g.lineWidth = 1;
+      const pts = [[10, 22], [24, 10], [38, 18], [52, 8], [70, 20], [86, 12], [100, 24], [118, 10]];
+      g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+      g.fillStyle = '#ffe68a'; for (const [x, y] of pts) { g.beginPath(); g.arc(x, y, 2.2, 0, Math.PI * 2); g.fill(); }
+    } else if (kind === 'stardust') {
+      const grd = g.createLinearGradient(0, 0, 128, 0);
+      grd.addColorStop(0, '#c8b8ff'); grd.addColorStop(0.5, '#9fd8ff'); grd.addColorStop(1, '#ffb8e8');
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 32);
+      const rng = new Rng(23);
+      for (let i = 0; i < 36; i++) { g.fillStyle = '#ffffff'; g.fillRect(rng.int(0, 127), rng.int(0, 31), 1.5, 1.5); }
     } else if (kind === 'frost') {
       g.fillStyle = '#bfe6ff'; g.fillRect(0, 0, 128, 32);
       g.strokeStyle = '#ffffff'; g.lineWidth = 1.6;

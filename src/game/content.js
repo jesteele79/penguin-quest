@@ -1,13 +1,14 @@
 // Characters, wardrobe items and other game content. The cast and place names belong to the book being
 // played; the wardrobe is shared, so anything earned in one book can be worn in the others.
-import { isBook2 } from '../books/active.js';
+import { byBook } from '../books/active.js';
 import { NPCS as GLACIER_CAST, REGION_INFO as GLACIER_PLACES } from '../books/book1/cast.js';
 import { NPCS as EMBER_CAST, REGION_INFO as EMBER_PLACES } from '../books/book2/cast.js';
+import { NPCS as SKY_CAST, REGION_INFO as SKY_PLACES } from '../books/book3/cast.js';
 
-export const NPCS = isBook2 ? EMBER_CAST : GLACIER_CAST;
-export const REGION_INFO = isBook2 ? EMBER_PLACES : GLACIER_PLACES;
+export const NPCS = byBook({ book1: GLACIER_CAST, book2: EMBER_CAST, book3: SKY_CAST });
+export const REGION_INFO = byBook({ book1: GLACIER_PLACES, book2: EMBER_PLACES, book3: SKY_PLACES });
 // Everyone in the series, for portraits that outlive their book (a lesson mentor, a replayed lesson).
-export const CAST = { ...GLACIER_CAST, ...EMBER_CAST };
+export const CAST = { ...GLACIER_CAST, ...EMBER_CAST, ...SKY_CAST };
 
 // Wardrobe. price = fish coins; stars = Aurora Stars from the daily patrol; price null = earned.
 export const SHOP = {
@@ -25,6 +26,8 @@ export const SHOP = {
     { id: 'glimmer', name: 'Glimmer Buddy', price: null, how: 'Finish the Glimmer Friends quest', book: 'book1' },
     { id: 'hatchling', name: 'Hatchling Buddy', price: null, how: 'Bring all 8 turtle hatchlings home', book: 'book2' },
     { id: 'sparkle', name: 'Sparkle Buddy', price: null, how: "Finish Keeper Lumi's Sparkle Friends quest", book: 'book2' },
+    { id: 'puffling', name: 'Puffling Buddy', price: null, how: 'Bring all 8 pufflings home to Wren', book: 'book3' },
+    { id: 'cloudlet', name: 'Cloudlet Buddy', price: null, how: "Finish Astra's Little Clouds quest", book: 'book3' },
   ],
   scarf: [
     { id: 'coral', name: 'Coral Red', color: 0xff5a4e, css: '#ff5a4e', price: 0 },
@@ -43,6 +46,9 @@ export const SHOP = {
     { id: 'lagoon', name: 'Lagoon Teal', color: 0x2ec4b6, css: '#2ec4b6', price: 40, book: 'book2' },
     { id: 'mango', name: 'Mango', color: 0xff9f1c, css: '#ff9f1c', price: 40, book: 'book2' },
     { id: 'wave', name: 'Wave', color: 0xffffff, tex: 'wave', css: 'repeating-linear-gradient(90deg,#2e86c8 0 9px,#7fe0d0 9px 14px,#ffffff 14px 16px)', price: null, how: 'Finish tide charts on 3 days', book: 'book2' },
+    { id: 'twilight', name: 'Twilight', color: 0xffffff, tex: 'twilight', css: 'linear-gradient(90deg,#2a2f7a,#7a6ad8,#ffa98c)', price: 120, book: 'book3' },
+    { id: 'constellation', name: 'Constellation', color: 0xffffff, tex: 'constellation', css: 'radial-gradient(circle at 25% 40%,#ffe68a 0 2px,transparent 3px),radial-gradient(circle at 60% 65%,#ffe68a 0 2px,transparent 3px),radial-gradient(circle at 80% 30%,#fff 0 2px,transparent 3px),#2a2f7a', price: null, how: 'Finish sky charts on 3 days', book: 'book3' },
+    { id: 'stardust', name: 'Stardust', color: 0xffffff, tex: 'stardust', css: 'linear-gradient(90deg,#c8b8ff,#9fd8ff,#ffb8e8)', price: null, how: "Find Tock's 4 treasures", book: 'book3' },
     { id: 'compass', name: 'Compass Rose', color: 0xffffff, tex: 'compass', css: 'radial-gradient(circle,#c8483a 0 3px,transparent 4px) 0 0/16px 16px,#f3e3c0', price: null, how: "Find Tortuga's 4 treasures", book: 'book2' },
   ],
   hat: [
@@ -62,6 +68,9 @@ export const SHOP = {
     { id: 'crest', name: 'Rockhopper Crest', price: 150, book: 'book2' },
     { id: 'sunhat', name: 'Sun Hat', price: null, how: 'Bring 10 sea glass to Nori', book: 'book2' },
     { id: 'goggles', name: 'Inventor Goggles', price: null, how: 'Finish Chapter 6', book: 'book2' },
+    { id: 'aviator', name: 'Aviator Cap', price: 110, book: 'book3' },
+    { id: 'propeller', name: 'Propeller Cap', price: null, how: 'Bring 10 sky feathers to Zephyr', book: 'book3' },
+    { id: 'starhood', name: 'Star Hood', price: null, how: 'Finish Chapter 6', book: 'book3' },
   ],
   trail: [
     { id: 'snow', name: 'Snow Spray', colors: [0xffffff, 0xdfeaff], price: 0 },
@@ -73,6 +82,7 @@ export const SHOP = {
     { id: 'aurora', name: 'Aurora Ribbon', colors: [0x4dffa0, 0x38f0d2, 0xb483ff, 0xff72c8], price: 450 },
     { id: 'comet', name: 'Comet Tail', colors: [0xffd166, 0xff9a3c, 0xffffff], stars: 6 },
     { id: 'spray', name: 'Sea Spray', colors: [0x7fe0d0, 0xffffff, 0x4fb3ff], price: null, how: 'Bring 20 sea glass to Nori', book: 'book2' },
+    { id: 'feathers', name: 'Golden Feathers', colors: [0xffd166, 0xfff4c8, 0xffb000], price: null, how: 'Bring 20 sky feathers to Zephyr', book: 'book3' },
   ],
 };
 

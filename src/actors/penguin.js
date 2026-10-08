@@ -304,7 +304,7 @@ class ScarfTail {
   dispose(scene) { scene.remove(this.mesh); this.mesh.geometry.dispose(); this.material.dispose(); }
 }
 
-const TUFT_HIDDEN = new Set(['beanie', 'helmetLamp', 'viking', 'pirate', 'tophat', 'wizard', 'sailor', 'scholar', 'party', 'chef', 'souwester', 'sunhat']);
+const TUFT_HIDDEN = new Set(['beanie', 'helmetLamp', 'viking', 'pirate', 'tophat', 'wizard', 'sailor', 'scholar', 'party', 'chef', 'souwester', 'sunhat', 'aviator', 'starhood', 'propeller']);
 
 const _v = new THREE.Vector3();
 const _side = new THREE.Vector3();

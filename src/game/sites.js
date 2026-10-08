@@ -6,7 +6,8 @@ import { lambert, crystalMaterial, REGION_COLORS } from '../core/materials.js';
 import { mergeColored, mat } from '../core/geo.js';
 import { clusterGeometry } from '../world/nature.js';
 import { WATER_Y, CRYSTALS } from '../world/layout.js';
-import { isBook2 } from '../books/active.js';
+import { isBook2, isBook3 } from '../books/active.js';
+import { buildSkySites } from '../books/book3/sites.js';
 import { buildEmberSites } from '../books/book2/sites.js';
 import { Site, Lantern } from './sitekit.js';
 import { damp } from '../core/mathutil.js';
@@ -194,6 +195,7 @@ export class SiteManager {
     this.ctx = ctx;
     this.sets = {};
     if (isBook2) { this.sets = buildEmberSites(ctx, SITE_SETS); return; }
+    if (isBook3) { this.sets = buildSkySites(ctx, SITE_SETS); return; }
     this.sets.buoys = SITE_SETS.buoys.points.map(([x, z], i) => new Buoy(ctx, i, x, z));
     this.sets.beds = SITE_SETS.beds.points.map(([x, z], i) => new Bed(ctx, i, x, z));
     this.sets.survey = SITE_SETS.survey.points.map(([x, z], i) => new SurveyFlag(ctx, i, x, z));

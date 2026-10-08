@@ -123,7 +123,8 @@ function switchToBook(id) {
   location.reload();
 }
 
-// Captain Flipper's boat: sail to another open book. The world fades to the sea and the page reloads there.
+// Captain Flipper's boat or Cinder's airship: travel to another open book. The world fades and the page
+// reloads there.
 export class VoyageScreen extends Screen {
   constructor(bookId, onDecline) {
     super('voyage-screen');
@@ -138,12 +139,12 @@ export class VoyageScreen extends Screen {
     this.root.style.cssText = `--c1:${b.colors[0]};--c2:${b.colors[1]};--c3:${b.colors[2]}`;
     this.root.append(el('div', { class: 'panel voyage-panel' },
       el('div', { class: 'voyage-cover', html: `<span class="book-emblem">${BOOK_ICONS[b.icon]}</span><span class="book-num">Book ${b.n}</span>` }),
-      el('h1', { text: home ? `Sail home to ${placeName(b.world)}?` : `Sail to ${placeName(b.world)}?` }),
+      el('h1', { text: `${b.travel === 'fly' ? 'Fly' : 'Sail'}${home ? ' home' : ''} to ${placeName(b.world)}?` }),
       el('p', { class: 'note', text: `${b.title}: ${b.blurb}` }),
-      el('p', { class: 'note', text: 'Your adventure here is saved, and Captain Flipper can sail you back any time.' }),
+      el('p', { class: 'note', text: 'Your adventure here is saved, and you can come back any time.' }),
       el('div', { class: 'row end' },
         btn('Not yet', () => { this.onDecline?.(); this.close(); }, 'ghost'),
-        btn('Set sail!', () => this.sail(), 'primary', { autofocus: true }))));
+        btn(b.travel === 'fly' ? 'Take off!' : 'Set sail!', () => this.sail(), 'primary', { autofocus: true }))));
   }
 
   sail() {
@@ -151,7 +152,7 @@ export class VoyageScreen extends Screen {
     this.root.classList.add('sailing');
     this.root.querySelector('.voyage-panel').replaceChildren(
       el('div', { class: 'voyage-boat', html: '<svg viewBox="0 0 64 40"><path d="M6 26 L58 26 L50 36 L14 36 Z" fill="#8a5c38"/><rect x="31" y="4" width="2.5" height="22" fill="#5a3a22"/><path d="M34 6 L52 22 L34 22 Z" fill="#fff4ec"/><path d="M30 8 L16 22 L30 22 Z" fill="#ff5a4e"/><path d="M0 38 Q8 34 16 38 T32 38 T48 38 T64 38" stroke="#7fe0d0" stroke-width="2.5" fill="none"/></svg>' }),
-      el('h1', { text: `Sailing to ${placeName(this.book.world)}...` }));
+      el('h1', { text: `${this.book.travel === 'fly' ? 'Flying' : 'Sailing'} to ${placeName(this.book.world)}...` }));
     setTimeout(() => switchToBook(this.book.id), 1600);
   }
 }
@@ -526,7 +527,7 @@ export class JournalScreen extends Screen {
     const tick = (ok) => (ok ? '✓' : '○');
     return `<section class="quest-card next-book" style="--c:${next.colors[1]}">
       <div class="qc-head"><h3>Next: Book ${next.n}, ${escapeHTML(next.title)}</h3>${open ? '<span class="pill ok">Unlocked</span>' : '<span class="pill dim">Locked</span>'}</div>
-      <p class="note">${escapeHTML(next.blurb)} Grade ${next.grade} math.${!next.ready ? ' Coming soon!' : open ? ' Captain Flipper is ready to sail you there!' : ''}</p>
+      <p class="note">${escapeHTML(next.blurb)} Grade ${next.grade} math.${!next.ready ? ' Coming soon!' : open ? ` ${next.travel === 'fly' ? 'Cinder is ready to fly' : 'Captain Flipper is ready to sail'} you there!` : ''}</p>
       <ul class="steps">
         <li class="${st.storyDone ? 'done' : ''}">${tick(st.storyDone)} Finish ${escapeHTML(cur.title)}</li>
         <li class="${togo === 0 ? 'done' : ''}">${tick(togo === 0)} Master ${Math.round(UNLOCK_MASTERY * 100)}% of the grade ${cur.grade} skills (${st.mastered} of ${st.total})</li>
@@ -740,6 +741,9 @@ function hatIcon(id) {
     chef: '<circle cx="15" cy="15" r="8" fill="#fff"/><circle cx="24" cy="10" r="9" fill="#fff"/><circle cx="33" cy="15" r="8" fill="#fff"/><rect x="12" y="16" width="24" height="18" rx="3" fill="#fff"/><rect x="12" y="29" width="24" height="5" fill="#e6e9f2"/>',
     crest: '<path d="M10 32 Q8 18 2 12 Q14 16 18 26 Z M38 32 Q40 18 46 12 Q34 16 30 26 Z" fill="#ffd23d"/><path d="M18 30 Q22 12 24 4 Q26 12 30 30 Z" fill="#1a1a24"/>',
     sunhat: '<ellipse cx="24" cy="30" rx="21" ry="6" fill="#f0d9a0"/><path d="M13 30 Q14 14 24 14 Q34 14 35 30 Z" fill="#f6e4b4"/><rect x="13" y="25" width="22" height="4" fill="#ff7a5c"/>',
+    aviator: '<path d="M10 32 Q12 8 24 8 Q36 8 38 32 Z" fill="#8a5a3a"/><ellipse cx="9" cy="34" rx="4" ry="6" fill="#8a5a3a"/><ellipse cx="39" cy="34" rx="4" ry="6" fill="#8a5a3a"/><circle cx="18" cy="18" r="5" fill="#bfe8ff" stroke="#9a9aa8" stroke-width="2.5"/><circle cx="30" cy="18" r="5" fill="#bfe8ff" stroke="#9a9aa8" stroke-width="2.5"/>',
+    propeller: '<path d="M10 34 Q12 12 24 12 Q36 12 38 34 Z" fill="#5aa9e6"/><rect x="9" y="30" width="30" height="5" rx="2.5" fill="#ffd23d"/><rect x="23" y="5" width="2" height="7" fill="#3a3a48"/><rect x="12" y="3" width="12" height="3" rx="1.5" fill="#ff5c5c"/><rect x="24" y="3" width="12" height="3" rx="1.5" fill="#39d98a"/>',
+    starhood: '<path d="M8 36 Q8 6 26 6 Q38 6 42 22 Q44 30 42 36 Q24 28 8 36 Z" fill="#2a2f7a"/><circle cx="43" cy="12" r="3" fill="#ffe27a"/><circle cx="18" cy="20" r="1.6" fill="#fff1b0"/><circle cx="28" cy="14" r="1.6" fill="#fff1b0"/><circle cx="33" cy="25" r="1.6" fill="#fff1b0"/>',
     goggles: '<rect x="4" y="18" width="40" height="5" rx="2" fill="#6a4a30"/><circle cx="16" cy="21" r="8" fill="#c89a3a"/><circle cx="32" cy="21" r="8" fill="#c89a3a"/><circle cx="16" cy="21" r="5" fill="#7fd6ff"/><circle cx="32" cy="21" r="5" fill="#7fd6ff"/>',
   };
   return `<svg viewBox="0 0 48 40" class="hat-svg">${c[id] ?? c.null}</svg>`;
@@ -755,6 +759,8 @@ function buddyIcon(id) {
   if (!id) return hatIcon(null);
   if (id === 'chick') return '<svg viewBox="0 0 48 40" class="hat-svg"><ellipse cx="24" cy="24" rx="12" ry="13" fill="#7d869f"/><ellipse cx="24" cy="28" rx="8" ry="8" fill="#e6e9f2"/><circle cx="20" cy="20" r="2.2" fill="#111"/><circle cx="28" cy="20" r="2.2" fill="#111"/><path d="M22 24 L26 24 L24 27 Z" fill="#ff9d2e"/></svg>';
   if (id === 'hatchling') return '<svg viewBox="0 0 48 40" class="hat-svg"><ellipse cx="22" cy="26" rx="14" ry="9" fill="#6f8f46"/><path d="M14 24 L22 20 L30 24 L22 29 Z" fill="#9ab866"/><circle cx="38" cy="22" r="6" fill="#9ad0b0"/><circle cx="40" cy="21" r="1.6" fill="#111"/><ellipse cx="12" cy="33" rx="4" ry="2.5" fill="#9ad0b0"/><ellipse cx="32" cy="33" rx="4" ry="2.5" fill="#9ad0b0"/></svg>';
+  if (id === 'puffling') return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="24" cy="23" r="13" fill="#5a5e6e"/><ellipse cx="24" cy="27" rx="8" ry="8" fill="#d8dbe6"/><circle cx="20" cy="20" r="2.2" fill="#111"/><circle cx="28" cy="20" r="2.2" fill="#111"/><path d="M22 24 L26 24 L24 27 Z" fill="#2a2a30"/><circle cx="20" cy="9" r="3" fill="#5a5e6e"/><circle cx="25" cy="8" r="3" fill="#5a5e6e"/></svg>';
+  if (id === 'cloudlet') return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="17" cy="24" r="9" fill="#e8e4ff"/><circle cx="27" cy="19" r="11" fill="#f4f0ff"/><circle cx="34" cy="26" r="8" fill="#e8e4ff"/><path d="M21 22 Q23 20 25 22 M29 22 Q31 20 33 22" stroke="#4a4670" stroke-width="2" fill="none"/></svg>';
   if (id === 'sparkle') return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="24" cy="22" r="13" fill="#ff9a3c"/><circle cx="21" cy="8" r="4" fill="#ffb86a"/><path d="M17 20 Q19 17 21 20 M27 20 Q29 17 31 20" stroke="#3a1a10" stroke-width="2" fill="none"/><circle cx="24" cy="22" r="17" fill="none" stroke="#ffd166" stroke-opacity="0.5" stroke-width="2"/></svg>';
   return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="24" cy="22" r="13" fill="#ff78d2"/><path d="M17 20 Q19 17 21 20 M27 20 Q29 17 31 20" stroke="#1a1333" stroke-width="2" fill="none"/><circle cx="24" cy="22" r="17" fill="none" stroke="#ffd166" stroke-opacity="0.5" stroke-width="2"/></svg>';
 }

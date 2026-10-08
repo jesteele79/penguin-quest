@@ -1,16 +1,20 @@
 // Small inline SVG icons (currentColor where it makes sense).
-import { isBook2 } from '../books/active.js';
+import { isBook2, isBook3 } from '../books/active.js';
 
 // Book 2's versions of the collectible and the five restorable landmarks.
 const SEA_GLASS = '<svg viewBox="0 0 24 24" class="ico"><path d="M4 13 Q3 6 10 4 Q18 2 21 9 Q23 16 15 20 Q7 22 4 13 Z" fill="#7fe0d0" stroke="#e8fff8" stroke-width="1.4"/><path d="M8 9 Q11 6 15 7" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.8"/></svg>';
 const EMBER = (color = '#ff8a3d', lit = true) => `<svg viewBox="0 0 20 26" class="ico ico-crystal ${lit ? 'lit' : ''}"><path d="M10 1 C12 7 18 9 18 16 A8 8 0 0 1 2 16 C2 12 5 10 6 7 C6 10 8 11 9 11 C8 7 9 4 10 1 Z" fill="${lit ? color : '#4a3e48'}" stroke="${lit ? '#fff' : '#7a6a70'}" stroke-opacity="${lit ? 0.7 : 0.8}" stroke-width="1.2"/><path d="M10 13 C11 15 13 16 13 18 A3 3 0 0 1 7 18 C7 16 9 15 10 13 Z" fill="#fff4c0" opacity="${lit ? 0.8 : 0.1}"/></svg>`;
 
+// Book 3's versions: a golden sky feather, and a Star Anchor (a five-pointed star on a little plinth).
+const SKY_FEATHER = '<svg viewBox="0 0 24 24" class="ico"><path d="M5 20 Q4 9 12 4 Q19 1 20 3 Q21 6 17 12 Q12 19 5 20 Z" fill="#ffd166" stroke="#fff4c8" stroke-width="1.2"/><path d="M5 20 L16 6" stroke="#c8902a" stroke-width="1.4" stroke-linecap="round"/><path d="M8 15 L11 14 M10 12 L13 11 M12 9 L15 8" stroke="#fff4c8" stroke-width="1" stroke-linecap="round"/></svg>';
+const STAR_ANCHOR = (color = '#ffd166', lit = true) => `<svg viewBox="0 0 22 26" class="ico ico-crystal ${lit ? 'lit' : ''}"><polygon points="11,1 13.6,7.6 20.6,8.1 15.2,12.6 17,19.4 11,15.6 5,19.4 6.8,12.6 1.4,8.1 8.4,7.6" fill="${lit ? color : '#3a3e6a'}" stroke="${lit ? '#fff' : '#6a70a8'}" stroke-opacity="0.75" stroke-width="1.1"/><rect x="6" y="21" width="10" height="4" rx="1.5" fill="${lit ? '#c8c0e8' : '#4a4e7a'}"/></svg>`;
+
 export const ICON = {
   fish: '<svg viewBox="0 0 32 20" class="ico"><ellipse cx="14" cy="10" rx="10" ry="7" fill="#ffb347"/><polygon points="22,10 31,3 31,17" fill="#ff9a2e"/><circle cx="9" cy="8" r="1.8" fill="#1b1b2e"/></svg>',
   heart: '<svg viewBox="0 0 24 22" class="ico"><path d="M12 21 C4 15 1 11 1 6.5 C1 3.4 3.5 1 6.5 1 C9 1 11 2.6 12 4.5 C13 2.6 15 1 17.5 1 C20.5 1 23 3.4 23 6.5 C23 11 20 15 12 21 Z" fill="#ff5a6e" stroke="#fff" stroke-opacity="0.35"/></svg>',
   heartEmpty: '<svg viewBox="0 0 24 22" class="ico"><path d="M12 21 C4 15 1 11 1 6.5 C1 3.4 3.5 1 6.5 1 C9 1 11 2.6 12 4.5 C13 2.6 15 1 17.5 1 C20.5 1 23 3.4 23 6.5 C23 11 20 15 12 21 Z" fill="none" stroke="#8fa0d8" stroke-width="2"/></svg>',
-  flake: isBook2 ? SEA_GLASS : '<svg viewBox="0 0 24 24" class="ico"><g stroke="#ffd166" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="22.5"/><line x1="2.9" y1="6.7" x2="21.1" y2="17.3"/><line x1="2.9" y1="17.3" x2="21.1" y2="6.7"/><path d="M9 3.5 L12 6 L15 3.5 M9 20.5 L12 18 L15 20.5" fill="none"/></g></svg>',
-  crystal: isBook2 ? EMBER : (color = '#4dffa0', lit = true) => `<svg viewBox="0 0 16 26" class="ico ico-crystal ${lit ? 'lit' : ''}"><polygon points="8,1 15,8 12,25 4,25 1,8" fill="${lit ? color : '#3a3e6a'}" stroke="${lit ? '#fff' : '#6a70a8'}" stroke-opacity="${lit ? 0.7 : 0.8}" stroke-width="1.2"/><polygon points="8,1 11,9 8,24 5,9" fill="#fff" opacity="${lit ? 0.35 : 0.08}"/></svg>`,
+  flake: isBook3 ? SKY_FEATHER : isBook2 ? SEA_GLASS : '<svg viewBox="0 0 24 24" class="ico"><g stroke="#ffd166" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="1.5" x2="12" y2="22.5"/><line x1="2.9" y1="6.7" x2="21.1" y2="17.3"/><line x1="2.9" y1="17.3" x2="21.1" y2="6.7"/><path d="M9 3.5 L12 6 L15 3.5 M9 20.5 L12 18 L15 20.5" fill="none"/></g></svg>',
+  crystal: isBook3 ? STAR_ANCHOR : isBook2 ? EMBER : (color = '#4dffa0', lit = true) => `<svg viewBox="0 0 16 26" class="ico ico-crystal ${lit ? 'lit' : ''}"><polygon points="8,1 15,8 12,25 4,25 1,8" fill="${lit ? color : '#3a3e6a'}" stroke="${lit ? '#fff' : '#6a70a8'}" stroke-opacity="${lit ? 0.7 : 0.8}" stroke-width="1.2"/><polygon points="8,1 11,9 8,24 5,9" fill="#fff" opacity="${lit ? 0.35 : 0.08}"/></svg>`,
   star: '<svg viewBox="0 0 24 24" class="ico"><polygon points="12,1.5 14.9,8.6 22.5,9.2 16.7,14.2 18.5,21.6 12,17.6 5.5,21.6 7.3,14.2 1.5,9.2 9.1,8.6" fill="#ffd166"/></svg>',
   starEmpty: '<svg viewBox="0 0 24 24" class="ico"><polygon points="12,1.5 14.9,8.6 22.5,9.2 16.7,14.2 18.5,21.6 12,17.6 5.5,21.6 7.3,14.2 1.5,9.2 9.1,8.6" fill="none" stroke="#6f7fbf" stroke-width="1.6"/></svg>',
   speaker: '<svg viewBox="0 0 24 24" class="ico"><path d="M3 9 H7 L12 4 V20 L7 15 H3 Z" fill="currentColor"/><path d="M15.5 8.5 Q18 12 15.5 15.5 M18 6 Q22 12 18 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
@@ -19,6 +23,26 @@ export const ICON = {
 
 // A tiny penguin face used for portraits; accent colors the scarf/hat band.
 const cuteEyeSvg = (cx, cy, r, iris = '#2a5cc8') => `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 1.2}" fill="#10142a"/><ellipse cx="${cx}" cy="${cy + r * 0.12}" rx="${r * 0.74}" ry="${r * 0.88}" fill="${iris}"/><ellipse cx="${cx}" cy="${cy + r * 0.12}" rx="${r * 0.38}" ry="${r * 0.45}" fill="#05060c"/><circle cx="${cx + r * 0.3}" cy="${cy - r * 0.45}" r="${r * 0.34}" fill="#fff"/><circle cx="${cx - r * 0.25}" cy="${cy + r * 0.5}" r="${r * 0.16}" fill="#fff"/>`;
+
+function owlPortrait() {
+  return `<svg viewBox="0 0 100 100" class="portrait-svg">
+  <ellipse cx="50" cy="58" rx="38" ry="36" fill="#c9a25a"/><polygon points="20,32 14,8 34,24" fill="#7a5a32"/><polygon points="80,32 86,8 66,24" fill="#7a5a32"/>
+  <ellipse cx="50" cy="74" rx="22" ry="18" fill="#f2e2b8"/>
+  <circle cx="35" cy="52" r="14" fill="none" stroke="#7a5a32" stroke-width="5" stroke-dasharray="4 2.5"/><circle cx="65" cy="52" r="14" fill="none" stroke="#7a5a32" stroke-width="5" stroke-dasharray="4 2.5"/>
+  ${cuteEyeSvg(35, 52, 8.5, '#2ec4b6')}${cuteEyeSvg(65, 52, 8.5, '#2ec4b6')}
+  <polygon points="46,62 54,62 50,71" fill="#ff9a3c"/>
+  <ellipse cx="22" cy="68" rx="5" ry="3" fill="#ff9fb0" opacity="0.9"/><ellipse cx="78" cy="68" rx="5" ry="3" fill="#ff9fb0" opacity="0.9"/>
+  </svg>`;
+}
+
+function puffinPortrait() {
+  return `<svg viewBox="0 0 100 100" class="portrait-svg">
+  <circle cx="50" cy="55" r="40" fill="#1c1e2c"/><ellipse cx="50" cy="58" rx="30" ry="26" fill="#f6f4ee"/>
+  ${cuteEyeSvg(38, 52, 6.5, '#3a2a14')}${cuteEyeSvg(62, 52, 6.5, '#3a2a14')}
+  <path d="M42 62 Q50 58 58 62 L56 76 Q50 80 44 76 Z" fill="#ff6a2a"/><path d="M44 66 Q50 64 56 66" stroke="#ffd23d" stroke-width="3" fill="none"/>
+  <ellipse cx="26" cy="64" rx="5" ry="3" fill="#ff9fb0" opacity="0.9"/><ellipse cx="74" cy="64" rx="5" ry="3" fill="#ff9fb0" opacity="0.9"/>
+  </svg>`;
+}
 
 function turtlePortrait(accent) {
   return `<svg viewBox="0 0 100 100" class="portrait-svg">
@@ -48,6 +72,8 @@ function crabPortrait() {
 export function portraitSVG({ accent = '#ff5a4e', hat = null, glasses = false, kid = false, gloom = false, species = null, iris = '#2a5cc8', body = '#1e2746', crest = false, goggles = false, lei = false, soot = false } = {}) {
   if (species === 'turtle') return turtlePortrait(accent);
   if (species === 'crab') return crabPortrait();
+  if (species === 'owl') return owlPortrait();
+  if (species === 'puffin') return puffinPortrait();
   if (gloom) {
     return `<svg viewBox="0 0 100 100" class="portrait-svg"><defs><radialGradient id="gg" cx="50%" cy="40%"><stop offset="0" stop-color="#5a3f9a"/><stop offset="1" stop-color="#231a44"/></radialGradient></defs>
     <path d="M20 88 Q8 60 22 38 Q30 18 50 16 Q70 18 78 38 Q92 60 80 88 Z" fill="url(#gg)"/>
@@ -70,6 +96,9 @@ export function portraitSVG({ accent = '#ff5a4e', hat = null, glasses = false, k
               : hat === 'chef' ? '<rect x="28" y="16" width="44" height="12" rx="3" fill="#fff"/><circle cx="34" cy="10" r="10" fill="#fff"/><circle cx="50" cy="6" r="11" fill="#fff"/><circle cx="66" cy="10" r="10" fill="#fff"/>'
                 : hat === 'souwester' ? '<path d="M17 36 Q19 6 50 6 Q81 6 83 36 Z" fill="#ffd23d"/><path d="M8 40 Q50 26 92 40 Q50 34 8 40 Z" fill="#f0b81e"/>'
                   : hat === 'sunhat' ? '<ellipse cx="50" cy="26" rx="46" ry="8" fill="#e8c77a"/><path d="M28 26 Q30 4 50 4 Q70 4 72 26 Z" fill="#e8c77a"/><rect x="28" y="19" width="44" height="6" fill="#ff5c5c"/>'
+                    : hat === 'aviator' ? '<path d="M14 40 Q16 4 50 4 Q84 4 86 40 Z" fill="#8a5a3a"/><ellipse cx="14" cy="46" rx="6" ry="10" fill="#8a5a3a"/><ellipse cx="86" cy="46" rx="6" ry="10" fill="#8a5a3a"/><circle cx="38" cy="22" r="8" fill="#bfe8ff" stroke="#9a9aa8" stroke-width="3.5"/><circle cx="62" cy="22" r="8" fill="#bfe8ff" stroke="#9a9aa8" stroke-width="3.5"/>'
+                    : hat === 'starhood' ? '<path d="M12 46 Q10 2 50 2 Q78 2 88 30 Q92 40 90 48 Q50 30 12 46 Z" fill="#2a2f7a"/><path d="M60 4 Q86 -2 94 16" stroke="#2a2f7a" stroke-width="9" fill="none" stroke-linecap="round"/><circle cx="95" cy="17" r="4" fill="#ffe27a"/><circle cx="30" cy="22" r="2" fill="#fff1b0"/><circle cx="52" cy="14" r="2" fill="#fff1b0"/><circle cx="70" cy="26" r="2" fill="#fff1b0"/>'
+                    : hat === 'propeller' ? '<path d="M16 36 Q18 6 50 6 Q82 6 84 36 Z" fill="#5aa9e6"/><rect x="15" y="31" width="70" height="7" rx="3.5" fill="#ffd23d"/><rect x="48.5" y="-2" width="3" height="9" fill="#3a3a48"/><rect x="30" y="-4" width="20" height="4" rx="2" fill="#ff5c5c"/><rect x="50" y="-4" width="20" height="4" rx="2" fill="#39d98a"/>'
                     : hat === 'hibiscus' ? '<g transform="translate(78 30)"><circle cx="0" cy="-6" r="6" fill="#ff5c8a"/><circle cx="6" cy="-1" r="6" fill="#ff5c8a"/><circle cx="3" cy="6" r="6" fill="#ff5c8a"/><circle cx="-4" cy="5" r="6" fill="#ff5c8a"/><circle cx="-6" cy="-2" r="6" fill="#ff5c8a"/><circle cx="0" cy="0" r="3" fill="#ffd23d"/></g>' : '';
   const glassesSvg = glasses ? `<circle cx="38.5" cy="57" r="11.5" fill="none" stroke="#3b2a1a" stroke-width="3"/><circle cx="61.5" cy="57" r="11.5" fill="none" stroke="#3b2a1a" stroke-width="3"/><line x1="49" y1="55" x2="51" y2="55" stroke="#3b2a1a" stroke-width="3"/>` : '';
   const extraSvg = (crest ? '<path d="M26 40 Q12 30 6 18 Q16 26 30 36 Z M74 40 Q88 30 94 18 Q84 26 70 36 Z" fill="#ffd23d"/><path d="M28 38 Q16 34 8 26 M72 38 Q84 34 92 26" stroke="#ffe27a" stroke-width="2" fill="none"/>' : '')

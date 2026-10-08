@@ -1,11 +1,12 @@
 // The shared heightfield: built once from the active book's land shape, then used by the renderer and physics.
 import { clamp, lerp, smoothstep } from '../core/mathutil.js';
 import { ROADS, WORLD_HALF, GRID_STEP } from './layout.js';
-import { isBook2 } from '../books/active.js';
+import { byBook } from '../books/active.js';
 import * as glacierBay from '../books/book1/shape.js';
 import * as emberIsles from '../books/book2/shape.js';
+import * as skyreach from '../books/book3/shape.js';
 
-const SHAPE = isBook2 ? emberIsles : glacierBay;
+const SHAPE = byBook({ book1: glacierBay, book2: emberIsles, book3: skyreach });
 export const terrainColor = SHAPE.terrainColor;
 export const gloomMask = SHAPE.gloomMask;
 

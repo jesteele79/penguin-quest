@@ -14,6 +14,11 @@ const BOOKS = {
     cast: await import('../src/books/book2/cast.js'),
     hooks: (await import('../src/books/book2/hooks.js')).HOOKS,
   },
+  book3: {
+    story: await import('../src/books/book3/story.js'),
+    cast: await import('../src/books/book3/cast.js'),
+    hooks: (await import('../src/books/book3/hooks.js')).HOOKS,
+  },
 };
 
 // Every step of every quest, main and side.

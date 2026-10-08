@@ -1,6 +1,6 @@
-// Friends who are not penguins: Tortuga the old sea turtle and Shelldon the hermit crab. They share the
-// penguin model's interface (root, animate, updateAttachments, setVisible, setCulled), so NPCs, dialog and
-// cutscenes treat them the same way.
+// Friends who are not penguins: Tortuga the old sea turtle, Shelldon the hermit crab, Tock the clockwork owl
+// and the puffins of Skyreach. They share the penguin model's interface (root, animate, updateAttachments,
+// setVisible, setCulled), so NPCs, dialog and cutscenes treat them the same way.
 import * as THREE from 'three';
 import { lambert, plush, CHARACTER_RIM } from '../core/materials.js';
 import { glowTexture } from '../core/textures.js';
@@ -242,4 +242,130 @@ export class Crab extends Critter {
   }
 }
 
-export const CRITTERS = { turtle: Turtle, crab: Crab };
+// ------------------------------------------------------------ Tock
+// A clockwork owl: polished brass, gear-ringed eyes, ear tufts, and a wind-up key turning on its back.
+export class Owl extends Critter {
+  constructor(scene, opts = {}) {
+    super(scene, opts);
+    this.shadowSize = 1.3;
+    const b = this.body;
+    const brass = opts.color ?? 0xc9a25a, dark = 0x7a5a32;
+    b.add(part(SPH, plushOf(brass), 0, 1.15, 0, 0.95, 1.1, 0.9));
+    b.add(part(SPH, plushOf(0xf2e2b8), 0, 1.0, 0.36, 0.7, 0.82, 0.62));
+    // Rows of little rivets down the belly.
+    for (let i = 0; i < 4; i++) b.add(part(SPH_LO, plushOf(dark), 0, 0.72 + i * 0.22, 0.95, 0.05));
+    this.head = new THREE.Group();
+    this.head.position.set(0, 1.95, 0.05);
+    b.add(this.head);
+    this.head.add(part(SPH, plushOf(brass), 0, 0.1, 0, 0.95, 0.78, 0.82));
+    for (const s of [-1, 1]) {
+      // Ear tufts.
+      this.head.add(part(new THREE.ConeGeometry(0.16, 0.5, 6), plushOf(dark), s * 0.58, 0.72, -0.05, 1, 1, 1, 0, 0, -s * 0.35));
+      // Gear-ring eyes: a toothed bronze ring around each big eye.
+      const ring = new THREE.Group();
+      ring.position.set(s * 0.34, 0.12, 0.62);
+      ring.add(part(new THREE.TorusGeometry(0.3, 0.06, 6, 24), plushOf(dark), 0, 0, 0));
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        ring.add(part(new THREE.BoxGeometry(0.07, 0.09, 0.07), plushOf(dark), Math.cos(a) * 0.38, Math.sin(a) * 0.38, 0, 1, 1, 1, 0, 0, a));
+      }
+      this.head.add(ring);
+      const e = cuteEye(0.22, opts.iris ?? 0x2ec4b6);
+      e.position.set(s * 0.34, 0.12, 0.66);
+      this.head.add(e);
+      this.eyes.push(e);
+      this.head.add(part(SPH_LO, plushOf(0xff9fb0), s * 0.62, -0.18, 0.5, 0.11, 0.06, 0.04));
+    }
+    this.head.add(part(new THREE.ConeGeometry(0.1, 0.26, 6), plushOf(0xff9a3c), 0, -0.12, 0.8, 1, 1, 1, Math.PI / 2 + 0.3));
+    // Wings at the sides, on pivots so they can flap.
+    this.flippers = [];
+    for (const s of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(s * 0.82, 1.45, 0);
+      pivot.add(part(SPH, plushOf(dark), s * 0.12, -0.45, 0, 0.26, 0.7, 0.5, 0, 0, s * 0.15));
+      b.add(pivot);
+      this.flippers.push({ pivot, side: s });
+    }
+    for (const s of [-1, 1]) b.add(part(SPH_LO, plushOf(0xff9a3c), s * 0.32, 0.08, 0.3, 0.2, 0.1, 0.26));
+    // The wind-up key.
+    this.key = new THREE.Group();
+    this.key.position.set(0, 1.3, -0.92);
+    this.key.add(part(new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8), plushOf(0xe8c46a), 0, 0, -0.1, 1, 1, 1, Math.PI / 2));
+    this.key.add(part(new THREE.TorusGeometry(0.16, 0.05, 6, 14), plushOf(0xe8c46a), -0.17, 0, -0.26, 1, 1, 1, 0, Math.PI / 2, 0));
+    this.key.add(part(new THREE.TorusGeometry(0.16, 0.05, 6, 14), plushOf(0xe8c46a), 0.17, 0, -0.26, 1, 1, 1, 0, Math.PI / 2, 0));
+    b.add(this.key);
+  }
+
+  animate(dt, st = {}) {
+    this.time += dt;
+    const t = this.time;
+    this.celebrate = damp(this.celebrate, st.celebrate ? 1 : 0, 6, dt);
+    this.body.position.y = Math.abs(Math.sin(t * 2.6)) * 0.03 * (st.talking ? 2.5 : 1) + this.celebrate * Math.abs(Math.sin(t * 8)) * 0.3;
+    this.head.rotation.z = Math.sin(t * 0.7) * 0.12 + (st.talking ? Math.sin(t * 5) * 0.08 : 0);
+    this.head.rotation.y = Math.sin(t * 0.4) * 0.35 * (st.talking ? 0.3 : 1);
+    for (const f of this.flippers) f.pivot.rotation.z = f.side * ((st.talking ? 0.2 + Math.sin(t * 7) * 0.15 : 0.05) + this.celebrate * (0.9 + Math.sin(t * 16) * 0.5));
+    this.key.rotation.z = t * 1.6;
+    this.blinkEyes(dt);
+  }
+}
+
+// ------------------------------------------------------------ puffins
+// Grown-up puffins have the famous striped beak; a puffling is a round ball of grey fluff.
+export class Puffin extends Critter {
+  constructor(scene, opts = {}) {
+    super(scene, opts);
+    this.shadowSize = 1.1;
+    const b = this.body;
+    const baby = !!opts.baby;
+    const back = baby ? 0x5a5e6e : 0x1c1e2c, front = baby ? 0xd8dbe6 : 0xf6f4ee;
+    b.add(part(SPH, plushOf(back), 0, 0.85, -0.05, 0.78, 0.85, 0.74));
+    b.add(part(SPH, plushOf(front), 0, 0.72, 0.28, 0.6, 0.62, 0.52));
+    this.head = new THREE.Group();
+    this.head.position.set(0, 1.62, 0.06);
+    b.add(this.head);
+    this.head.add(part(SPH, plushOf(back), 0, 0, 0, 0.62, 0.6, 0.6));
+    if (!baby) this.head.add(part(SPH, plushOf(0xf6f4ee), 0, -0.02, 0.24, 0.52, 0.42, 0.42));
+    for (const s of [-1, 1]) {
+      const e = cuteEye(baby ? 0.16 : 0.13, 0x3a2a14);
+      e.position.set(s * 0.22, 0.08, 0.5);
+      this.head.add(e);
+      this.eyes.push(e);
+      this.head.add(part(SPH_LO, plushOf(0xff9fb0), s * 0.36, -0.12, 0.44, 0.08, 0.05, 0.03));
+    }
+    if (baby) {
+      this.head.add(part(new THREE.ConeGeometry(0.08, 0.2, 6), plushOf(0x2a2a30), 0, -0.1, 0.62, 1, 1, 1, Math.PI / 2));
+      // Fluff tufts.
+      for (let i = 0; i < 5; i++) this.head.add(part(SPH_LO, plushOf(back), Math.sin(i * 1.3) * 0.2, 0.52, Math.cos(i * 1.3) * 0.1 - 0.05, 0.12));
+    } else {
+      const beak = new THREE.Group();
+      beak.position.set(0, -0.1, 0.56);
+      beak.add(part(SPH_LO, plushOf(0xff6a2a), 0, 0, 0.1, 0.16, 0.24, 0.24));
+      beak.add(part(SPH_LO, plushOf(0xffd23d), 0, 0, -0.02, 0.17, 0.26, 0.12));
+      beak.add(part(SPH_LO, plushOf(0x5a6a8a), 0, 0, -0.12, 0.18, 0.28, 0.06));
+      this.head.add(beak);
+    }
+    this.flippers = [];
+    for (const s of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(s * 0.68, 1.1, 0);
+      pivot.add(part(SPH_LO, plushOf(back), s * 0.06, -0.3, 0, 0.16, 0.48, 0.34));
+      b.add(pivot);
+      this.flippers.push({ pivot, side: s });
+      b.add(part(SPH_LO, plushOf(0xff7a3a), s * 0.26, 0.06, 0.22, 0.18, 0.07, 0.26));
+    }
+  }
+
+  animate(dt, st = {}) {
+    this.time += dt;
+    const t = this.time;
+    this.celebrate = damp(this.celebrate, st.celebrate ? 1 : 0, 6, dt);
+    const waddle = st.speed ? Math.min(1, Math.abs(st.speed) / 4) : 0;
+    this.body.rotation.z = Math.sin(t * 9) * 0.12 * waddle;
+    this.body.position.y = Math.abs(Math.sin(t * 9)) * 0.08 * waddle + this.celebrate * Math.abs(Math.sin(t * 8)) * 0.25;
+    this.head.rotation.x = st.talking ? Math.sin(t * 6) * 0.1 : Math.sin(t * 0.8) * 0.05;
+    for (const f of this.flippers) f.pivot.rotation.z = f.side * (0.1 + waddle * Math.abs(Math.sin(t * 9)) * 0.4 + this.celebrate * (0.8 + Math.sin(t * 14) * 0.4));
+    this.blinkEyes(dt);
+  }
+}
+
+export const CRITTERS = { turtle: Turtle, crab: Crab, owl: Owl, puffin: Puffin };

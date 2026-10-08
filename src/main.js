@@ -41,6 +41,7 @@ import { T } from './books/terms.js';
 import { ACTIVE } from './books/active.js';
 import { SHOP, findItem, NPCS } from './game/content.js';
 import { setTheme } from './math/theme.js';
+import { domainOf } from './books/regions.js';
 
 // Word problems and lessons speak the language of the book on this page.
 setTheme(ACTIVE);
@@ -72,8 +73,8 @@ function installHelpers() {
     return findItem(slot, id === 'null' ? null : id)?.name ?? key;
   };
   G.unlockedDomains = () => {
-    const out = ['lake'];
-    for (const r of REGIONS) if (r !== 'lake' && G.quests.started(CHAPTER_OF[r])) out.push(r);
+    const out = [domainOf('lake')];
+    for (const r of REGIONS) if (r !== 'lake' && G.quests.started(CHAPTER_OF[r])) out.push(domainOf(r));
     return out;
   };
   G.makeTutor = (data) => new Tutor(data.tutor, data.profile.grade, undefined, bookScope(data.active));

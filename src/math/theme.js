@@ -27,6 +27,29 @@ const THEMES = {
   },
 };
 
+THEMES.book3 = {
+  friends: ['Vela', 'Zephyr', 'Comet', 'Skye', 'Rocco', 'Nimbus'],
+  swaps: [
+    [/\bMama Mittens\b/g, 'Nimbus'], [/\bMittens\b/g, 'Nimbus'], [/\bPebble\b/g, 'Rocco'], [/\bFern\b/g, 'Vela'],
+    [/\bLulu\b/g, 'Zephyr'], [/\bSunny\b/g, 'Comet'], [/\bSkipper\b/g, 'Skye'], [/\bMo\b/g, 'Wren'],
+    [/\bcocoas\b/g, 'cloud candies'], [/\bcocoa\b/g, 'cloud candy'],
+    [/\bsnow cones\b/g, 'star cookies'], [/\bsnow cone\b/g, 'star cookie'], [/\bice pops\b/g, 'berry pops'], [/\bice pop\b/g, 'berry pop'],
+    [/\bsnowballs\b/g, 'feathers'], [/\bsnowball\b/g, 'feather'], [/\bSnowflake counts\b/g, 'Feather counts'], [/\bIcicle\b/g, 'Feather'], [/\bicicles\b/g, 'feathers'], [/\bicicle\b/g, 'feather'],
+    [/\bice sleds\b/g, 'gliders'], [/\bice sled\b/g, 'glider'], [/\bsleds\b/g, 'gliders'], [/\bsled\b/g, 'glider'],
+    [/\bice rafts\b/g, 'balloons'], [/\bice raft\b/g, 'balloon'],
+    [/\bAn ice block\b/g, 'A glass block'], [/\ban ice block\b/g, 'a glass block'], [/\bice block\b/g, 'glass block'],
+    [/\bA cube of ice\b/g, 'A cube of glass'], [/\bice wall\b/g, 'glass wall'], [/\bice rectangle\b/g, 'glass tile'],
+    [/\bice floor\b/g, 'workshop floor'], [/\bice bar\b/g, 'honey bar'], [/\bsnow pie\b/g, 'berry pie'],
+    [/\bcrystal lock\b/g, 'star lock'], [/\bcrystal beads\b/g, 'glass beads'], [/\bigloo\b/g, 'cottage'],
+    [/\bred scarves\b/g, 'red kites'], [/\bblue scarves\b/g, 'blue kites'], [/\bscarves\b/g, 'kites'], [/\bscarf\b/g, 'kite'],
+    [/\bmittens\b/g, 'goggles'], [/\bmitten\b/g, 'pair of goggles'],
+    [/\bslides\b/g, 'glides'], [/\bslide each\b/g, 'glide each'],
+    [/\bcrystal bars\b/g, 'honey bars'], [/\bcrystal juice\b/g, 'berry juice'], [/\bCrystal juice\b/g, 'Berry juice'],
+    [/\bbar is glowing\b/g, 'bar is shaded'], [/\bpie is glowing\b/g, 'pie is shaded'],
+    [/\bglow potions\b/g, 'sky lanterns'], [/\bglow potion\b/g, 'sky lantern'], [/\bpotions\b/g, 'lanterns'], [/\bpotion\b/g, 'lantern'],
+  ],
+};
+
 let current = THEMES.book1;
 
 export function setTheme(id) { current = THEMES[id] ?? THEMES.book1; }
