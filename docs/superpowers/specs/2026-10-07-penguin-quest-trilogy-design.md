@@ -414,3 +414,32 @@ Each phase ends playable, tested and deployed.
 2. Unlock threshold: 80% of the grade's skills mastered, with grown-up override.
 3. Daily pacing: keep one chapter per day as the default in Books 2 and 3?
 4. If he is already strong at grade 4, allow a grown-up placement check to start Book 2 early?
+
+## Status (October 2026)
+
+Phases 1 to 4 are done and deployed; Book 2 is playable from start to finish.
+
+**Built for Book 2, and where it differs from the plan above:**
+
+- One volcanic main island (Arrival Beach, Forge Volcano, Coral Lagoon, Harbor Market, Lighthouse Cliffs)
+  plus the Sunken Temple islet on a sandbar; Mount Ember's crater is the Ember Heart. Its own sky (warm
+  sunset dome), sea, plants, cast models (Tortuga the turtle and Shelldon the crab are their own critters)
+  and Sootlings in place of Glooms.
+- Chapter games as built: Rocco's siphon valves, the **Lava Hop** (stepping stones over a lava pool to the
+  forge vent's island; it stays as a bridge), Rocco's glass orders, the coral beds, the **Snorkel Trail**
+  (answer rings through the lagoon; the reef fish that follow you settle at the vent), Chef Marlo's kelp
+  recipe, cargo scales and deliveries, Tortuga's sea-chart dive and the Temple Builder, the signal lamps
+  and the Sootling battle at the old lookout, the siphon machine on the crater rim, the Legend Trials and
+  the Festival of Currents. The "Cart Split" and ferry time trials were not built; the Lava Hop and the
+  snorkel trail took their place as the action games.
+- Shared systems read the active book: terms (vents, sea glass, Sootlings, Island Patrol), the market,
+  builder, slalom and battle titles and skill lists, word-problem and lesson wording, lesson mentors
+  (Book 1's teachers hand their lessons to the island friend who looks after the same subject), the
+  wardrobe's shopkeeper and the music palette (steel drum, marimba, calypso bass, surf ambience).
+- Book switching is diegetic: when a book opens, a banner announces it once, the free-play objective
+  points to Captain Flipper, and he sails the penguin there (and back) from the dock. The title screen's
+  shelf can switch books too.
+- Book 3 is named **Skyreach** in the game; Cinder's last lines in Book 2 point to it.
+
+**Next:** grade 6 skills and lessons (ratios and rates, negative numbers, expressions and equations, area
+and nets, statistics), then Book 3's world, cast, story and games.

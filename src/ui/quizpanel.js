@@ -3,12 +3,13 @@ import { ICON } from './icons.js';
 import { toHTML, toSpeech } from '../math/fmt.js';
 import { renderVisual } from '../math/visuals.js';
 import { parseAnswer } from '../math/frac.js';
+import { T } from '../books/terms.js';
 
 // On-screen keypad for touch and controllers: digits, decimal point, fraction bar, minus, a space
 // (for mixed numbers like 2 1/4), R for remainders, backspace and check.
 const KEYPAD = ['7', '8', '9', '/', '4', '5', '6', '.', '1', '2', '3', '−', '0', '␣', 'R', '⌫'];
 
-const PRAISE = ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Ice work!', 'Cool thinking!', 'Aurora-some!', 'Spot on!', 'Waddle-ful!', 'Snow problem!', 'Perfect!'];
+const PRAISE = T.praise;
 const NUDGE = ['Not quite. Try again!', 'Close! Have another look.', 'Hmm, not yet. You can do it!', 'Almost there. Try once more!'];
 const ALLOWED = /^[0-9.,/\- rR$%]$/;
 

@@ -325,7 +325,7 @@ export class SettingsScreen extends Screen {
       slider('set-sfx', 'Sound effects', 'sfx'),
       slider('set-voice', 'Read-aloud voice', 'voice'),
       el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: 'Graphics' }), el('div', { class: 'note', text: G.qualityNote() })), quality),
-      toggle('set-gentle', 'Gentle mode', 'gentle', 'Glooms wait patiently in battles.'),
+      toggle('set-gentle', 'Gentle mode', 'gentle', `${T.glooms} wait patiently in battles.`),
       toggle('set-read', 'Read aloud', 'readAloud', 'Questions and story lines are read out loud.'),
       choice('Text size', null, 'textSize', [[1, '100%'], [1.25, '125%'], [1.5, '150%']]),
       toggle('set-easy', 'Easy reading', 'easyRead', 'Wider spacing and cream pages for questions and stories.'),
@@ -350,7 +350,7 @@ export class MapScreen extends Screen {
     const canvas = el('canvas', { width: 760, height: 760, class: `map-canvas${treasure ? ' treasure' : ''}`, style: { width: `${size}px`, height: `${size}px` } });
     const clue = treasure ? G.treasure.objective({ text: (n, c) => `Treasure ${n + 1}: ${c}` }).text : null;
     const legend = el('div', { class: 'map-legend' },
-      el('h2', { text: 'Glacier Bay' }),
+      el('h2', { text: bookById(ACTIVE).world }),
       el('div', { class: 'legend-row', html: '<span class="lg-player"></span> You' }),
       el('div', { class: 'legend-row', html: `${ICON.star} Next goal` }),
       el('div', { class: 'legend-row', html: `${ICON.crystal('#4dffa0', true)} ${T.crystalName}` }),
@@ -397,6 +397,10 @@ export class MapScreen extends Screen {
       for (let i = 1; i <= GRID.n; i++) label(String(i), Math.max(8, X(GRID.x0) + 6), Z(GRID.z0 - i * GRID.cell));
       c.textBaseline = 'alphabetic';
     }
+    for (const m of G.quests.markers(true)) {
+      c.save(); c.translate(X(m.x), Z(m.z)); c.scale(1.2, 1.2); drawMarker(c, m.kind, false, m.color); c.restore();
+    }
+    // Place names go over the markers so a vent or a friend never hides one.
     c.font = '600 19px Fredoka, sans-serif';
     c.textAlign = 'center';
     for (const r of REGIONS) {
@@ -405,9 +409,6 @@ export class MapScreen extends Screen {
       c.fillRect(X(r.x) - w / 2, Z(r.z) - 42, w, 26);
       c.fillStyle = '#eef5ff';
       c.fillText(r.name, X(r.x), Z(r.z) - 23);
-    }
-    for (const m of G.quests.markers(true)) {
-      c.save(); c.translate(X(m.x), Z(m.z)); c.scale(1.2, 1.2); drawMarker(c, m.kind, false, m.color); c.restore();
     }
     const p = G.player.pos;
     c.save();
@@ -434,7 +435,7 @@ export class JournalScreen extends Screen {
   render() {
     this.root.innerHTML = '';
     const tabs = el('div', { class: 'tabs', role: 'tablist', 'data-cols': 6 });
-    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', 'Aurora Patrol'], ['collect', 'Collections'], ['lessons', 'Lessons'], ['chats', 'Chats']]) {
+    for (const [id, label] of [['story', 'Story'], ['side', 'Side quests'], ['patrol', T.patrol], ['collect', 'Collections'], ['lessons', 'Lessons'], ['chats', 'Chats']]) {
       tabs.append(btn(label, () => { this.tab = id; this.render(); this.root.querySelector(`[data-tab="${id}"]`)?.focus(); }, this.tab === id ? 'sel' : '', { 'data-tab': id, role: 'tab' }));
     }
     const body = el('div', { class: 'journal-body' });
@@ -451,7 +452,7 @@ export class JournalScreen extends Screen {
       this.render();
     });
     this.root.append(el('div', { class: 'panel journal-panel' },
-      el('div', { class: 'row between' }, el('h1', { text: 'Aurora Journal' }), btn('Close', () => this.close(), 'primary')),
+      el('div', { class: 'row between' }, el('h1', { text: T.journal }), btn('Close', () => this.close(), 'primary')),
       tabs, body));
   }
 
@@ -501,7 +502,7 @@ export class JournalScreen extends Screen {
       else if (def.chapter > 0 && G.quests.done(MAIN[def.chapter - 1].id)) status = '<span class="pill dim">Opens tomorrow</span>';
       else status = '<span class="pill dim">Locked</span>';
       const shards = ['lake', 'grove', 'huts', 'cave', 'ridge'].includes(def.region)
-        ? `<div class="shard-row">${[0, 1, 2].map((i) => `<span class="shard-pip ${i < (s.shards[def.region] || 0) ? 'on' : ''}" style="--c:${color}"></span>`).join('')} Aurora Shards · Resonance ${Math.min(RESONANCE_NEED, Math.floor(s.resonance[def.region] || 0))}/${RESONANCE_NEED}</div>` : '';
+        ? `<div class="shard-row">${[0, 1, 2].map((i) => `<span class="shard-pip ${i < (s.shards[def.region] || 0) ? 'on' : ''}" style="--c:${color}"></span>`).join('')} ${T.shard}s · Resonance ${Math.min(RESONANCE_NEED, Math.floor(s.resonance[def.region] || 0))}/${RESONANCE_NEED}</div>` : '';
       const tracked = s.tracked === def.id;
       return `<section class="quest-card ${q && !q.done ? 'active' : ''}" style="--c:${color}">
         <div class="qc-head"><h3>${escapeHTML(def.title)}</h3>${status}</div>
@@ -531,7 +532,7 @@ export class JournalScreen extends Screen {
         <li class="${togo === 0 ? 'done' : ''}">${tick(togo === 0)} Master ${Math.round(UNLOCK_MASTERY * 100)}% of the grade ${cur.grade} skills (${st.mastered} of ${st.total})</li>
       </ul>
       <div class="mini-track wide"><div style="width:${pct}%"></div></div>
-      ${togo && st.missing.length ? `<p class="note">Practise at a restored crystal to master: ${st.missing.slice(0, 4).map((x) => escapeHTML(x.name)).join(', ')}${st.missing.length > 4 ? ', and more' : ''}.</p>` : ''}
+      ${togo && st.missing.length ? `<p class="note">Practise at a restored ${T.crystal} to master: ${st.missing.slice(0, 4).map((x) => escapeHTML(x.name)).join(', ')}${st.missing.length > 4 ? ', and more' : ''}.</p>` : ''}
     </section>`;
   }
 
@@ -556,7 +557,7 @@ export class JournalScreen extends Screen {
   patrol() {
     G.patrol.ensureToday();
     const p = G.save.data.patrol;
-    if (!G.quests.done('ch0')) return '<p class="note">The Aurora Patrol opens after the Professor\'s warm-up.</p>';
+    if (!G.quests.done('ch0')) return `<p class="note">The ${T.patrol} opens after the Professor's warm-up.</p>`;
     const tasks = p.tasks.map((t) => {
       const pct = Math.round((100 * Math.min(t.progress, t.need)) / t.need);
       return `<div class="task ${t.done ? 'done' : ''}"><div class="task-top"><span>${t.done ? '✓ ' : ''}${escapeHTML(t.text)}</span><span class="num">${Math.floor(Math.min(t.progress, t.need))}/${t.need}</span></div><div class="gu-track"><div class="gu-fill" style="width:${pct}%;background:#ffd166"></div></div></div>`;
@@ -581,8 +582,8 @@ export class JournalScreen extends Screen {
       <div class="coll"><span>Treasure chests</span><b>${s.chests.length} / 12</b></div>
       <div class="coll"><span>Lost chicks home</span><b>${s.chicks.home.length} / 8</b></div>
       <div class="coll"><span>Pirate treasures</span><b>${s.treasures.length} / 4</b></div>
-      <div class="coll"><span>Gloom spots cheered</span><b>${s.counters.gloomSpots.length} / 8</b></div>
-      <div class="coll"><span>Glooms cheered up</span><b>${s.counters.glooms}</b></div>
+      <div class="coll"><span>${T.gloom} spots cheered</span><b>${s.counters.gloomSpots.length} / 8</b></div>
+      <div class="coll"><span>${T.glooms} cheered up</span><b>${s.counters.glooms}</b></div>
       <div class="coll"><span>Fish caught</span><b>${s.counters.fish}</b></div>
       <div class="coll"><span>Best answer streak</span><b>${s.counters.bestInARow} in a row</b></div>
     </div>
@@ -605,7 +606,7 @@ function stepSummary(st) {
   // Only site steps have a site count (the prologue's snowflake step crashed the journal here).
   const total = st.type === 'sites' ? G.sites?.count(st.set) ?? 0 : st.type === 'collect' ? G.pickups?.total(st.set) ?? 0 : st.need ?? 0;
   const t = typeof st.text === 'function' ? st.text(0, total, '') : st.text;
-  if (st.type === 'crystal') return 'Charge and wake the Aurora Crystal';
+  if (st.type === 'crystal') return `${T.charge} and ${T.wake.toLowerCase()} the ${T.crystalName}`;
   return (t || '').replace(/\s*\(0\/\d+\)$/, '').replace(/\(0\/\d+\)/, '');
 }
 
@@ -699,7 +700,7 @@ export class ShopScreen extends Screen {
       this.say(BOOK.shop.where);
       return;
     } else if (it.stars ? d.stars < it.stars : d.coins < it.price) {
-      this.say(it.stars ? `You need ${it.stars - d.stars} more Aurora Stars. Finish Aurora Patrol tasks to earn them!` : `You need ${it.price - d.coins} more fish coins. Solve puzzles to earn more!`);
+      this.say(it.stars ? `You need ${it.stars - d.stars} more Aurora Stars. Finish ${T.patrol} tasks to earn them!` : `You need ${it.price - d.coins} more fish coins. Solve puzzles to earn more!`);
       G.audio.play('wrong');
       return;
     } else {
