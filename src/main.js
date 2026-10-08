@@ -40,6 +40,10 @@ import { BOOK } from './books/current.js';
 import { T } from './books/terms.js';
 import { ACTIVE } from './books/active.js';
 import { SHOP, findItem, NPCS } from './game/content.js';
+import { setTheme } from './math/theme.js';
+
+// Word problems and lessons speak the language of the book on this page.
+setTheme(ACTIVE);
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 

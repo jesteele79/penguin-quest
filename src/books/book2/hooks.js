@@ -89,8 +89,13 @@ export const HOOKS = {
 
   prologueFriends: ['professor', 'nori', 'kai', 'lani', 'captain'],
   prologueLine: 'Hello there! The Professor has been looking for you. His tent is right by the campfire.',
-  shop: { npc: 'marlo', after: 'ch3', line: 'Want to try something on, sweet pea? My wardrobe trunk is open!' },
+  shop: {
+    npc: 'marlo', after: 'ch3', line: 'Want to try something on, sweet pea? My wardrobe trunk is open!',
+    title: "Chef Marlo's Wardrobe Trunk", where: "Buy new things from Chef Marlo's wardrobe trunk at the harbor.",
+  },
   nursery: 'lani',
+  // Book 1's teachers hand their lessons to the island friend who looks after the same subject.
+  mentors: { captain: 'rocco', fern: 'isa', mittens: 'marlo', pebble: 'tortuga', skipper: 'lumi' },
   slalomSkills: ['pow10', 'place_ten', 'dec_round', 'exponents', 'rounding', 'factors', 'patterns'],
   architect: {
     title: 'Temple Builder', contestTitle: 'Sandcastle Contest', color: '#2a9d8f', subtitle: (n) => `Help Tortuga rebuild the temple (${n} builds)`,

@@ -1,7 +1,9 @@
-// A little companion that follows the player: a rescued chick or a friendly Glimmer.
+// A little companion that follows the player: a rescued chick or turtle hatchling, or a friendly Glimmer or
+// Sparkle floating alongside.
 import * as THREE from 'three';
 import { Penguin } from './penguin.js';
 import { Gloom } from './gloom.js';
+import { Turtle } from './critters.js';
 import { WATER_Y } from '../world/layout.js';
 
 export class Buddy {
@@ -20,8 +22,10 @@ export class Buddy {
     this.kind = kind;
     if (kind === 'chick') {
       this.model = new Penguin(this.scene, { name: 'buddy', scale: 0.42, body: 0x7d869f, belly: 0xe6e9f2, scarf: 0xff5a4e });
-    } else if (kind === 'glimmer') {
-      this.model = new Gloom(this.scene, { scale: 0.4 });
+    } else if (kind === 'hatchling') {
+      this.model = new Turtle(this.scene, { name: 'buddy', scale: 0.42, shell: 0x6f8f46, plate: 0x9ab866, skin: 0x9ad0b0 });
+    } else if (kind === 'glimmer' || kind === 'sparkle') {
+      this.model = new Gloom(this.scene, { scale: 0.4, soot: kind === 'sparkle' });
       this.model.cheerUp();
       this.model.happy = 1;
     }
@@ -54,9 +58,14 @@ export class Buddy {
     }
     if (d > 40) root.position.copy(target);
     const ground = Math.max(this.terrain.heightAt(root.position.x, root.position.z), WATER_Y - 0.25);
-    if (this.kind === 'glimmer') {
+    if (this.kind === 'glimmer' || this.kind === 'sparkle') {
       root.position.y = Math.max(ground, player.pos.y) + 1.6 + Math.sin(this.t * 2.4) * 0.3;
       this.model.update(dt, null);
+    } else if (this.kind === 'hatchling') {
+      root.position.y = ground;
+      root.rotation.y = this.yaw;
+      this.model.animate(dt, { talking: speed > 1 });
+      this.model.updateAttachments(dt, ground);
     } else {
       root.position.y = ground;
       root.rotation.y = this.yaw;

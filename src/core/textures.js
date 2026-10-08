@@ -300,6 +300,25 @@ export function scarfTexture(kind) {
       g.globalAlpha = 0.35;
       for (let i = 0; i < 6; i++) { g.fillStyle = '#ffffff'; g.fillRect(0, 3 + i * 5.5, 128, 1.2); }
       g.globalAlpha = 1;
+    } else if (kind === 'wave') {
+      g.fillStyle = '#2e86c8'; g.fillRect(0, 0, 128, 32);
+      g.fillStyle = '#7fe0d0';
+      g.beginPath(); g.moveTo(0, 32);
+      for (let x = 0; x <= 128; x += 4) g.lineTo(x, 18 + Math.sin((x / 128) * Math.PI * 8) * 5);
+      g.lineTo(128, 32); g.fill();
+      g.strokeStyle = '#ffffff'; g.lineWidth = 2;
+      g.beginPath();
+      for (let x = 0; x <= 128; x += 4) g.lineTo(x, 18 + Math.sin((x / 128) * Math.PI * 8) * 5);
+      g.stroke();
+    } else if (kind === 'compass') {
+      g.fillStyle = '#f3e3c0'; g.fillRect(0, 0, 128, 32);
+      for (let i = 0; i < 4; i++) {
+        const x = 16 + i * 32, y = 16;
+        g.fillStyle = '#c8483a';
+        g.beginPath(); g.moveTo(x, y - 11); g.lineTo(x + 3, y); g.lineTo(x, y + 11); g.lineTo(x - 3, y); g.closePath(); g.fill();
+        g.fillStyle = '#3a4a6a';
+        g.beginPath(); g.moveTo(x - 11, y); g.lineTo(x, y + 3); g.lineTo(x + 11, y); g.lineTo(x, y - 3); g.closePath(); g.fill();
+      }
     } else if (kind === 'frost') {
       g.fillStyle = '#bfe6ff'; g.fillRect(0, 0, 128, 32);
       g.strokeStyle = '#ffffff'; g.lineWidth = 1.6;

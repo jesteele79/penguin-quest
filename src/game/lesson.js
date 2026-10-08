@@ -13,8 +13,12 @@ import { speak } from '../ui/quizpanel.js';
 import { SKILLS } from '../math/skills.js';
 import { Rng } from '../core/rng.js';
 import { NPCS, CAST } from './content.js';
+import { BOOK } from '../books/current.js';
+import { flavor } from '../math/theme.js';
 
 const STAGES = ['Explore', 'See', 'Watch', 'Your turn'];
+// Lessons were written once; their words follow the book being played, like its word problems do.
+const themed = (v) => (v?.title ? { ...v, title: flavor(v.title) } : v);
 
 export const lessonSeen = (id) => !!G.save.data.lessons?.[id];
 
@@ -43,7 +47,8 @@ export class LessonActivity {
     G.player.frozen = true;
     G.hud.setPrompt(null);
     G.audio.play('open');
-    const mentor = NPCS[this.lesson.mentor] ?? CAST[this.lesson.mentor] ?? NPCS.professor;
+    const who = BOOK.mentors[this.lesson.mentor] ?? this.lesson.mentor;
+    const mentor = NPCS[who] ?? CAST[who] ?? NPCS.professor;
     this.say = el('div', { class: 'lesson-say' });
     this.speakBtn = el('button', { class: 'btn ghost lesson-speak', type: 'button', 'aria-label': 'Read this aloud', html: ICON.speaker });
     this.speakBtn.addEventListener('click', () => speak(this.sayText));
@@ -79,6 +84,7 @@ export class LessonActivity {
   }
 
   talk(text) {
+    text = flavor(text);
     this.sayText = text;
     this.say.innerHTML = toHTML(text);
     if (G.save.data.settings.readAloud) speak(text);
@@ -96,19 +102,19 @@ export class LessonActivity {
       const Model = MODELS[L.explore.model];
       const cfg = { ...L.explore.cfg };
       // Rows are copied so a replay starts fresh.
-      if (Array.isArray(cfg.rows)) cfg.rows = cfg.rows.map((r) => ({ ...r }));
+      if (Array.isArray(cfg.rows)) cfg.rows = cfg.rows.map((r) => ({ ...r, name: flavor(r.name) }));
       if (L.explore.solve) cfg.solution = L.explore.solve;
       this.model = new Model(this.stageEl, cfg, () => this.explored());
       this.setNext(false);
       this.celebrated = false;
     } else if (this.stage === 1) {
       this.talk(L.see.text);
-      const vis = renderVisual(L.see.visual);
+      const vis = renderVisual(themed(L.see.visual));
       if (vis) this.stageEl.append(el('div', { class: 'quiz-visual lesson-visual', html: vis }));
       this.setNext(true);
     } else if (this.stage === 2) {
       this.talk(L.watch.text);
-      const vis = renderVisual(L.watch.visual);
+      const vis = renderVisual(themed(L.watch.visual));
       if (vis) this.stageEl.append(el('div', { class: 'quiz-visual lesson-visual', html: vis }));
       this.stepsEl = el('ol', { class: 'lesson-steps' });
       this.stageEl.append(this.stepsEl);
@@ -117,13 +123,13 @@ export class LessonActivity {
     } else if (this.stage === 3) {
       this.practice = L.practice(this.rng);
       this.talk('Your turn! The first steps are done. Finish the last one.');
-      this.stageEl.append(el('ol', { class: 'lesson-steps all', html: this.practice.steps.map((s) => `<li>${toHTML(s)}</li>`).join('') }));
+      this.stageEl.append(el('ol', { class: 'lesson-steps all', html: this.practice.steps.map((s) => `<li>${toHTML(flavor(s))}</li>`).join('') }));
       this.input = el('input', { class: 'quiz-input lesson-input', type: 'text', autocomplete: 'off', inputmode: G.input.mode === 'touch' ? 'none' : 'text', 'aria-label': 'Your answer', placeholder: 'Type your answer' });
       const check = el('button', { class: 'btn primary', type: 'button', html: 'Check <kbd>Enter</kbd>' });
       check.addEventListener('click', () => this.check());
       this.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (this.solved) this.next(); else this.check(); } });
       this.feedback = el('div', { class: 'quiz-feedback' });
-      this.stageEl.append(el('div', { class: 'lesson-prompt', html: toHTML(this.practice.prompt) }), el('div', { class: 'quiz-input-row' }, this.input, check), this.feedback);
+      this.stageEl.append(el('div', { class: 'lesson-prompt', html: toHTML(flavor(this.practice.prompt)) }), el('div', { class: 'quiz-input-row' }, this.input, check), this.feedback);
       if (G.input.mode !== 'keys') this.stageEl.append(this.keypad());
       this.solved = false;
       this.tries = 0;
@@ -173,7 +179,7 @@ export class LessonActivity {
   revealStep() {
     const steps = this.lesson.watch.steps;
     if (this.watched < steps.length) {
-      this.stepsEl.append(el('li', { class: 'fresh', html: toHTML(steps[this.watched]) }));
+      this.stepsEl.append(el('li', { class: 'fresh', html: toHTML(flavor(steps[this.watched])) }));
       this.watched += 1;
       G.audio.play('tab');
     }

@@ -20,6 +20,9 @@ const THEMES = {
       [/\bred scarves\b/g, 'red shells'], [/\bblue scarves\b/g, 'blue shells'], [/\bscarves\b/g, 'sun hats'], [/\bscarf\b/g, 'sun hat'],
       [/\bmittens\b/g, 'flip-flops'], [/\bmitten\b/g, 'flip-flop'],
       [/\bslides\b/g, 'surfs'], [/\bslide each\b/g, 'surf each'],
+      [/\bcrystal bars\b/g, 'coconut bars'], [/\bcrystal juice\b/g, 'coconut juice'], [/\bCrystal juice\b/g, 'Coconut juice'],
+      [/\bbar is glowing\b/g, 'bar is shaded'], [/\bpie is glowing\b/g, 'pie is shaded'],
+      [/\bglow potions\b/g, 'reef smoothies'], [/\bglow potion\b/g, 'reef smoothie'], [/\bpotions\b/g, 'smoothies'], [/\bpotion\b/g, 'smoothie'],
     ],
   },
 };

@@ -3,7 +3,7 @@ import { G, pushActivity, popActivity } from '../core/state.js';
 import { el, $$, arrowNav, escapeHTML, readable } from '../ui/dom.js';
 import { ICON, portraitSVG } from '../ui/icons.js';
 import { drawMarker } from '../ui/hud.js';
-import { SHOP, findItem, SLOT_NAMES } from './content.js';
+import { SHOP, findItem, SLOT_NAMES, inWardrobe } from './content.js';
 import { MAIN, SIDE, RESONANCE_NEED } from './questdata.js';
 import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
@@ -12,6 +12,7 @@ import { orbitShot } from './minigames/common.js';
 import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById } from '../books/books.js';
 import { T } from '../books/terms.js';
 import { ACTIVE } from '../books/active.js';
+import { BOOK } from '../books/current.js';
 import { LESSONS } from '../math/lessons.js';
 import { SKILLS } from '../math/skills.js';
 
@@ -613,14 +614,17 @@ export class ShopScreen extends Screen {
       tabs.append(btn(SLOT_NAMES[slot], () => { this.tab = slot; this.render(); this.root.querySelector(`[data-tab="${slot}"]`)?.focus(); }, this.tab === slot ? 'sel' : '', { 'data-tab': slot, role: 'tab' }));
     }
     const grid = el('div', { class: 'shop-grid', 'data-cols': 3 });
-    for (const it of SHOP[this.tab]) {
+    const here = d.active ?? 'book1';
+    const rank = (it) => (!it.book ? 0 : it.book === here ? 1 : 2);
+    const items = SHOP[this.tab].filter((it) => inWardrobe(d, this.tab, it)).sort((a, b) => rank(a) - rank(b));
+    for (const it of items) {
       const owned = this.owned(this.tab, it.id);
       const equipped = d.equipped[this.tab] === it.id;
       let status;
       if (equipped) status = '<span class="tag on">Wearing</span>';
       else if (owned) status = '<span class="tag">Owned</span>';
       else if (it.stars) status = `<span class="price">${ICON.star} ${it.stars}</span>`;
-      else if (it.price === null) status = `<span class="tag how">${it.how}</span>`;
+      else if (it.price === null) status = `<span class="tag how">${howToGet(it, here)}</span>`;
       else status = `<span class="price">${ICON.fish} ${it.price}</span>`;
       const swatch = this.tab === 'scarf' ? `<span class="swatch big" style="background:${it.css}"></span>`
         : this.tab === 'trail' ? `<span class="swatch big trail" style="background:linear-gradient(90deg,${it.colors.map((c) => '#' + c.toString(16).padStart(6, '0')).join(',')})"></span>`
@@ -635,8 +639,8 @@ export class ShopScreen extends Screen {
     this.msg = el('div', { class: 'shop-msg', 'aria-live': 'polite' });
     this.root.append(el('div', { class: 'panel shop-panel' },
       el('div', { class: 'shop-head' },
-        el('div', {}, el('h1', { text: this.buyMode ? "Mama Mittens' Wardrobe" : 'Wardrobe' }),
-          el('p', { class: 'note', text: this.buyMode ? 'Buy with fish coins or Aurora Stars, then wear it!' : 'Wear anything you own. Buy new things from Mama Mittens at the Heart Huts.' })),
+        el('div', {}, el('h1', { text: this.buyMode ? BOOK.shop.title : 'Wardrobe' }),
+          el('p', { class: 'note', text: this.buyMode ? 'Buy with fish coins or Aurora Stars, then wear it!' : `Wear anything you own. ${BOOK.shop.where}` })),
         el('div', { class: 'coins-big', html: `${ICON.fish} <span>${d.coins}</span> ${ICON.star} <span>${d.stars}</span>` })),
       tabs, grid, this.msg,
       el('div', { class: 'row end' }, btn('Done', () => this.close(), 'primary'))));
@@ -653,11 +657,11 @@ export class ShopScreen extends Screen {
       G.audio.play('chime');
       this.say(`Now using: ${it.name}`);
     } else if (!it.stars && it.price === null) {
-      this.say(it.how);
+      this.say(howToGet(it, d.active ?? 'book1'));
       G.audio.play('wrong');
       return;
     } else if (!this.buyMode) {
-      this.say('Visit Mama Mittens at the Heart Huts to buy this.');
+      this.say(BOOK.shop.where);
       return;
     } else if (it.stars ? d.stars < it.stars : d.coins < it.price) {
       this.say(it.stars ? `You need ${it.stars - d.stars} more Aurora Stars. Finish Aurora Patrol tasks to earn them!` : `You need ${it.price - d.coins} more fish coins. Solve puzzles to earn more!`);
@@ -680,6 +684,9 @@ export class ShopScreen extends Screen {
   say(text) { if (this.msg) this.msg.textContent = text; }
 }
 
+// A prize from another book says which book it comes from.
+const howToGet = (it, here) => (it.book && it.book !== here ? `In ${bookById(it.book).title}: ${it.how}` : it.how);
+
 function hatIcon(id) {
   const c = {
     null: '<circle cx="24" cy="26" r="14" fill="none" stroke="#8fa0d8" stroke-width="3"/><line x1="14" y1="36" x2="34" y2="16" stroke="#8fa0d8" stroke-width="3"/>',
@@ -692,6 +699,12 @@ function hatIcon(id) {
     viking: '<path d="M10 32 Q12 12 24 12 Q36 12 38 32 Z" fill="#a6b0c4"/><path d="M10 26 Q2 18 6 8 Q8 18 14 22 Z" fill="#fff4dc"/><path d="M38 26 Q46 18 42 8 Q40 18 34 22 Z" fill="#fff4dc"/>',
     party: '<path d="M24 4 L34 36 L14 36 Z" fill="#ff5ab0"/><circle cx="24" cy="4" r="4" fill="#ffe14d"/>',
     crown: '<path d="M8 34 L8 16 L16 24 L24 12 L32 24 L40 16 L40 34 Z" fill="#ffcc3d"/><circle cx="24" cy="28" r="3" fill="#4de1ff"/>',
+    hibiscus: '<g fill="#ff5c8a"><circle cx="24" cy="12" r="7"/><circle cx="34" cy="20" r="7"/><circle cx="30" cy="31" r="7"/><circle cx="18" cy="31" r="7"/><circle cx="14" cy="20" r="7"/></g><circle cx="24" cy="22" r="4" fill="#ffd166"/>',
+    souwester: '<path d="M10 30 Q12 10 24 10 Q36 10 38 30 Z" fill="#ffc83d"/><path d="M4 30 Q24 24 44 30 Q46 36 38 37 L10 37 Q2 36 4 30 Z" fill="#f2b42a"/>',
+    chef: '<circle cx="15" cy="15" r="8" fill="#fff"/><circle cx="24" cy="10" r="9" fill="#fff"/><circle cx="33" cy="15" r="8" fill="#fff"/><rect x="12" y="16" width="24" height="18" rx="3" fill="#fff"/><rect x="12" y="29" width="24" height="5" fill="#e6e9f2"/>',
+    crest: '<path d="M10 32 Q8 18 2 12 Q14 16 18 26 Z M38 32 Q40 18 46 12 Q34 16 30 26 Z" fill="#ffd23d"/><path d="M18 30 Q22 12 24 4 Q26 12 30 30 Z" fill="#1a1a24"/>',
+    sunhat: '<ellipse cx="24" cy="30" rx="21" ry="6" fill="#f0d9a0"/><path d="M13 30 Q14 14 24 14 Q34 14 35 30 Z" fill="#f6e4b4"/><rect x="13" y="25" width="22" height="4" fill="#ff7a5c"/>',
+    goggles: '<rect x="4" y="18" width="40" height="5" rx="2" fill="#6a4a30"/><circle cx="16" cy="21" r="8" fill="#c89a3a"/><circle cx="32" cy="21" r="8" fill="#c89a3a"/><circle cx="16" cy="21" r="5" fill="#7fd6ff"/><circle cx="32" cy="21" r="5" fill="#7fd6ff"/>',
   };
   return `<svg viewBox="0 0 48 40" class="hat-svg">${c[id] ?? c.null}</svg>`;
 }
@@ -705,6 +718,8 @@ function sledIcon(it) {
 function buddyIcon(id) {
   if (!id) return hatIcon(null);
   if (id === 'chick') return '<svg viewBox="0 0 48 40" class="hat-svg"><ellipse cx="24" cy="24" rx="12" ry="13" fill="#7d869f"/><ellipse cx="24" cy="28" rx="8" ry="8" fill="#e6e9f2"/><circle cx="20" cy="20" r="2.2" fill="#111"/><circle cx="28" cy="20" r="2.2" fill="#111"/><path d="M22 24 L26 24 L24 27 Z" fill="#ff9d2e"/></svg>';
+  if (id === 'hatchling') return '<svg viewBox="0 0 48 40" class="hat-svg"><ellipse cx="22" cy="26" rx="14" ry="9" fill="#6f8f46"/><path d="M14 24 L22 20 L30 24 L22 29 Z" fill="#9ab866"/><circle cx="38" cy="22" r="6" fill="#9ad0b0"/><circle cx="40" cy="21" r="1.6" fill="#111"/><ellipse cx="12" cy="33" rx="4" ry="2.5" fill="#9ad0b0"/><ellipse cx="32" cy="33" rx="4" ry="2.5" fill="#9ad0b0"/></svg>';
+  if (id === 'sparkle') return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="24" cy="22" r="13" fill="#ff9a3c"/><circle cx="21" cy="8" r="4" fill="#ffb86a"/><path d="M17 20 Q19 17 21 20 M27 20 Q29 17 31 20" stroke="#3a1a10" stroke-width="2" fill="none"/><circle cx="24" cy="22" r="17" fill="none" stroke="#ffd166" stroke-opacity="0.5" stroke-width="2"/></svg>';
   return '<svg viewBox="0 0 48 40" class="hat-svg"><circle cx="24" cy="22" r="13" fill="#ff78d2"/><path d="M17 20 Q19 17 21 20 M27 20 Q29 17 31 20" stroke="#1a1333" stroke-width="2" fill="none"/><circle cx="24" cy="22" r="17" fill="none" stroke="#ffd166" stroke-opacity="0.5" stroke-width="2"/></svg>';
 }
 

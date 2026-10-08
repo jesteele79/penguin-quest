@@ -109,8 +109,13 @@ export const HOOKS = {
 
   prologueFriends: ['professor', 'mo', 'lulu', 'sunny'],
   prologueLine: "Oh, hello there! Have you seen Professor Waddlesworth? He's been looking for you by the big igloo.",
-  shop: { npc: 'mittens', after: 'ch3', line: 'Want to try on something cozy? My Wardrobe is open!' },
+  shop: {
+    npc: 'mittens', after: 'ch3', line: 'Want to try on something cozy? My Wardrobe is open!',
+    title: "Mama Mittens' Wardrobe", where: 'Buy new things from Mama Mittens at the Heart Huts.',
+  },
   nursery: 'nestle',
+  // Lessons are taught by whoever wrote them in this book.
+  mentors: {},
   slalomSkills: ['mul_facts', 'div_facts', 'exponents', 'integers', 'rounding', 'pow10'],
   architect: {
     title: 'Ice Architect', contestTitle: 'Snow Sculpture Contest', color: '#55b4ff', subtitle: (n) => `Help Pebble rebuild the cave floor (${n} builds)`,
