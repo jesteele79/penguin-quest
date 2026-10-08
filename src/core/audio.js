@@ -9,6 +9,20 @@ const MOODS = {
   boss: { bpm: 100, chords: [[40, 47, 52, 55], [48, 55, 60, 64], [50, 57, 62, 66], [47, 54, 59, 63]], box: 0.4, bass: true, kick: true, pluck: true, drive: true, scale: [4, 7, 9, 11, 2] },
   finale: { bpm: 84, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [45, 52, 57, 61], [50, 57, 62, 69]], box: 0.85, bass: true, kick: false, pluck: true },
 };
+// The Ember Isles' band plays in the same key, so every effect still fits: marimba instead of the music box,
+// a steel drum lead, a calypso bass line, shaker and congas.
+const ISLAND_MOODS = {
+  title: { bpm: 92, chords: [[50, 57, 62, 66], [47, 54, 59, 62], [43, 50, 55, 59], [45, 52, 57, 61]], box: 0.45, bass: true, island: true },
+  explore: { bpm: 96, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [45, 52, 57, 61], [43, 50, 55, 59]], box: 0.55, bass: true, layered: true, island: true },
+  quiz: { bpm: 92, chords: [[50, 57, 62, 66], [47, 54, 59, 62], [43, 50, 55, 59], [45, 52, 57, 61]], box: 0.28, bass: true, pluck: true, island: true },
+  battle: { bpm: 120, chords: [[47, 54, 59, 62], [43, 50, 55, 59], [50, 57, 62, 66], [45, 52, 57, 61]], box: 0.4, bass: true, kick: true, pluck: true, drive: true, island: true },
+  boss: { bpm: 108, chords: [[40, 47, 52, 55], [48, 55, 60, 64], [50, 57, 62, 66], [47, 54, 59, 63]], box: 0.35, bass: true, kick: true, pluck: true, drive: true, scale: [4, 7, 9, 11, 2], island: true },
+  finale: { bpm: 100, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [45, 52, 57, 61], [50, 57, 62, 69]], box: 0.75, bass: true, pluck: true, island: true },
+};
+// A calypso bass bar: [eighth position in the bar, semitones above the chord root].
+const CALYPSO = [[0, 0], [1.5, 7], [2, 0], [3, 7], [3.5, 12]];
+const PALETTES = { book1: { moods: MOODS, ambience: 'wind', ground: 'snow' }, book2: { moods: ISLAND_MOODS, ambience: 'surf', ground: 'sand' } };
+
 const PENTA = [0, 2, 4, 7, 9];
 // D major pentatonic (same notes as B minor pentatonic), as pitch classes.
 const SCALE_D = [2, 4, 6, 9, 11];
@@ -26,7 +40,11 @@ export class AudioEngine {
     // Music layers: 0 to 5, one per restored aurora crystal (pad always, then bass, bells, plucks, shaker, lead).
     this.layers = 1;
     this.duck = 1;
+    this.palette = PALETTES.book1;
   }
+
+  // Each book has its own band and its own sound of the outdoors. Chosen once, before the first sound.
+  usePalette(id) { this.palette = PALETTES[id] ?? PALETTES.book1; }
 
   setLayers(n) { this.layers = Math.max(1, Math.min(5, n)); }
 
@@ -64,7 +82,7 @@ export class AudioEngine {
     this.musicSend = c.createGain(); this.musicSend.gain.value = 0.55; this.musicSend.connect(this.reverb);
     this.sfxSend = c.createGain(); this.sfxSend.gain.value = 0.22; this.sfxSend.connect(this.reverb);
     this.noiseBuf = this.makeNoise(2);
-    this.startWind();
+    if (this.palette.ambience === 'surf') this.startSurf(); else this.startWind();
     this.startSlideLoop();
     this.sched = setInterval(() => this.tick(), 60);
     this.resume();
@@ -173,6 +191,47 @@ export class AudioEngine {
     this.windGain = g;
   }
 
+  // Waves rolling onto the beach, a fizz of foam on each one, and now and then a sea bird.
+  startSurf() {
+    const c = this.ctx;
+    const g = c.createGain();
+    g.gain.value = 0.022 * this.sfxVol;
+    g.connect(this.master);
+    const swell = c.createOscillator(); swell.frequency.value = 0.085;
+    const layer = (type, freq, q, depth, base) => {
+      const src = c.createBufferSource();
+      src.buffer = this.noiseBuf; src.loop = true;
+      const f = c.createBiquadFilter();
+      f.type = type; f.frequency.value = freq; f.Q.value = q;
+      const lg = c.createGain(); lg.gain.value = base;
+      const d = c.createGain(); d.gain.value = depth;
+      swell.connect(d).connect(lg.gain);
+      src.connect(f).connect(lg).connect(g);
+      src.start();
+    };
+    layer('lowpass', 520, 0.4, 0.9, 1.1);
+    layer('highpass', 2600, 0.3, 0.35, 0.3);
+    swell.start();
+    this.windGain = g;
+    this.birds = true;
+  }
+
+  seabird(when) {
+    const n = 2 + Math.floor(Math.random() * 3), f = 2100 + Math.random() * 900;
+    for (let i = 0; i < n; i++) this.tone({ f, to: f * 1.32, type: 'sine', dur: 0.11, vol: 0.011, a: 0.01, r: 0.06, when: when + i * 0.16 });
+  }
+
+  marimba(f, when, vol, bus = 'music') {
+    this.tone({ f, type: 'sine', dur: 0.55, vol, a: 0.003, r: 0.5, when, bus });
+    this.tone({ f: f * 3.93, type: 'sine', dur: 0.09, vol: vol * 0.3, a: 0.002, r: 0.08, when, bus, send: false });
+  }
+
+  steelDrum(f, when, vol, dur) {
+    this.tone({ f: f * 1.01, to: f, type: 'triangle', dur, vol, a: 0.004, r: dur * 0.8, when, bus: 'music', lp: 3200 });
+    this.tone({ f: f * 2, type: 'sine', dur: dur * 0.6, vol: vol * 0.45, a: 0.003, r: dur * 0.5, when, bus: 'music' });
+    this.tone({ f: f * 2.76, type: 'sine', dur: dur * 0.25, vol: vol * 0.15, a: 0.002, r: dur * 0.2, when, bus: 'music', send: false });
+  }
+
   startSlideLoop() {
     const c = this.ctx;
     const src = c.createBufferSource();
@@ -199,6 +258,7 @@ export class AudioEngine {
     switch (name) {
       case 'step':
         if (o.wood) this.tone({ f: 170 + r() * 40, type: 'triangle', dur: 0.06, vol: 0.09, send: false });
+        else if (this.palette.ground === 'sand') this.noise({ dur: 0.09, vol: 0.075, f: 600 + r() * 500, q: 0.7, type: 'lowpass' });
         else this.noise({ dur: 0.08, vol: 0.09, f: 1400 + r() * 1200, q: 1.2, type: 'bandpass' });
         break;
       case 'jump':
@@ -325,7 +385,7 @@ export class AudioEngine {
     if (!this.ctx || mood === (this.pending ?? this.mood)) return;
     if (!this.moodDef) {
       this.mood = mood;
-      this.moodDef = MOODS[mood] || null;
+      this.moodDef = this.palette.moods[mood] || null;
       this.beat = 0;
       this.nextTime = this.ctx.currentTime + 0.1;
       const t = this.ctx.currentTime;
@@ -340,10 +400,11 @@ export class AudioEngine {
   tick() {
     const c = this.ctx;
     if (!c || !this.moodDef || c.state !== 'running') return;
+    if (this.birds && Math.random() < 0.006) this.seabird(0.05);
     while (this.nextTime < c.currentTime + 0.25) {
       if (this.pending && this.beat % 4 === 0) {
         this.mood = this.pending;
-        this.moodDef = MOODS[this.pending] || this.moodDef;
+        this.moodDef = this.palette.moods[this.pending] || this.moodDef;
         this.pending = null;
         this.beat = 0;
       }
@@ -370,6 +431,7 @@ export class AudioEngine {
     }
     // Exploring, the band grows with the aurora: each restored crystal adds a layer.
     const layers = m.layered ? this.layers : 5;
+    if (m.island) { this.islandEighth(w, m, spb, chord, posInBar, posInChord, layers); return; }
     if (m.bass && layers >= 2 && (posInBar === 0 || posInBar === 2 || (m.drive && Number.isInteger(this.beat)))) {
       this.tone({ f: midi(chord[0] - 12), type: m.drive ? 'triangle' : 'sine', dur: spb * (m.drive ? 0.9 : 1.8), vol: m.drive ? 0.07 : 0.06, a: 0.02, r: 0.4, when: w, bus: 'music', send: false });
     }
@@ -397,6 +459,42 @@ export class AudioEngine {
     if ((m.pluck || (m.layered && layers >= 3)) && Number.isInteger(this.beat)) {
       const n = chord[(Math.floor(this.beat) + 1) % chord.length] + 12;
       this.tone({ f: midi(n), type: 'triangle', dur: 0.25, vol: 0.03, a: 0.003, r: 0.2, when: w, bus: 'music' });
+    }
+  }
+
+  // One eighth note of the island band.
+  islandEighth(w, m, spb, chord, posInBar, posInChord, layers) {
+    const root = chord[0];
+    if (m.bass && layers >= 2) {
+      for (const [pos, up] of CALYPSO) {
+        if (pos !== posInBar && !(m.drive && pos + 0.5 === posInBar)) continue;
+        this.tone({ f: midi(root - 12 + up), type: 'triangle', dur: spb * 0.55, vol: 0.075, a: 0.006, r: spb * 0.4, when: w, bus: 'music', send: false, lp: 900 });
+      }
+    }
+    // Shaker on every sixteenth, leaning on the off-beats.
+    if (layers >= 4 || !m.layered) {
+      const off = !Number.isInteger(this.beat);
+      this.noise({ dur: 0.04, vol: off ? 0.02 : 0.011, f: 7200, q: 1.2, when: w, bus: 'music' });
+      this.noise({ dur: 0.035, vol: 0.009, f: 7600, q: 1.2, when: w + spb / 4, bus: 'music' });
+    }
+    // Congas on the "and" of two and four, and a low one on three.
+    if (layers >= 3 && (posInBar === 1.5 || posInBar === 3.5)) this.tone({ f: 330, to: 250, type: 'sine', dur: 0.16, vol: 0.05, when: w, bus: 'music', send: false });
+    if (layers >= 3 && posInBar === 2) this.tone({ f: 200, to: 150, type: 'sine', dur: 0.22, vol: 0.05, when: w, bus: 'music', send: false });
+    if (m.kick && (posInBar === 0 || posInBar === 2)) this.tone({ f: 120, to: 45, type: 'sine', dur: 0.2, vol: 0.1, when: w, bus: 'music', send: false });
+    // Marimba: chord tones in a warm middle octave.
+    if (Math.random() < m.box * (m.layered ? 0.4 + layers * 0.12 : 1)) {
+      const pcs = Math.random() < 0.65 ? chord.map((n) => n % 12) : (m.scale ?? SCALE_D);
+      const pc = pcs[Math.floor(Math.random() * pcs.length)];
+      const octave = Math.random() < 0.6 ? 60 : 72;
+      this.marimba(midi(octave + ((pc - (octave % 12)) + 12) % 12), w, 0.05);
+    }
+    // Steel drum lead: a short answering phrase each chord.
+    if ((!m.layered || layers >= 5) && posInChord === 4) {
+      [0, 1, 2, 3].forEach((k, i) => this.steelDrum(midi(penta(Math.floor(Math.random() * 3) + k)), w + i * spb * 0.5, 0.026, spb * 0.8));
+    }
+    // Strummed off-beat chords, like a ukulele.
+    if ((m.pluck || (m.layered && layers >= 3)) && posInBar % 1 === 0.5) {
+      chord.slice(1).forEach((n, i) => this.tone({ f: midi(n + 12), type: 'triangle', dur: 0.18, vol: 0.016, a: 0.003, r: 0.15, when: w + i * 0.012, bus: 'music' }));
     }
   }
 }

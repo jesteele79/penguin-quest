@@ -188,6 +188,7 @@ function boot() {
   input.attach(canvas);
   const cam = new FollowCam(camera, world.terrain);
   const audio = new AudioEngine();
+  audio.usePalette(ACTIVE);
   const quality = new Quality(renderer, scene, camera, world);
   const uiRoot = document.getElementById('ui');
   Object.assign(G, {
