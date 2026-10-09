@@ -431,7 +431,7 @@ export function buildStructures(ctx) {
 
   addSnowman(ctx, -86, 112, 0.6, 'top');
   addSnowman(ctx, 20, 72, -0.4, 'bucket');
-  addSnowman(ctx, 126, 56, -1.8, null);
+  addSnowman(ctx, 122, 60, -1.8, null);
   addSnowman(ctx, -118, -6, 1.2, 'bucket');
   addSnowman(ctx, 86, 118, -2.4, 'top');
 
@@ -448,7 +448,7 @@ export function buildStructures(ctx) {
   ctx.launch = buildPier(ctx, { x: LOC.launch.x0, z: LOC.launch.z1, dirX: 0, dirZ: 1, w: LOC.launch.w, top: LOC.launch.top });
   const dl = ctx.dock.landEnd;
   addBarrel(ctx, dl.x - 1.5, dl.z + 3.0);
-  addCrate(ctx, dl.x - 2.2, dl.z - 3.4, 0.2, 0.9);
+  addCrate(ctx, dl.x - 4.2, dl.z - 3.4, 0.2, 0.9);
   const ll = ctx.launch.landEnd;
   addLantern(ctx, ll.x + 3.2, ll.z + 1.2, 2.2);
   addLantern(ctx, ll.x - 3.2, ll.z + 1.2, 2.2);

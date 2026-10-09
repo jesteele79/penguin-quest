@@ -5,6 +5,7 @@ import { lambert } from '../../core/materials.js';
 import { mergeColored, mat } from '../../core/geo.js';
 import { damp } from '../../core/mathutil.js';
 import { Site, Lantern } from '../../game/sitekit.js';
+import { gearGeometry } from './gear.js';
 
 const V = (x, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const BRASS = 0xc89a3a;
@@ -18,17 +19,13 @@ class Pinwheel extends Site {
     pole.position.y = 2.1;
     this.head = new THREE.Group();
     this.head.position.set(0, 4.2, 0.2);
-    const red = lambert({ color: 0xff5c6a }), blue = lambert({ color: 0x5aa9e6 });
+    // Six red and blue blades round a gold hub, merged so the whole head is one mesh.
+    const parts = [{ geo: new THREE.SphereGeometry(0.16, 8, 6), color: 0xffd166 }];
     for (let k = 0; k < 6; k++) {
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.4, 0.04), k % 2 ? blue : red);
-      blade.position.y = 0.75;
-      blade.rotation.y = 0.5;
-      const p = new THREE.Group();
-      p.rotation.z = (k / 6) * Math.PI * 2;
-      p.add(blade);
-      this.head.add(p);
+      const turn = new THREE.Matrix4().makeRotationZ((k / 6) * Math.PI * 2);
+      parts.push({ geo: new THREE.BoxGeometry(0.5, 1.4, 0.04), color: k % 2 ? 0x5aa9e6 : 0xff5c6a, matrix: turn.multiply(mat(0, 0.75, 0, 0, 0.5, 0)) });
     }
-    this.head.add(new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), lambert({ color: 0xffd166 })));
+    this.head.add(new THREE.Mesh(mergeColored(parts), lambert({ vertexColors: true })));
     this.group.add(pole, this.head);
     this.group.rotation.y = i * 1.3;
     ctx.scene.add(this.group);
@@ -72,16 +69,7 @@ class ClockGear extends Site {
     super('gears', i, V(x, y, z));
     const stand = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.2, 0.5), lambert({ color: 0x7a5a32 }));
     stand.position.y = 1.1;
-    this.gear = new THREE.Group();
-    const gm = lambert({ color: BRASS }, { color: 0xffe0a0, strength: 0.25 });
-    this.gear.add(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.3, 20), gm));
-    for (let k = 0; k < 10; k++) {
-      const a = (k / 10) * Math.PI * 2;
-      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.4), gm);
-      tooth.position.set(Math.cos(a) * 1.12, 0, Math.sin(a) * 1.12);
-      tooth.rotation.y = -a;
-      this.gear.add(tooth);
-    }
+    this.gear = new THREE.Mesh(gearGeometry(1, { teeth: 10, toothR: 1.12 }), lambert({ vertexColors: true }, { color: 0xffe0a0, strength: 0.25 }));
     this.gear.rotation.x = Math.PI / 2;
     this.gear.position.y = 2.6;
     this.group.add(stand, this.gear);

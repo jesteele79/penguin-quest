@@ -25,7 +25,8 @@ export const SITE_SETS = {
   beacons: { kind: 'beacon', points: BEACONS, label: 'Light the beacon', title: 'Signal Beacon', domain: 'ridge', count: 2 },
   legends: {
     kind: 'lantern', label: 'Begin the Legend Trial', title: 'Legend Trial', count: 6, hard: true,
-    points: ['lake', 'grove', 'huts', 'cave', 'ridge'].map((r) => [CRYSTALS[r].x + 4.5, CRYSTALS[r].z + 4.5]),
+    // Beside each crystal; in the ice cave the open floor is on the other side.
+    points: ['lake', 'grove', 'huts', 'cave', 'ridge'].map((r) => (r === 'cave' ? [CRYSTALS[r].x - 4.5, CRYSTALS[r].z - 4.5] : [CRYSTALS[r].x + 4.5, CRYSTALS[r].z + 4.5])),
     domains: ['lake', 'grove', 'huts', 'cave', 'ridge'],
   },
   invites: {

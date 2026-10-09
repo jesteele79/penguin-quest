@@ -483,6 +483,18 @@ export class Penguin {
 
   setCulled(c) { if (this.culled !== c) { this.culled = c; this.applyVisibility(); } }
 
+  // Real shadows cost a second draw of every part; past a few steps the soft blob shadow is enough.
+  setCastShadows(on) {
+    if (this.castsShadows === on) return;
+    if (this.castsShadows === undefined) {
+      this.shadowParts = [];
+      this.root.traverse((m) => { if (m.isMesh && m.castShadow) this.shadowParts.push(m); });
+      for (const t of this.tails) if (t.mesh.castShadow) this.shadowParts.push(t.mesh);
+    }
+    this.castsShadows = on;
+    for (const m of this.shadowParts) m.castShadow = on;
+  }
+
   applyVisibility() {
     const v = this.shown !== false && !this.culled;
     this.root.visible = v;

@@ -92,6 +92,7 @@ export class NPCManager {
       const camD = cameraPos.distanceTo(n.pos);
       // Far friends are a few pixels tall and deep in the fog: skip drawing them.
       n.model.setCulled(camD > 125);
+      n.model.setCastShadows?.(camD < 30);
       if (camD < 125) {
         n.model.animate(dt, { speed: 0, grounded: true, talking: n.talking, celebrate });
         n.model.updateAttachments(dt, n.pos.y, camD < 60);

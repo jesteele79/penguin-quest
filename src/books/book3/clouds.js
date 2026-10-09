@@ -6,6 +6,8 @@ import { Rng } from '../../core/rng.js';
 import { WATER_Y, ISLANDS } from './layout.js';
 import { SUN_DIR } from './sky.js';
 
+const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+
 const vert = /* glsl */ `
 varying vec2 vXZ;
 #include <fog_pars_vertex>
@@ -55,6 +57,42 @@ void main() {
   #include <fog_fragment>
 }`;
 
+// The billows are one instanced draw: each instance is a camera-facing quad, sized and placed by its matrix,
+// with its own tint, opacity and roll, the way a sprite would be.
+const billowVert = /* glsl */ `
+attribute float aRot;
+attribute float aAlpha;
+attribute vec3 aTint;
+varying vec2 vUv;
+varying float vAlpha;
+varying vec3 vTint;
+#include <fog_pars_vertex>
+void main() {
+  vUv = uv;
+  vAlpha = aAlpha;
+  vTint = aTint;
+  vec4 mvPosition = viewMatrix * modelMatrix * vec4(instanceMatrix[3].xyz, 1.0);
+  vec2 p = position.xy * vec2(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));
+  float c = cos(aRot), s = sin(aRot);
+  mvPosition.xy += vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`;
+
+const billowFrag = /* glsl */ `
+uniform sampler2D map;
+varying vec2 vUv;
+varying float vAlpha;
+varying vec3 vTint;
+#include <fog_pars_fragment>
+void main() {
+  vec4 t = texture2D(map, vUv);
+  gl_FragColor = vec4(vTint * t.rgb, t.a * vAlpha);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}`;
+
 export class CloudSea {
   constructor(scene, terrain) {
     this.terrain = terrain;
@@ -75,15 +113,11 @@ export class CloudSea {
     this.group.add(sea);
     // Billows: soft puffs sitting on the blanket, thickest around the islands' feet.
     const rng = new Rng(77);
-    const tex = puffTexture();
     this.billows = [];
+    const tints = [new THREE.Color(0xf3e8ff), new THREE.Color(0xffe4dc)];
     const add = (x, z, s, y) => {
-      const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: rng.chance(0.5) ? 0xf3e8ff : 0xffe4dc, transparent: true, opacity: rng.float(0.5, 0.8), depthWrite: false, fog: true }));
-      m.scale.set(s, s * 0.55, 1);
-      m.position.set(x, y, z);
-      m.material.rotation = rng.float(-0.3, 0.3);
-      this.group.add(m);
-      this.billows.push({ m, x, z, phase: rng.float(0, 6), drift: rng.float(0.2, 0.6) });
+      const tint = rng.chance(0.5) ? tints[0] : tints[1], alpha = rng.float(0.5, 0.8), rot = rng.float(-0.3, 0.3);
+      this.billows.push({ x, y, z, s, tint, alpha, rot, phase: rng.float(0, 6), drift: rng.float(0.2, 0.6) });
     };
     for (const I of Object.values(ISLANDS)) {
       const k = Math.round(I.r / 4);
@@ -96,15 +130,35 @@ export class CloudSea {
       const a = rng.float(0, Math.PI * 2), r = rng.float(40, 260);
       add(Math.cos(a) * r, Math.sin(a) * r, rng.float(26, 60), WATER_Y + rng.float(1, 6));
     }
+    const n = this.billows.length;
+    const geo = new THREE.PlaneGeometry(1, 1);
+    geo.setAttribute('aRot', new THREE.InstancedBufferAttribute(new Float32Array(this.billows.map((b) => b.rot)), 1));
+    geo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(new Float32Array(this.billows.map((b) => b.alpha)), 1));
+    geo.setAttribute('aTint', new THREE.InstancedBufferAttribute(new Float32Array(this.billows.flatMap((b) => [b.tint.r, b.tint.g, b.tint.b])), 3));
+    const mat = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: puffTexture() } }]),
+      vertexShader: billowVert, fragmentShader: billowFrag, transparent: true, depthWrite: false, fog: true,
+    });
+    this.puffs = new THREE.InstancedMesh(geo, mat, n);
+    this.puffs.frustumCulled = false;
+    this.puffs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.group.add(this.puffs);
+    this.placeBillows(0);
+  }
+
+  placeBillows(time) {
+    this.billows.forEach((b, i) => {
+      _p.set(b.x + Math.sin(time * 0.05 * b.drift + b.phase) * 3, b.y, b.z + Math.cos(time * 0.04 * b.drift + b.phase) * 2);
+      _s.set(b.s, b.s * 0.55, 1);
+      this.puffs.setMatrixAt(i, _m.compose(_p, _q, _s));
+    });
+    this.puffs.instanceMatrix.needsUpdate = true;
   }
 
   depthAt(x, z) { return WATER_Y - this.terrain.heightAt(x, z); }
 
   update(dt, time) {
     this.uniforms.uTime.value = time;
-    for (const b of this.billows) {
-      b.m.position.x = b.x + Math.sin(time * 0.05 * b.drift + b.phase) * 3;
-      b.m.position.z = b.z + Math.cos(time * 0.04 * b.drift + b.phase) * 2;
-    }
+    this.placeBillows(time);
   }
 }

@@ -55,7 +55,7 @@ export const LOC = {
   // The Starwell, the highest island, where Guildmaster Astra keeps the stars.
   astra: { x: 70, z: -80 },
   spire: { x: -6, z: -88 },
-  wren: { x: -26, z: 82 },
+  wren: { x: -21, z: 85 },
   // The cheer-up circle in the Cloud Valleys, where Hushlings gather.
   arena: { x: -112, z: 92 },
   // The mooring pier reaches east over the clouds: sky carp rise to bait dropped off its end.
@@ -110,7 +110,7 @@ export const SNOWFLAKES = [
   [10, 94], [-8, 98], [16, 76],
   [-24, 76], [28, 82], [-10, 46], [24, 48], [-112, -18], [-80, -22], [-118, 14], [-86, 22],
   [-120, 98], [-96, 112], [-88, 86], [96, 44], [120, 36], [112, 8], [90, 18], [72, 132],
-  [96, 140], [100, 118], [64, -80], [90, -100], [86, -76], [-16, -96], [10, -92], [-2, -66],
+  [96, 140], [100, 118], [64, -80], [80, -104], [86, -76], [-16, -96], [10, -92], [-2, -66],
   [-36, 70], [34, 88], [-72, 8],
 ];
 
@@ -134,9 +134,9 @@ export const BEDS = [];
 export const SEEDS = [];
 export const PINWHEELS = [[-84, -10], [-110, 0], [-96, 16], [-118, -12]];
 export const GAUGES = [[-96, 106], [-114, 92], [-90, 98], [-108, 120]];
-export const GEARS = [[96, 22], [118, 34], [110, 10], [100, 40]];
+export const GEARS = [[96, 22], [122, 36], [110, 10], [100, 40]];
 export const PRISMS = [[78, 134], [92, 116], [70, 124], [98, 136]];
-export const SCOPES = [[70, -98], [84, -80], [90, -96], [64, -82]];
+export const SCOPES = [[70, -98], [84, -80], [94, -90], [64, -82]];
 
 export const CHICK_SPOTS = [[-36, 74], [22, 44], [-100, -24], [-94, 112], [116, 40], [72, 120], [80, -78], [-10, -94]];
 export const NURSERY = { x: -24, z: 86 };

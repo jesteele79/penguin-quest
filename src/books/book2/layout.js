@@ -11,7 +11,7 @@ export const WORLD_RADIUS = 186;
 export const LOC = {
   home: { x: 0, z: 100 },
   start: { x: 4, z: 116, yaw: Math.PI },
-  professor: { x: -9, z: 95 },
+  professor: { x: -6.5, z: 94.5 },
   camp: { x: -12, z: 92 },
   kids: { x: 20, z: 104 },
   easel: { x: -15, z: 100 },

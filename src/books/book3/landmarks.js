@@ -172,26 +172,22 @@ export function buildStarwell(ctx) {
   scene.add(hush);
   const cloudMat = new THREE.MeshLambertMaterial({ color: 0xa8a6d2, emissive: 0x34325a, transparent: true, opacity: 0.94 });
   const puff = new THREE.IcosahedronGeometry(1, 2);
+  // The puffs are one instanced draw; each frame places them.
   const puffs = [];
-  for (let i = 0; i < 26; i++) {
-    const a = (i / 26) * Math.PI * 2;
-    const r = W.r + 6 + Math.sin(i * 1.7) * 2;
-    const m = new THREE.Mesh(puff, cloudMat);
-    const s = 5 + (i % 4) * 1.6;
-    m.position.set(Math.cos(a) * r, Math.sin(i * 2.3) * 2, Math.sin(a) * r);
-    m.scale.set(s, s * 0.8, s);
-    hush.add(m);
-    puffs.push({ m, a, r, base: m.position.y, s });
-  }
+  for (let i = 0; i < 26; i++) puffs.push({ a: (i / 26) * Math.PI * 2, r: W.r + 6 + Math.sin(i * 1.7) * 2, base: Math.sin(i * 2.3) * 2, s: 5 + (i % 4) * 1.6 });
+  const cloudRing = new THREE.InstancedMesh(puff, cloudMat, puffs.length);
+  cloudRing.frustumCulled = false;
+  cloudRing.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  hush.add(cloudRing);
+  const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
   const headA = Math.atan2(-2, 1), headR = W.r + 9;
   const head = new THREE.Group();
   hush.add(head);
-  for (const [x, y, z, s] of [[0, 0, 0, 8.5], [-6.5, -2.5, -1, 5.5], [6.5, -2.5, -1, 6], [-3.5, 5, -2, 5.5], [3.5, 5.5, -2.5, 5]]) {
-    const m = new THREE.Mesh(puff, cloudMat);
-    m.position.set(x, y, z);
-    m.scale.set(s, s * 0.88, s);
-    head.add(m);
-  }
+  const headPuffs = [[0, 0, 0, 8.5], [-6.5, -2.5, -1, 5.5], [6.5, -2.5, -1, 6], [-3.5, 5, -2, 5.5], [3.5, 5.5, -2.5, 5]];
+  const headCloud = new THREE.InstancedMesh(puff, cloudMat, headPuffs.length);
+  headPuffs.forEach(([x, y, z, s], i) => headCloud.setMatrixAt(i, _m.compose(_p.set(x, y, z), _q, _s.set(s, s * 0.88, s))));
+  headCloud.frustumCulled = false;
+  head.add(headCloud);
   // A shy face: sleepy eyes that open as it calms, rosy cheeks, and a little mouth that becomes a smile.
   const faceMat = new THREE.MeshBasicMaterial({ color: 0x3a3060, transparent: true });
   const eyes = [-1, 1].map((s) => {
@@ -246,12 +242,13 @@ export function buildStarwell(ctx) {
     glow.set(g1, { color: 0x9a8aff, intensity: 0.3 + spire.level * 1.4, size: 14 + spire.level * 12 });
     // Calmer, the Hush sinks below the rim and draws back, paler; once the Star Map is whole it drifts off
     // over the clouds and fades.
-    for (const p of puffs) {
+    puffs.forEach((p, i) => {
       const r = p.r + calm * 4 + gone * 30;
-      p.m.position.set(Math.cos(p.a) * r, p.base + Math.sin(t * 0.5 + p.a * 3) * 0.8 - calm * 10 + gone * 12, Math.sin(p.a) * r);
       const breathe = 1 + Math.sin(t * 0.7 + p.a) * 0.04;
-      p.m.scale.set(p.s * breathe, p.s * 0.8 * breathe, p.s * breathe);
-    }
+      _p.set(Math.cos(p.a) * r, p.base + Math.sin(t * 0.5 + p.a * 3) * 0.8 - calm * 10 + gone * 12, Math.sin(p.a) * r);
+      cloudRing.setMatrixAt(i, _m.compose(_p, _q, _s.set(p.s * breathe, p.s * 0.8 * breathe, p.s * breathe)));
+    });
+    cloudRing.instanceMatrix.needsUpdate = true;
     head.position.set(Math.cos(headA) * (headR + gone * 30), 8 + Math.sin(t * 0.6) * 0.6 - calm * 6 + gone * 16, Math.sin(headA) * (headR + gone * 30));
     head.scale.setScalar(1 + Math.sin(t * 0.7) * 0.025);
     if (focus) {

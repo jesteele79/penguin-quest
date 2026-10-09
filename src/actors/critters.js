@@ -5,14 +5,39 @@ import * as THREE from 'three';
 import { lambert, plush, CHARACTER_RIM } from '../core/materials.js';
 import { glowTexture } from '../core/textures.js';
 import { clamp, damp } from '../core/mathutil.js';
+import { mergeColored } from '../core/geo.js';
 
 const SPH = new THREE.SphereGeometry(1, 22, 14);
 const SPH_LO = new THREE.SphereGeometry(1, 12, 8);
 const cache = new Map();
 const plushOf = (color) => { if (!cache.has(color)) cache.set(color, plush(lambert({ color }, CHARACTER_RIM))); return cache.get(color); };
 const unlit = (color) => { const k = 'u' + color; if (!cache.has(k)) cache.set(k, new THREE.MeshBasicMaterial({ color })); return cache.get(k); };
+let plushVC = null, unlitVC = null;
 
-function part(geo, material, x, y, z, sx, sy = sx, sz = sx, rx = 0, ry = 0, rz = 0) {
+// Merge each group's still parts into one mesh per kind (plush or unlit), so a critter costs a handful of
+// draw calls instead of dozens. Groups keep their place, so heads, wings, claws and blinking eyes still move;
+// meshes that move on their own are passed in skip and left alone.
+function bake(group, skip) {
+  const kinds = { plush: [], unlit: [] };
+  for (const m of group.children) {
+    if (!m.isMesh || skip.has(m)) continue;
+    const kind = m.material.isMeshBasicMaterial ? 'unlit' : 'plush';
+    m.updateMatrix();
+    kinds[kind].push(m);
+  }
+  for (const [kind, list] of Object.entries(kinds)) {
+    if (list.length < 2) continue;
+    plushVC ??= plush(lambert({ vertexColors: true }, CHARACTER_RIM));
+    unlitVC ??= new THREE.MeshBasicMaterial({ vertexColors: true });
+    const merged = new THREE.Mesh(mergeColored(list.map((m) => ({ geo: m.geometry, color: m.material.color.getHex(), matrix: m.matrix }))), kind === 'plush' ? plushVC : unlitVC);
+    merged.castShadow = kind === 'plush';
+    for (const m of list) group.remove(m);
+    group.add(merged);
+  }
+  for (const c of [...group.children]) if (!c.isMesh) bake(c, skip);
+}
+
+function part(geo, material, x, y, z, sx = 1, sy = sx, sz = sx, rx = 0, ry = 0, rz = 0) {
   const m = new THREE.Mesh(geo, material);
   m.position.set(x, y, z);
   m.scale.set(sx, sy, sz);
@@ -72,6 +97,9 @@ class Critter {
   }
 
   get position() { return this.root.position; }
+
+  // Called at the end of each critter's constructor, once every part is in place.
+  bakeParts(skip = []) { bake(this.root, new Set(skip)); }
 
   land() {}
 
@@ -141,6 +169,7 @@ export class Turtle extends Critter {
     }
     this.head.add(part(new THREE.TorusGeometry(0.12, 0.022, 6, 16, Math.PI), unlit(0x10142a), 0, 0.03, 0.8, 1, 1, 1, 0, 0, Math.PI));
     this.root.rotation.order = 'YXZ';
+    this.bakeParts();
   }
 
   animate(dt, st = {}) {
@@ -220,6 +249,7 @@ export class Crab extends Critter {
         this.legs.push({ leg, side: s, i });
       }
     }
+    this.bakeParts(this.legs.map((l) => l.leg));
   }
 
   animate(dt, st = {}) {
@@ -294,6 +324,7 @@ export class Owl extends Critter {
     this.key.add(part(new THREE.TorusGeometry(0.16, 0.05, 6, 14), plushOf(0xe8c46a), -0.17, 0, -0.26, 1, 1, 1, 0, Math.PI / 2, 0));
     this.key.add(part(new THREE.TorusGeometry(0.16, 0.05, 6, 14), plushOf(0xe8c46a), 0.17, 0, -0.26, 1, 1, 1, 0, Math.PI / 2, 0));
     b.add(this.key);
+    this.bakeParts();
   }
 
   animate(dt, st = {}) {
@@ -353,6 +384,7 @@ export class Puffin extends Critter {
       this.flippers.push({ pivot, side: s });
       b.add(part(SPH_LO, plushOf(0xff7a3a), s * 0.26, 0.06, 0.22, 0.18, 0.07, 0.26));
     }
+    this.bakeParts();
   }
 
   animate(dt, st = {}) {

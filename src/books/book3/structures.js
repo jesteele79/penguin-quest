@@ -7,6 +7,7 @@ import { mat } from '../../core/geo.js';
 import { signTexture, awningTexture, heightBoardTexture, woodTexture } from '../../core/textures.js';
 import { PropBatch, buildPier, addSignpost, worldMat, shadowed, faceYaw, toWorld } from '../../world/structures.js';
 import { LOC, PATROL_BOARD, NURSERY, ISLANDS } from './layout.js';
+import { gearGeometry } from './gear.js';
 
 const NO_CAP = null;
 const WOOD = 0x8a5c38, WOOD_D = 0x5e3a22, STONE = 0xd8d4e4, STONE_D = 0xa8a2c0, BRASS = 0xc89a3a;
@@ -363,22 +364,13 @@ function clockwork(ctx) {
   const c = ctx.collision.addCircle(D.x, D.z, 6.4, 'dome');
   c.top = y + 11;
   ctx.gears = [];
-  const gearMat = lambert({ color: BRASS }, { color: 0xffe0a0, strength: 0.25 });
+  const gearMat = lambert({ vertexColors: true }, { color: 0xffe0a0, strength: 0.25 });
   for (const [x, z, r, sp] of [[D.x - 3, D.z - 11, 3.2, 0.5], [D.x + 3.4, D.z - 11.6, 2.2, -0.73], [D.x + 7, D.z - 8, 1.5, 1.07]]) {
     const gy = ground(ctx, x, z);
-    const g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.5, 28), gearMat));
-    for (let k = 0; k < Math.round(r * 5); k++) {
-      const a = (k / Math.round(r * 5)) * Math.PI * 2;
-      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.6), gearMat);
-      tooth.position.set(Math.cos(a) * (r + 0.2), 0, Math.sin(a) * (r + 0.2));
-      tooth.rotation.y = -a;
-      g.add(tooth);
-    }
-    g.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.3, r * 0.3, 0.7, 12), lambert({ color: 0x7a5a32 })));
+    const g = new THREE.Mesh(gearGeometry(r, { thick: 0.5, tooth: [0.5, 0.5, 0.6], toothR: r + 0.2, hub: 0x7a5a32, hubThick: 0.7 }), gearMat);
     g.rotation.x = Math.PI / 2;
     g.position.set(x, gy + r + 0.6, z);
-    g.traverse((m) => { m.castShadow = true; });
+    g.castShadow = true;
     ctx.scene.add(g);
     b.add(new THREE.BoxGeometry(0.6, r + 0.6, 0.6), 0x7a5a32, mat(x, gy + (r + 0.6) / 2, z - 0.6));
     ctx.collision.addCircle(x, z, r * 0.7, 'gear');
