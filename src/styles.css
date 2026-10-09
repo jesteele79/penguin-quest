@@ -654,7 +654,8 @@ tr.dim td { color: var(--frost-dim); }
 [data-input="touch"] .hud-controls { display: none; }
 /* Key names on buttons and on the dialog's "next" mean nothing to a finger or a game controller. */
 [data-input="touch"] .btn kbd, [data-input="pad"] .btn kbd,
-[data-input="touch"] .dlg-more kbd, [data-input="pad"] .dlg-more kbd { display: none; }
+[data-input="touch"] .dlg-more kbd, [data-input="pad"] .dlg-more kbd,
+[data-input="touch"] .keys-only, [data-input="pad"] .keys-only { display: none; }
 
 /* ------------------------------------------------ quiet HUD */
 .hud-name { display: none; }

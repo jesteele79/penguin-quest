@@ -106,7 +106,7 @@ export class TitleScreen extends Screen {
       bookShelf(d),
       el('div', { class: 'title-foot' },
         btn('For grown-ups', () => pushActivity(new GrownupsScreen()), 'ghost small'),
-        el('span', { class: 'title-hint', html: 'Use <kbd>↑</kbd><kbd>↓</kbd> and <kbd>Enter</kbd>, or click' })),
+        el('span', { class: 'title-hint keys-only', html: 'Use <kbd>↑</kbd><kbd>↓</kbd> and <kbd>Enter</kbd>, or click' })),
     );
   }
 
@@ -372,7 +372,7 @@ export class MapScreen extends Screen {
       el('div', { class: 'legend-row', html: '<span class="lg-new"></span> Friend with a new quest' }),
       el('div', { class: 'legend-row', html: '<span class="lg-site"></span> Quest spot' }),
       treasure ? el('div', { class: 'map-clue', html: `<b>Treasure map</b><br>${escapeHTML(clue)}<br><span class="note">${GRID.origin ? 'Start at 0. Count across for x (left of 0 is negative), then up or down for y (below 0 is negative).' : 'Count across for x, then up for y.'}</span>` }) : null,
-      el('p', { class: 'note', html: 'Close with <kbd>M</kbd> or <kbd>Esc</kbd>' }),
+      el('p', { class: 'note keys-only', html: 'Close with <kbd>M</kbd> or <kbd>Esc</kbd>' }),
       btn('Close', () => this.close(), 'primary'));
     this.root.append(el('div', { class: 'panel map-panel' }, canvas, legend));
     this.draw(canvas, treasure);
