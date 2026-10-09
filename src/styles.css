@@ -493,15 +493,15 @@ sup { font-size: 0.62em; }
 .price { display: inline-flex; align-items: center; gap: 4px; color: var(--lantern); font-weight: 700; }
 .shop-msg { min-height: 1.4em; margin-top: 12px; color: var(--lantern); font-weight: 600; }
 
-.book-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
-.book-card { padding: 14px 16px; border-radius: 16px; background: rgba(8, 12, 44, 0.45); border-top: 4px solid var(--c); }
-.book-card h3 { color: var(--c); }
-.book-card .place { color: var(--frost); font-size: 0.85em; margin-bottom: 6px; }
-.book-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.book-card li { display: flex; align-items: center; gap: 8px; font-size: 0.95em; }
-.book-card .stars { display: inline-flex; flex: none; }
-.book-card .stars .ico { width: 1em; height: 1em; }
-.book-card .next { margin-top: 8px; color: var(--lantern); font-weight: 600; font-size: 0.9em; }
+.skill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+.skill-card { padding: 14px 16px; border-radius: 16px; background: rgba(8, 12, 44, 0.45); border-top: 4px solid var(--c); }
+.skill-card h3 { color: var(--c); }
+.skill-card .place { color: var(--frost); font-size: 0.85em; margin-bottom: 6px; }
+.skill-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.skill-card li { display: flex; align-items: center; gap: 8px; font-size: 0.95em; }
+.skill-card .stars { display: inline-flex; flex: none; }
+.skill-card .stars .ico { width: 1em; height: 1em; }
+.skill-card .next { margin-top: 8px; color: var(--lantern); font-weight: 600; font-size: 0.9em; }
 
 .gu-panel h1 { font-size: 1.6em; }
 .gu-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }

@@ -6,7 +6,8 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === 'html') e.innerHTML = v;
     else if (k === 'text') e.textContent = v;
     else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
-    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+    // Custom properties (--c) only take through setProperty; assigning them like other styles is silently ignored.
+    else if (k === 'style' && typeof v === 'object') for (const [p, x] of Object.entries(v)) e.style.setProperty(p.startsWith('--') ? p : p.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()), x);
     else e.setAttribute(k, v === true ? '' : v);
   }
   for (const c of children.flat()) {

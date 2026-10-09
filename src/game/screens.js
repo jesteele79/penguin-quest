@@ -817,7 +817,7 @@ export class SkillBookScreen extends Screen {
 
   render() {
     this.root.innerHTML = '';
-    const cards = el('div', { class: 'book-grid' });
+    const cards = el('div', { class: 'skill-grid' });
     for (const dom of DOMAIN_ORDER) {
       const sum = G.tutor.domainSummary(dom);
       // Subjects this book does not teach at all (ratios before grade 6) stay off the page.
@@ -829,7 +829,7 @@ export class SkillBookScreen extends Screen {
         const stars = r.mastered ? 3 : r.m >= 0.55 ? 2 : r.attempts > 0 ? 1 : 0;
         return `<li><span class="stars">${[0, 1, 2].map((i) => (i < stars ? ICON.star : ICON.starEmpty)).join('')}</span><span>${r.name}</span></li>`;
       }).join('');
-      cards.append(el('section', { class: 'book-card', style: { '--c': color } },
+      cards.append(el('section', { class: 'skill-card', style: { '--c': color } },
         el('h3', { text: DOMAINS[dom].name }),
         el('div', { class: 'place', text: REGION_INFO[dom]?.name ?? (dom === 'stars' ? T.dataPlace : DOMAINS[dom].place) }),
         el('ul', { html: list }),
