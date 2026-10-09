@@ -256,8 +256,20 @@ function boot() {
   window.addEventListener('keydown', wake, { once: false });
 
   showTitle();
+  // Every shader compiles behind the loading screen before the first frame is drawn, in parallel where the browser
+  // allows: drawing straight away stalls on them instead (2.4 s on a laptop's integrated graphics). If the
+  // browser never says they are ready, the game starts anyway.
+  G.shadersReady = false;
   startLoop();
-  document.getElementById('boot').classList.add('gone');
+  const ready = () => {
+    if (G.shadersReady) return;
+    G.shadersReady = true;
+    // One frame drawn while the loading screen still covers it takes the last first-use stalls (the shadow maps).
+    G.quality.render();
+    document.getElementById('boot').classList.add('gone');
+  };
+  renderer.compileAsync(scene, camera).then(ready, ready);
+  setTimeout(ready, 8000);
 }
 
 function registerInteractions() {
@@ -391,6 +403,7 @@ function startLoop() {
     requestAnimationFrame(frame);
     if (!G.quality.shouldRender(ts)) return;
     timer.update(ts);
+    if (!G.shadersReady) return;
     try {
       tick(timer.getDelta(), true);
     } catch (e) {
