@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { lambert } from '../core/materials.js';
+import { mergeColored } from '../core/geo.js';
 
 const matCache = new Map();
 export function solid(color, opts = {}) {
@@ -11,6 +12,24 @@ const basicCache = new Map();
 export function basic(color) {
   if (!basicCache.has(color)) basicCache.set(color, new THREE.MeshBasicMaterial({ color }));
   return basicCache.get(color);
+}
+
+// The parts of an accessory never move on their own, so its plain coloured pieces are merged into one mesh:
+// a hat or a lei costs one draw call instead of a dozen. Glowing, see-through or two-sided pieces stay apart.
+let plainVC = null;
+function mergePlain(g) {
+  if (!g?.isGroup) return g;
+  for (const c of g.children) if (c.isGroup) mergePlain(c);
+  const plain = g.children.filter((m) => m.isMesh && m.material.isMeshLambertMaterial && !m.material.map && !m.material.vertexColors
+    && !m.material.transparent && m.material.side === THREE.FrontSide && !m.material.flatShading && m.material.emissive.getHex() === 0);
+  if (plain.length < 2) return g;
+  plainVC ??= lambert({ vertexColors: true });
+  for (const m of plain) m.updateMatrix();
+  const merged = new THREE.Mesh(mergeColored(plain.map((m) => ({ geo: m.geometry, color: m.material.color.getHex(), matrix: m.matrix }))), plainVC);
+  merged.castShadow = true;
+  for (const m of plain) g.remove(m);
+  g.add(merged);
+  return g;
 }
 
 function mesh(geo, material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
@@ -253,7 +272,7 @@ export const HAT_LIST = ['beanie', 'earmuffs', 'party', 'tophat', 'pirate', 'hea
 
 export function buildHat(id, color) {
   const fn = HATS[id];
-  return fn ? fn(color) : null;
+  return fn ? mergePlain(fn(color)) : null;
 }
 
 // Neck/body extras.
@@ -262,7 +281,7 @@ export function bowTie(color = 0xd8333f) {
   g.add(mesh(new THREE.ConeGeometry(0.16, 0.28, 8), solid(color), -0.14, 0, 0, 0, 0, -Math.PI / 2));
   g.add(mesh(new THREE.ConeGeometry(0.16, 0.28, 8), solid(color), 0.14, 0, 0, 0, 0, Math.PI / 2));
   g.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), solid(color), 0, 0, 0.02));
-  return g;
+  return mergePlain(g);
 }
 
 export function apron(color = 0xff9fc6) {
@@ -281,7 +300,7 @@ export function lei(colors = [0xff5c8a, 0xffd23d, 0xffffff, 0xff8a3d]) {
     g.add(mesh(new THREE.IcosahedronGeometry(0.15, 0), solid(colors[i % colors.length]), Math.cos(a) * 0.86, Math.sin(a * 2) * 0.03 - (Math.sin(a) > 0 ? Math.sin(a) * 0.08 : 0), Math.sin(a) * 0.82));
   }
   g.position.y = 1.64;
-  return g;
+  return mergePlain(g);
 }
 
 // Soot smudges from a busy workshop.

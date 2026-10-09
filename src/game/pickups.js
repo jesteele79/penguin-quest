@@ -33,6 +33,8 @@ const SETS = {
   seeds: { points: SEEDS ?? [], key: 'seeds', always: false, height: 0.9, radius: 1.6, glow: 0x38f0d2, glowSize: 4, glowAmount: 0.9 },
 };
 
+// Every collectible that shares a look is drawn by one instanced mesh. Each item keeps a plain stand-in object
+// (it.mesh) for its position, spin and visibility, and the instances copy those after every change.
 export class Pickups {
   constructor(ctx) {
     this.ctx = ctx;
@@ -41,17 +43,40 @@ export class Pickups {
     const fg = flakeGeometry();
     const sg = seedGeometry();
     const seedMat = crystalMaterial(0x38f0d2, 0.9);
+    const looks = new Map();
     for (const [set, def] of Object.entries(SETS)) {
       def.points.forEach(([x, z], i) => {
         const y = Math.max(ctx.terrain.heightAt(x, z), 0) + def.height;
-        const mesh = set === 'flakes' && LOOK.make ? LOOK.make(i) : new THREE.Mesh(set === 'flakes' ? fg : sg, set === 'flakes' ? flakeMat : seedMat);
+        const model = set === 'flakes' && LOOK.make ? LOOK.make(i) : new THREE.Mesh(set === 'flakes' ? fg : sg, set === 'flakes' ? flakeMat : seedMat);
+        const key = model.geometry.uuid + model.material.uuid;
+        if (!looks.has(key)) looks.set(key, { geometry: model.geometry, material: model.material, items: [] });
+        const mesh = new THREE.Object3D();
         mesh.position.set(x, y, z);
-        mesh.castShadow = true;
-        ctx.scene.add(mesh);
         const glow = ctx.glow.add(x, y, z, def.glow, def.glowSize, def.glowAmount);
-        this.items[set].push({ i, x, z, y, mesh, glow, phase: i * 0.7 });
+        const it = { i, x, z, y, mesh, glow, phase: i * 0.7 };
+        looks.get(key).items.push(it);
+        this.items[set].push(it);
       });
     }
+    this.looks = [...looks.values()].map((L) => {
+      const im = new THREE.InstancedMesh(L.geometry, L.material, L.items.length);
+      im.castShadow = true;
+      im.frustumCulled = false;
+      im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      ctx.scene.add(im);
+      L.items.forEach((it, k) => { it.look = im; it.slot = k; });
+      return im;
+    });
+    for (const list of Object.values(this.items)) for (const it of list) this.place(it);
+  }
+
+  // Copy an item's stand-in into its instance; hidden ones shrink to nothing.
+  place(it) {
+    const m = it.mesh;
+    m.scale.setScalar(m.visible ? 1 : 0);
+    m.updateMatrix();
+    it.look.setMatrixAt(it.slot, m.matrix);
+    it.look.instanceMatrix.needsUpdate = true;
   }
 
   isCollected(set, i) { return G.save.data[SETS[set].key].includes(i); }
@@ -73,6 +98,7 @@ export class Pickups {
       for (const it of list) {
         const show = !this.isCollected(set, it.i) && (SETS[set].always || hunt);
         it.mesh.visible = show;
+        this.place(it);
         this.ctx.glow.set(it.glow, { color: SETS[set].glow, intensity: show ? SETS[set].glowAmount : 0 });
       }
     }
@@ -98,6 +124,7 @@ export class Pickups {
         if (!it.mesh.visible) continue;
         it.mesh.rotation.y = t * 1.6 + it.phase;
         it.mesh.position.y = it.y + Math.sin(t * 2 + it.phase) * 0.2;
+        this.place(it);
         const dx = p.x - it.x, dz = p.z - it.z;
         if (dx * dx + dz * dz < def.radius * def.radius * 2.2 && Math.abs(p.y + 1 - it.mesh.position.y) < 2.4) this.collect(set, it);
       }
@@ -110,6 +137,7 @@ export class Pickups {
     if (s[key].includes(it.i)) return;
     s[key].push(it.i);
     it.mesh.visible = false;
+    this.place(it);
     this.ctx.glow.set(it.glow, { intensity: 0 });
     G.world.effects.sparkle(it.mesh.position, SETS[set].glow, 36);
     G.audio.play('chime');
