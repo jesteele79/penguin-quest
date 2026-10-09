@@ -162,6 +162,7 @@ export class NumberLine extends Model {
     svg.insertBefore(hit, svg.firstChild);
     // Keyboard: arrows move the marker.
     svg.setAttribute('tabindex', '0');
+    svg.dataset.key = this.constructor.kind;
     svg.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         this.k = Math.max(0, Math.min(n, this.k + (e.key === 'ArrowRight' ? 1 : -1)));
@@ -283,6 +284,7 @@ export class Protractor extends Model {
     hit.addEventListener('pointerup', () => { dragging = false; });
     svg.append(hit);
     svg.setAttribute('tabindex', '0');
+    svg.dataset.key = this.constructor.kind;
     svg.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         const step = (e.key === 'ArrowLeft') === (this.cfg.from !== 'left') ? 5 : -5;

@@ -2,7 +2,7 @@
 // cards to put in order, bins that build a histogram, shapes to copy and cut, a box net to paint, rows of
 // multiples, and distances from the mean. Same contract as the models in manip.js.
 import { el } from './dom.js';
-import { Model, svgEl, svgRoot, txt, button, signed } from './manipkit.js';
+import { Model, svgEl, svgRoot, txt, button, signed, tappable } from './manipkit.js';
 
 // ------------------------------------------------------------ balance scale
 // An equation on a balance: mystery bags (each worth x) and unit weights on the left, weights on the right.
@@ -81,7 +81,8 @@ export class Balance extends Model {
         const c = i % perRow, r = Math.floor(i / perRow);
         const wx = x + 60 - c * 19, wy = y + 50 - r * 19;
         const box = svgEl('rect', { x: wx, y: wy, width: 16, height: 16, rx: 3, class: 'v-fill v-edge tap' });
-        box.addEventListener('pointerdown', (e) => { e.preventDefault(); this.take(side); });
+        if (i === 0) tappable(box, `weight-${side}`, `Take a weight from the ${side === 'L' ? 'left' : 'right'} side`, () => this.take(side));
+        else box.addEventListener('pointerdown', (e) => { e.preventDefault(); this.take(side); });
         g.append(box);
       }
       return g;
@@ -280,7 +281,7 @@ export class Bins extends Model {
       g.append(svgEl('rect', { x: x + 2, y: top, width: bw - 4, height: Y(0) - top, rx: 6, class: 'v-empty' }));
       if (this.counts[i]) g.append(svgEl('rect', { x, y: Y(this.counts[i]), width: bw, height: Y(0) - Y(this.counts[i]), class: 'v-fill v-edge' }));
       g.append(txt(x + bw / 2, H - bottom + 18, `${lo}–${hi}`, 'v-t2 v-strong', 13));
-      g.addEventListener('pointerdown', (e) => { e.preventDefault(); this.drop(i); });
+      tappable(g, `bin-${i}`, `Bar for ${lo} to ${hi}`, () => this.drop(i));
       svg.append(g);
     });
     svg.append(svgEl('line', { x1: left, y1: Y(0), x2: W - 8, y2: Y(0), class: 'v-axis' }));
@@ -412,7 +413,7 @@ export class BoxNet extends Model {
       const g = svgEl('g', { class: 'tap' });
       g.append(svgEl('rect', { x: 10 + f.x * S, y: 10 + f.y * S, width: f.fw * S, height: f.fh * S, class: `${on ? 'v-fill' : 'v-empty'} v-edge` }));
       g.append(txt(10 + (f.x + f.fw / 2) * S, 10 + (f.y + f.fh / 2) * S, on ? String(f.a) : `${f.fw} × ${f.fh}`, on ? 'v-t v-strong' : 'v-t2', on ? 18 : 13));
-      g.addEventListener('pointerdown', (e) => { e.preventDefault(); if (on) this.painted.delete(f.id); else this.painted.add(f.id); this.changed(); });
+      tappable(g, `face-${f.id}`, `${f.id} face, ${f.fw} by ${f.fh}`, () => { if (this.painted.has(f.id)) this.painted.delete(f.id); else this.painted.add(f.id); this.changed(); });
       svg.append(g);
     }
     const sum = this.faces().filter((f) => this.painted.has(f.id)).reduce((s, f) => s + f.a, 0);
@@ -506,7 +507,7 @@ export class Spread extends Model {
         svg.append(txt((X(v) + X(m)) / 2, cy - lift / 2 - 6, String(Math.abs(v - m)), 'v-t v-strong', 14));
       }
       const dot = svgEl('circle', { cx: X(v), cy, r: 9, class: `${on ? 'v-mark' : 'v-fill'} v-edge tap` });
-      dot.addEventListener('pointerdown', (e) => { e.preventDefault(); this.seen.add(i); this.changed(); });
+      tappable(dot, `dot-${i}`, `Dot at ${v}`, () => { this.seen.add(i); this.changed(); });
       svg.append(dot);
     });
     const d = values.map((v) => Math.abs(v - m));

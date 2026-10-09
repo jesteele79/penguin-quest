@@ -237,8 +237,20 @@ export class LessonActivity {
   onKey(e, inField) {
     if (e.key === 'Escape') { e.preventDefault(); this.finish(true); return; }
     if (inField) return;
+    // Arrow keys (and a controller's d-pad) step through everything that can be pressed: the model's parts,
+    // Show me, Skip and Next.
+    // The number line and protractor take left and right for themselves.
+    if (e.key.startsWith('Arrow') && !((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target?.matches?.('svg[tabindex]'))) {
+      const items = [...this.panel.querySelectorAll('button:not([disabled]), [data-nav], svg[tabindex]')].filter((n) => n.getClientRects().length);
+      if (!items.length) return;
+      const i = items.indexOf(document.activeElement);
+      const back = e.key === 'ArrowUp' || e.key === 'ArrowLeft';
+      items[i < 0 ? (back ? items.length - 1 : 0) : (i + (back ? -1 : 1) + items.length) % items.length].focus();
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'Enter' || e.key === ' ') {
-      if (e.target?.tagName === 'BUTTON' && e.target !== this.nextBtn) return;
+      if ((e.target?.tagName === 'BUTTON' && e.target !== this.nextBtn) || e.target?.dataset?.nav !== undefined) return;
       e.preventDefault();
       this.next();
     }

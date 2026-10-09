@@ -32,9 +32,36 @@ export class Model {
     host.append(this.root);
   }
 
-  changed() { this.render(); this.onChange?.(this); }
+  // Redrawing replaces the model's controls, so the one that had keyboard focus gets it back.
+  changed() {
+    const a = document.activeElement;
+    const key = a && a !== document.body && this.root.contains(a) ? focusKey(a) : null;
+    this.render();
+    if (key) [...this.root.querySelectorAll('button, [data-nav], svg[tabindex]')].find((n) => focusKey(n) === key)?.focus();
+    this.onChange?.(this);
+  }
 
   destroy() { this.root.remove(); }
+}
+
+const focusKey = (n) => n.dataset?.key ?? n.textContent;
+
+// Makes a drawn part of a model (a bar, a face, a dot) work like a button for the keyboard and controllers too:
+// it takes focus, and Enter or Space taps it.
+export function tappable(node, key, label, onTap) {
+  node.setAttribute('tabindex', '0');
+  node.setAttribute('role', 'button');
+  node.setAttribute('aria-label', label);
+  node.dataset.nav = '';
+  node.dataset.key = key;
+  node.addEventListener('pointerdown', (e) => { e.preventDefault(); onTap(); });
+  node.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    e.stopPropagation();
+    onTap();
+  });
+  return node;
 }
 
 export function button(text, onClick, cls = 'btn small', disabled = false) {

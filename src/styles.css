@@ -751,6 +751,9 @@ tr.dim td { color: var(--frost-dim); }
 .step-op.card.used { opacity: 0.35; }
 .card-row.sorted { min-height: 60px; padding: 6px 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); border: 1.5px dashed rgba(169, 196, 255, 0.35); }
 .card-arrow { font-size: 1.6em; color: var(--frost); line-height: 1; }
+.manip-svg [data-nav] { outline: none; }
+.manip-svg [data-nav]:focus-visible rect, .manip-svg [data-nav]:focus-visible circle,
+.manip-svg rect[data-nav]:focus-visible, .manip-svg circle[data-nav]:focus-visible { stroke: var(--lantern); stroke-width: 4px; }
 .mult-line { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; width: 100%; max-width: 640px; }
 .mult-line .card-row { justify-content: flex-start; font-size: 1.15em; }
 .mult-line .step-op.card { min-width: 44px; min-height: 44px; }
