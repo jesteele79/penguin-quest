@@ -395,6 +395,8 @@ function startLoop() {
         tick(1 / 30, true);
       },
       tp(x, z, yaw = 0) { player.teleport(x, z, yaw); cam.snap(player); tick(1 / 30, true); },
+      // The book's opening cutscene, as a brand-new game shows it.
+      intro() { BOOK.intro(); tick(1 / 30, true); },
       typed: typedValue,
       games: GAMES,
       newGame(profile = { name: 'Pip', grade: 5, scarf: 'coral' }) {

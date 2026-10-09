@@ -114,7 +114,7 @@ export const COTTAGES = [[-14, 80, 1], [16, 52, 2], [-26, 64, 3], [26, 78, 4], [
 export const cottageRadius = (i) => 2.3 + (i % 3) * 0.3;
 
 // Street lamps in Guild Town, beside the paths (never on them).
-export const LAMPS = [[6.4, 86.4], [-4, 82], [7.4, 68.9], [-8, 70], [14, 62], [-16, 50], [30, 58], [-26, 90.6], [19.2, 95.5], [2, 104]];
+export const LAMPS = [[6.4, 86.4], [-4, 82], [7.4, 68.9], [-8, 70], [14, 62], [-16, 50], [30, 58], [-26, 90.6], [19.2, 95.5], [-6, 101]];
 
 // Sky feathers. The first three are near the mooring, for the tutorial.
 export const SNOWFLAKES = [
