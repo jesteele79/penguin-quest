@@ -89,7 +89,7 @@ export function startStarMap(params, onDone) {
         G.world.sky.setRestored('crown', true);
         G.world.sky.pulse('crown', 3);
         G.toasts.showBanner('The Star Map is whole!', 'The stars over Glacier Bay shine again', '#c8b8ff', 4600, { replace: true });
-        G.audio.play('fanfare');
+        G.audio.hero();
       },
     },
   ], () => {
@@ -157,7 +157,8 @@ export function startSkyFestival(params, onDone) {
         starBurst(c.clone().add(V(0, 60, -60)), 12, 70);
         G.world.sky.pulse('crown', 3);
         G.toasts.showBanner('The Night of a Thousand Stars', `${name}, Wayfinder of Skyreach`, '#c8b8ff', 6500, { replace: true });
-        G.audio.play('fanfare');
+        // The last night of the series: the theme in every book's voice at once.
+        G.audio.hero({ all: true });
       },
     },
     {

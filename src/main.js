@@ -464,6 +464,7 @@ function startLoop() {
       if (distT.swim > 5) { G.patrol.event('swim', { amount: distT.swim }); d.counters.swim += distT.swim; distT.swim = 0; }
       if (distT.glide > 5) { G.patrol.event('glide', { amount: distT.glide }); distT.glide = 0; }
       G.audio.setSlide(player.sliding ? Math.min(1, sp / 18) : player.swimming && sp > 2 ? 0.35 : 0, player.swimming);
+      G.audio.setGlide(player.gliding);
 
       cam.update(dt, player, input);
       G.npcs.update(dt, player.pos, camera.position);

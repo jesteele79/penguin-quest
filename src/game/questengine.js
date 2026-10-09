@@ -549,7 +549,7 @@ export class QuestEngine {
           G.world.sky.setRestored(region, true);
           G.world.sky.pulse(region, 2);
           G.toasts.showBanner(T.restored, `${info.name} ${T.glowsAgain}`, color.css, 3600, { replace: true });
-          G.audio.play('fanfare');
+          G.audio.hero({ bars: 2 });
           BOOK.onRestore(region, G.world.ctx);
         },
       },

@@ -94,7 +94,7 @@ export function startRekindle(params, onDone) {
       shot: { pos: heart.clone().add(V(-30, 40, 60)), look: V(0, 0, 120), fov: 60 }, blend: 3, wait: 2.6,
       call: () => {
         G.toasts.showBanner('The Heart-Ember is warm again!', 'The warm current flows to Glacier Bay', '#ffb050', 4200, { replace: true });
-        G.audio.play('fanfare');
+        G.audio.hero();
       },
     },
   ], () => {
@@ -167,7 +167,7 @@ export function startEmberFestival(params, onDone) {
         emberBurst(V(0, 40, 150), 12, 70);
         G.world.sky.pulse('crown', 3);
         G.toasts.showBanner('The Festival of Currents', `${name}, Ember Legend of the Isles`, '#ffb050', 6500, { replace: true });
-        G.audio.play('fanfare');
+        G.audio.hero();
       },
     },
     {

@@ -118,7 +118,7 @@ export function startFestival(params, onDone) {
         fireworks(V(0, 55, -10), 14, 60);
         for (const r of ['lake', 'grove', 'huts', 'cave', 'ridge', 'crown']) G.world.sky.pulse(r, 3);
         G.toasts.showBanner('The Great Aurora Festival', `${name}, Aurora Legend of Glacier Bay`, '#ffd86b', 6500, { replace: true });
-        G.audio.play('fanfare');
+        G.audio.hero();
       },
     },
     {

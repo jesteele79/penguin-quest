@@ -34,7 +34,9 @@ and the tutor's record belong to the child.
   answer and down into the clouds, a slalom, a market stall, a builder that turns answers into 3D builds,
   and a cheer-up battle.
 - Its own look, music and sounds: Book 1's music box and wind, Book 2's steel drums, marimba and surf,
-  Book 3's harp, glass celesta and flute over a high breeze with wind chimes.
+  Book 3's harp, glass celesta and flute over a high breeze with wind chimes (and strings while gliding).
+  One hero theme runs through the series, played in each book's own voice at its big moments and in all
+  three voices at once on Skyreach's last night.
 - An adaptive tutor with 100 Common Core aligned skills (grades 3 to 6). It gives a hint after a first
   wrong answer, a worked solution after a second, rests a skill that was missed twice in a row, and
   brings missed skills back later. Word problems use the names and things of the book being played.

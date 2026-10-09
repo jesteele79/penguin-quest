@@ -462,6 +462,9 @@ All five phases are done and deployed: the three books are playable from start t
   Skyreach's friends and new hands-on models: a balance scale, a growing ratio table, number cards for
   median and quartiles, histogram bins, shapes to copy and turn, a box net to paint, rows of multiples and
   distances from the mean. Labels inside problem pictures follow the book's words like the problems do.
-- Music palette: harp arpeggios, a glass celesta and a breathy flute, with a high breeze and wind chimes.
+- Music palette: harp arpeggios, a glass celesta and a breathy flute, with a high breeze and wind chimes;
+  strings swell while gliding. The four-bar hero theme (in D, so it fits every book's band) plays for two
+  bars at each restored crystal, vent or anchor and in full at each book's climax and festival; Skyreach's
+  festival plays the music-box, steel-drum and flute versions together.
 - Layout tests keep everything the player walks to on an island and away from the rim, every bridge
   joining two islands and every updraft on solid ground.

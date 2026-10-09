@@ -34,8 +34,19 @@ const SKY_MOODS = {
 const PALETTES = {
   book1: { moods: MOODS, ambience: 'wind', ground: 'snow' },
   book2: { moods: ISLAND_MOODS, ambience: 'surf', ground: 'sand' },
-  book3: { moods: SKY_MOODS, ambience: 'breeze', ground: 'grass' },
+  book3: { moods: SKY_MOODS, ambience: 'breeze', ground: 'grass', strings: true },
 };
+
+// The series' hero theme: four bars in D that each book plays in its own voice, and Skyreach's last night plays
+// in all three at once. Notes are [beat, MIDI note, beats long]; one chord per bar (D, B minor, G, D).
+const HERO = [
+  [0, 74, 1], [1, 76, 0.5], [1.5, 78, 0.5], [2, 81, 2],
+  [4, 83, 1], [5, 81, 0.5], [5.5, 78, 0.5], [6, 76, 2],
+  [8, 78, 1], [9, 81, 0.5], [9.5, 83, 0.5], [10, 86, 1], [11, 83, 1],
+  [12, 81, 1.5], [13.5, 83, 0.5], [14, 86, 2],
+];
+const HERO_CHORDS = [[50, 54, 57], [47, 50, 54], [43, 47, 50], [50, 54, 57]];
+const HERO_BPM = 84;
 
 const PENTA = [0, 2, 4, 7, 9];
 // D major pentatonic (same notes as B minor pentatonic), as pitch classes.
@@ -55,10 +66,11 @@ export class AudioEngine {
     this.layers = 1;
     this.duck = 1;
     this.palette = PALETTES.book1;
+    this.paletteId = 'book1';
   }
 
   // Each book has its own band and its own sound of the outdoors. Chosen once, before the first sound.
-  usePalette(id) { this.palette = PALETTES[id] ?? PALETTES.book1; }
+  usePalette(id) { this.paletteId = PALETTES[id] ? id : 'book1'; this.palette = PALETTES[this.paletteId]; }
 
   setLayers(n) { this.layers = Math.max(1, Math.min(5, n)); }
 
@@ -88,6 +100,10 @@ export class AudioEngine {
     this.musicBus = c.createGain();
     this.musicBus.gain.value = this.musicVol;
     this.musicBus.connect(this.master);
+    // The hero theme has a bus of its own, so the band can step back while it plays.
+    this.heroBus = c.createGain();
+    this.heroBus.gain.value = this.musicVol;
+    this.heroBus.connect(this.master);
     this.reverb = c.createConvolver();
     this.reverb.buffer = this.impulse(2.8, 2.2);
     const wet = c.createGain();
@@ -100,6 +116,7 @@ export class AudioEngine {
     else if (this.palette.ambience === 'breeze') this.startBreeze();
     else this.startWind();
     this.startSlideLoop();
+    if (this.palette.strings) this.startStrings();
     this.sched = setInterval(() => this.tick(), 60);
     this.resume();
   }
@@ -111,6 +128,7 @@ export class AudioEngine {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     this.musicBus.gain.setTargetAtTime(music * this.duck, t, 0.1);
+    this.heroBus.gain.setTargetAtTime(music, t, 0.1);
     this.sfxBus.gain.setTargetAtTime(sfx, t, 0.1);
     this.windGain?.gain.setTargetAtTime(0.022 * sfx, t, 0.3);
   }
@@ -154,9 +172,9 @@ export class AudioEngine {
       f2.type = 'lowpass'; f2.frequency.value = lp;
       node = g.connect(f2);
     }
-    const out = bus === 'music' ? this.musicBus : this.sfxBus;
+    const out = bus === 'music' ? this.musicBus : bus === 'hero' ? this.heroBus : this.sfxBus;
     node.connect(out);
-    if (send) node.connect(bus === 'music' ? this.musicSend : this.sfxSend);
+    if (send) node.connect(bus === 'sfx' ? this.sfxSend : this.musicSend);
     o.start(t0);
     o.stop(t0 + dur + 0.05);
   }
@@ -175,7 +193,7 @@ export class AudioEngine {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + a);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(filt).connect(g).connect(bus === 'music' ? this.musicBus : this.sfxBus);
+    src.connect(filt).connect(g).connect(bus === 'music' ? this.musicBus : bus === 'hero' ? this.heroBus : this.sfxBus);
     g.connect(this.sfxSend);
     src.start(t0, Math.random() * 1.5);
     src.stop(t0 + dur + 0.05);
@@ -272,13 +290,13 @@ export class AudioEngine {
     this.tone({ f: f * 3.93, type: 'sine', dur: 0.09, vol: vol * 0.3, a: 0.002, r: 0.08, when, bus, send: false });
   }
 
-  harp(f, when, vol) {
-    this.tone({ f, type: 'triangle', dur: 1.1, vol, a: 0.003, r: 1.0, when, bus: 'music', lp: 2600 });
-    this.tone({ f: f * 2, type: 'sine', dur: 0.45, vol: vol * 0.3, a: 0.002, r: 0.4, when, bus: 'music', send: false });
+  harp(f, when, vol, bus = 'music') {
+    this.tone({ f, type: 'triangle', dur: 1.1, vol, a: 0.003, r: 1.0, when, bus, lp: 2600 });
+    this.tone({ f: f * 2, type: 'sine', dur: 0.45, vol: vol * 0.3, a: 0.002, r: 0.4, when, bus, send: false });
   }
 
   // A breathy flute: a sine with a gentle vibrato that swells in, and a puff of breath at the start.
-  flute(f, when, vol, dur) {
+  flute(f, when, vol, dur, bus = 'music') {
     const c = this.ctx;
     const t0 = c.currentTime + when;
     const o = c.createOscillator();
@@ -292,17 +310,74 @@ export class AudioEngine {
     g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.12, dur * 0.3));
     g.gain.setValueAtTime(vol, t0 + dur * 0.7);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(this.musicBus);
+    o.connect(g).connect(bus === 'hero' ? this.heroBus : this.musicBus);
     g.connect(this.musicSend);
     o.start(t0); vib.start(t0);
     o.stop(t0 + dur + 0.05); vib.stop(t0 + dur + 0.05);
-    this.noise({ dur: 0.08, vol: vol * 0.25, f: 2400, q: 0.8, when, bus: 'music' });
+    this.noise({ dur: 0.08, vol: vol * 0.25, f: 2400, q: 0.8, when, bus });
   }
 
-  steelDrum(f, when, vol, dur) {
-    this.tone({ f: f * 1.01, to: f, type: 'triangle', dur, vol, a: 0.004, r: dur * 0.8, when, bus: 'music', lp: 3200 });
-    this.tone({ f: f * 2, type: 'sine', dur: dur * 0.6, vol: vol * 0.45, a: 0.003, r: dur * 0.5, when, bus: 'music' });
-    this.tone({ f: f * 2.76, type: 'sine', dur: dur * 0.25, vol: vol * 0.15, a: 0.002, r: dur * 0.2, when, bus: 'music', send: false });
+  // Skyreach: a string section that holds the current chord and swells in while the penguin glides.
+  startStrings() {
+    const c = this.ctx;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1300; lp.Q.value = 0.4;
+    const g = c.createGain();
+    g.gain.value = 0;
+    lp.connect(g).connect(this.musicBus);
+    g.connect(this.musicSend);
+    this.strings = { gain: g, oscs: [57, 62, 66, 69].map((m, i) => {
+      const o = c.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = midi(m);
+      o.detune.value = i % 2 ? 7 : -7;
+      o.connect(lp);
+      o.start();
+      return o;
+    }) };
+  }
+
+  setGlide(on) {
+    if (!this.strings || on === this.gliding) return;
+    this.gliding = on;
+    this.strings.gain.gain.setTargetAtTime(on ? 0.014 : 0, this.ctx.currentTime, on ? 0.35 : 0.9);
+  }
+
+  // The hero theme: `bars` bars (1 to 4) in this book's voice, or every book's voice at once. Returns its length.
+  hero({ bars = 4, all = false } = {}) {
+    if (!this.ctx) return 0;
+    const spb = 60 / HERO_BPM, start = 0.1, dur = bars * 4 * spb;
+    const now = this.ctx.currentTime;
+    this.musicBus.gain.cancelScheduledValues(now);
+    this.musicBus.gain.setTargetAtTime(this.musicVol * this.duck * 0.3, now, 0.15);
+    this.musicBus.gain.setTargetAtTime(this.musicVol * this.duck, now + start + dur, 0.8);
+    const voices = all ? ['book1', 'book2', 'book3'] : [this.paletteId];
+    const soft = all ? 0.7 : 1;
+    for (const [beat, m, len] of HERO) {
+      if (beat >= bars * 4) break;
+      const w = start + beat * spb, d = len * spb;
+      for (const v of voices) {
+        if (v === 'book2') this.steelDrum(midi(m), w, 0.05 * soft, d * 0.9 + 0.25, 'hero');
+        else if (v === 'book3') this.flute(midi(m), w, 0.055 * soft, d * 0.95 + 0.1, 'hero');
+        else this.bell(midi(m + 12), w, 0.05 * soft, d + 0.8, 'hero');
+      }
+    }
+    for (let b = 0; b < bars; b++) {
+      const chord = HERO_CHORDS[b], w = start + b * 4 * spb;
+      for (const v of voices) {
+        if (v === 'book2') [0, 1.5, 2, 3].forEach((p) => chord.forEach((n, i) => this.marimba(midi(n + 12), w + p * spb + i * 0.012, 0.022 * soft, 'hero')));
+        else if (v === 'book3') [...chord, ...chord.map((n) => n + 12)].forEach((n, i) => this.harp(midi(n + 12), w + i * spb * 0.5, 0.02 * soft, 'hero'));
+        else chord.forEach((n) => this.tone({ f: midi(n + 12), type: 'triangle', dur: 4 * spb, vol: 0.028 * soft, a: 0.3, r: 1.5, when: w, bus: 'hero', lp: 1800 }));
+      }
+      this.tone({ f: midi(chord[0] - 12), type: 'sine', dur: 4 * spb, vol: 0.05, a: 0.05, r: 1.2, when: w, bus: 'hero', send: false });
+    }
+    return start + dur;
+  }
+
+  steelDrum(f, when, vol, dur, bus = 'music') {
+    this.tone({ f: f * 1.01, to: f, type: 'triangle', dur, vol, a: 0.004, r: dur * 0.8, when, bus, lp: 3200 });
+    this.tone({ f: f * 2, type: 'sine', dur: dur * 0.6, vol: vol * 0.45, a: 0.003, r: dur * 0.5, when, bus });
+    this.tone({ f: f * 2.76, type: 'sine', dur: dur * 0.25, vol: vol * 0.15, a: 0.002, r: dur * 0.2, when, bus, send: false });
   }
 
   startSlideLoop() {
@@ -541,6 +616,10 @@ export class AudioEngine {
   // One eighth note of the sky band.
   skyEighth(w, m, spb, chord, posInBar, posInChord, layers) {
     const root = chord[0];
+    if (this.strings && posInChord === 0) {
+      const t = this.ctx.currentTime + w;
+      [chord[1], chord[2], chord[3] ?? chord[1] + 12, chord[1] + 12].forEach((n, i) => this.strings.oscs[i].frequency.setTargetAtTime(midi(n), t, 0.25));
+    }
     // A soft low root on one and its fifth on three.
     if (m.bass && layers >= 2 && (posInBar === 0 || posInBar === 2)) {
       this.tone({ f: midi(root - 12 + (posInBar === 2 ? 7 : 0)), type: 'sine', dur: spb * 1.9, vol: 0.055, a: 0.03, r: spb, when: w, bus: 'music', send: false });

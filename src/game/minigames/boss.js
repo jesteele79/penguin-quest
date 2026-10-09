@@ -132,7 +132,7 @@ class BossActivity {
           sky.setRestored('crown', true);
           for (const r of ORDER) sky.pulse(r, 2.5);
           G.toasts.showBanner('The Aurora is whole again!', 'Glacier Bay shines', '#ffd86b', 4600, { replace: true });
-          G.audio.play('fanfare');
+          G.audio.hero();
           G.world.ctx.spire.setFinale(true);
           G.fireworks?.(this.top.clone().add(V(0, 40, 0)), 7);
         },
