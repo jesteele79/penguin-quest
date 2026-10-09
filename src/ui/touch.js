@@ -69,6 +69,11 @@ export class TouchControls {
     const endLook = (e) => { if (e.pointerId === lookId) lookId = null; };
     this.lookZone.addEventListener('pointerup', endLook);
     this.lookZone.addEventListener('pointercancel', endLook);
+    this.stickZone.addEventListener('lostpointercapture', endStick);
+    this.lookZone.addEventListener('lostpointercapture', endLook);
+    // A finger lifted while the controls are hidden (a chat began mid-walk) may never report back here; forget it,
+    // or the stick would ignore every later touch.
+    this.forgetTouches = () => { stickId = null; lookId = null; };
 
     // Buttons
     // Held for as long as the finger stays on it (that is a glide in Skyreach), and let go however the touch ends:
@@ -102,6 +107,7 @@ export class TouchControls {
       this.input.touchAxis.forward = this.input.touchAxis.turn = 0;
       this.input.touchSlide = false;
       this.releaseJump();
+      this.forgetTouches();
       this.base.classList.add('hidden');
     }
   }
