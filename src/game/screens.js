@@ -9,6 +9,7 @@ import { DOMAINS, DOMAIN_ORDER } from '../math/skills.js';
 import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
+import { ExploreActivity } from './activities.js';
 import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById, nextBook, placeName } from '../books/books.js';
 import { T } from '../books/terms.js';
 import { ACTIVE } from '../books/active.js';
@@ -271,9 +272,12 @@ export class PauseScreen extends Screen {
     const d = G.save.data;
     const crystals = Object.values(d.crystals).filter(Boolean).length;
     const mins = Math.round(d.stats.playSeconds / 60);
+    const exploring = G.activities[G.activities.indexOf(this) - 1] instanceof ExploreActivity;
     this.root.innerHTML = '';
     const menu = el('div', { class: 'menu-list' },
       btn('Resume', () => this.close(), 'primary', { autofocus: true }),
+      // For a penguin who is lost, or stuck somewhere it cannot walk out of.
+      exploring ? btn('Back to the start', () => { popActivity(this); G.backToStart(); }) : null,
       btn('Journal <kbd>J</kbd>', () => { popActivity(this); pushActivity(new JournalScreen()); }),
       btn('Map <kbd>M</kbd>', () => { popActivity(this); pushActivity(new MapScreen()); }),
       btn('Wardrobe', () => pushActivity(new ShopScreen(false))),

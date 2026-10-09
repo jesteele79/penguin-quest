@@ -113,6 +113,11 @@ function installHelpers() {
     journal: (tab) => pushActivity(new JournalScreen(tab)),
   };
   G.toTitle = () => { G.saveNow(); location.reload(); };
+  G.backToStart = () => {
+    G.player.teleport(LOC.start.x, LOC.start.z, LOC.start.yaw);
+    G.cam.snap(G.player);
+    G.audio.play('whoosh');
+  };
   // A tiny freeze-frame that makes a correct answer land (off with reduced motion).
   G.hitStopT = 0;
   G.hitStop = (s) => { if (!G.reduceMotion) G.hitStopT = Math.max(G.hitStopT, s); };

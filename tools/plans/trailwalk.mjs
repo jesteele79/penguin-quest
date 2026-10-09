@@ -2,7 +2,9 @@
 // crystal, quest spot and game spot, and reports any trip that gets stuck, falls or takes too long. Treasures are
 // left out: the trail never points at them, they are found by reading the treasure map.
 // Run: node tools/shoot.mjs tools/plans/trailwalk.mjs --size 400x300 --query book=book3
-// TRAILWALK_ONLY=npc (or crystal, site, game) limits the trips.
+// TRAILWALK_ONLY=npc (or crystal, site, game) limits the trips. TRAILWALK_FROM=random:40 instead starts 40 trips
+// from random spots on open ground, each to a random place, as a child who has wandered off would
+// (TRAILWALK_SEED picks another set).
 export default async (page) => {
   await page.wait(1200);
   await page.eval(`const {G}=window.__pq; G.dev.newGame({name:'Sam',grade:5,scarf:'coral'}); G.save.data.settings.pace='free'; G.hud.showControls(false);
@@ -80,13 +82,30 @@ export default async (page) => {
     for (const s of Object.values(G.sites.sets ?? {}).flat()) if (s?.pos) out.push(['site ' + s.set + ' ' + s.index, s.pos.x, s.pos.z, 3.8]);
     for (const k of G.dev.book.gameAnchors ?? []) { const a = G.quests.anchor(k); if (a) out.push(['game ' + k, a.x, a.z, 3.5]); }
     return JSON.stringify(out);`)).filter(([name]) => !only || name.startsWith(only));
-  const start = await page.eval(`const {G}=window.__pq; return JSON.stringify([G.player.pos.x, G.player.pos.z]);`);
+  const start = JSON.parse(await page.eval(`const {G}=window.__pq; return JSON.stringify([G.player.pos.x, G.player.pos.z]);`));
+  let trips = targets.map((t) => [start, t]);
+  const random = /^random:(\d+)$/.exec(process.env.TRAILWALK_FROM ?? '');
+  if (random) {
+    let seed = +(process.env.TRAILWALK_SEED ?? 7);
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let k = 0; k < 10; k++) rnd();
+    // Open ground: not deep water, lava or sky, not a cliff face, clear of anything solid.
+    const spots = JSON.parse(await page.eval(`const {G}=window.__pq; const out = [];
+      for (const [x, z] of ${JSON.stringify(Array.from({ length: 4000 }, () => { const r = Math.sqrt(rnd()) * 175, a = rnd() * Math.PI * 2; return [+(Math.cos(a) * r).toFixed(1), +(Math.sin(a) * r).toFixed(1)]; }))}) {
+        if (G.world.isDeepWater(x, z) || G.world.roads.hazardAt?.(x, z) || G.terrain.slopeAt(x, z) > 0.8) continue;
+        if (G.world.collision.nearby(x, z, 5).some((c) => c.r !== undefined && Math.hypot(x - c.x, z - c.z) < c.r + 0.8)) continue;
+        out.push([x, z]);
+      }
+      return JSON.stringify(out);`));
+    trips = spots.slice(0, +random[1]).map((s) => [s, targets[Math.floor(rnd() * targets.length)]]);
+  }
   const fails = [];
   let n = 0;
-  for (const [name, x, z, reach] of targets) {
-    const r = JSON.parse(await page.eval(`const {G}=window.__pq; const [sx, sz] = ${start}; G.player.teleport(sx, sz, 0); G.dev.step(0.2); return JSON.stringify(await window.__walk(${x}, ${z}, ${reach}));`));
+  for (const [[sx, sz], [name, x, z, reach]] of trips) {
+    const r = JSON.parse(await page.eval(`const {G}=window.__pq; G.player.teleport(${sx}, ${sz}, 0); G.dev.step(0.2); return JSON.stringify(await window.__walk(${x}, ${z}, ${reach}));`));
     n++;
-    if (!r.ok) { fails.push(`${name} at (${x.toFixed(0)}, ${z.toFixed(0)}): ${r.why} near (${r.at}) after ${r.t}s`); await page.shot('fail-' + name.replace(/\W+/g, '_')); }
+    const from = random ? ` from (${sx.toFixed(0)}, ${sz.toFixed(0)})` : '';
+    if (!r.ok) { fails.push(`${name} at (${x.toFixed(0)}, ${z.toFixed(0)})${from}: ${r.why} near (${r.at}) after ${r.t}s`); await page.shot('fail-' + n + '-' + name.replace(/\W+/g, '_')); }
   }
   console.log(JSON.stringify({ trips: n, failed: fails.length, fails }, null, 1));
 };
