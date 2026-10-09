@@ -14,6 +14,7 @@ BEAK.rotateX(Math.PI / 2);
 const TORUS = new THREE.TorusGeometry(0.8, 0.21, 12, 32);
 TORUS.rotateX(Math.PI / 2);
 const TUFT = new THREE.ConeGeometry(0.09, 0.4, 6);
+const SHADOW_DISC = new THREE.CircleGeometry(1.25, 20);
 
 // A slightly bottom-heavy (pear) body: cuter, and it sits more solidly on the ground.
 function pear(src) {
@@ -404,7 +405,7 @@ export class Penguin {
     }
     if (opts.scarfTex) this.setScarf(opts.scarf ?? PAL.scarf, opts.scarfTex);
 
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(1.25, 20), blobShadowMaterial());
+    this.shadow = new THREE.Mesh(SHADOW_DISC, blobShadowMaterial());
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.renderOrder = 2;
     scene.add(this.shadow);
@@ -673,5 +674,7 @@ export class Penguin {
     this.scene.remove(this.root);
     this.scene.remove(this.shadow);
     for (const t of this.tails) t.dispose(this.scene);
+    // The body and face are shared by every penguin; a hat is built for its wearer.
+    this.hatSlot.traverse((m) => { if (m.isMesh) m.geometry.dispose(); });
   }
 }

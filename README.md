@@ -72,6 +72,8 @@ node tools/shoot.mjs tools/plans/overlaps.mjs --query book=book3          # thin
 node tools/shoot.mjs tools/plans/bridges.mjs --query book=book3           # walk across every sky bridge both ways
 node tools/shoot.mjs tools/plans/trailwalk.mjs --query book=book2         # follow the gold trail on foot to every place
 TRAILWALK_FROM=random:40 node tools/shoot.mjs tools/plans/trailwalk.mjs  # ...from 40 random spots instead of camp
+node tools/shoot.mjs tools/plans/fullrun.mjs --query book=book3           # play the whole story, report any errors
+node tools/shoot.mjs tools/plans/leaks.mjs --query book=book2             # repeat games, check nothing piles up unfreed
 ```
 
 A shoot plan exports `default async (page) => {...}` and uses `page.eval(js)`, `page.shot(name)` and

@@ -9,6 +9,10 @@ import { LOC } from '../../world/layout.js';
 import { NPCS } from '../content.js';
 import { el } from '../../ui/dom.js';
 
+// Every beam is the same wide open tube, stretched from the penguin to the King.
+const BEAM = new THREE.CylinderGeometry(0.35, 0.35, 1, 12, 1, true);
+const dropBeam = (b) => { G.scene.remove(b.m); b.m.material.dispose(); };
+
 const ORDER = ['lake', 'grove', 'huts', 'cave', 'ridge'];
 const HP = 12;
 const TAUNTS = ['Ho ho! Too chilly for you?', 'Grrr, is that all you have?', 'The cold is MINE!', 'Brrr-ha-ha!'];
@@ -101,7 +105,7 @@ class BossActivity {
     const from = G.player.pos.clone().add(V(0, 1.8, 0));
     const to = this.king.position.clone().add(V(0, 3.2, 0));
     const d = to.clone().sub(from);
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1, 12, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const m = new THREE.Mesh(BEAM, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false }));
     m.position.copy(from).addScaledVector(d, 0.5);
     m.scale.set(1, d.length(), 1);
     m.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize());
@@ -139,7 +143,8 @@ class BossActivity {
       },
     ], () => {
       king.dispose();
-      for (const b of this.beams) G.scene.remove(b.m);
+      this.beams.forEach(dropBeam);
+      this.beams = [];
       G.save.data.finale = true;
       this.onDone?.();
     }));
@@ -160,7 +165,7 @@ class BossActivity {
     for (const b of this.beams) {
       b.life -= dt;
       b.m.material.opacity = Math.max(0, b.life * 1.4);
-      if (b.life <= 0) G.scene.remove(b.m);
+      if (b.life <= 0) dropBeam(b);
     }
     this.beams = this.beams.filter((b) => b.life > 0);
   }
@@ -170,6 +175,7 @@ class BossActivity {
     this.bar?.remove();
     G.cam.release(1.0);
     if (this.hp > 0 && this.king) { this.king.dispose(); this.king = null; }
+    if (this.hp > 0) { this.beams.forEach(dropBeam); this.beams = []; }
   }
 }
 

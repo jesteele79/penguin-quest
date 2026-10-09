@@ -50,6 +50,18 @@ const _e = new THREE.Euler();
 const _s = new THREE.Vector3();
 const _p = new THREE.Vector3();
 
+// Frees the geometry and materials that obj and its children own, once it has left the scene. keep lists geometry
+// shared with others. Sprites share one geometry inside three.js, so only their materials go; textures are left to
+// whoever made them.
+export function disposeTree(obj, keep = []) {
+  const shared = new Set(keep), mats = new Set();
+  obj.traverse((o) => {
+    if (o.isMesh && !shared.has(o.geometry)) o.geometry.dispose();
+    if (o.material) [o.material].flat().forEach((m) => mats.add(m));
+  });
+  mats.forEach((m) => m.dispose());
+}
+
 export function mat(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) {
   _e.set(rx, ry, rz);
   _q.setFromEuler(_e);

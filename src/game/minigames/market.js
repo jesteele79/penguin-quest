@@ -5,6 +5,7 @@ import { G, pushActivity } from '../../core/state.js';
 import { QuizActivity } from '../activities.js';
 import { Penguin } from '../../actors/penguin.js';
 import { V, awardMedal } from './common.js';
+import { disposeTree } from '../../core/geo.js';
 import { LOC } from '../../world/layout.js';
 import { BOOK } from '../../books/current.js';
 
@@ -89,7 +90,7 @@ class MarketActivity extends QuizActivity {
     const item = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.4, 10), new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x663300, emissiveIntensity: 0.3 }));
     item.position.set(LOC.counter.x, G.terrain.heightAt(LOC.counter.x, LOC.counter.z) + 1.7, LOC.counter.z);
     G.scene.add(item);
-    setTimeout(() => G.scene.remove(item), 1100);
+    setTimeout(() => { G.scene.remove(item); disposeTree(item); }, 1100);
     setTimeout(() => {
       c.state = 'leaving';
       c.bubble?.remove();

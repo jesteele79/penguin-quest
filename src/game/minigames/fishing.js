@@ -4,7 +4,7 @@ import { G, pushActivity, popActivity } from '../../core/state.js';
 import { Round, V, awardMedal, MEDAL_ICON } from './common.js';
 import { toHTML } from '../../math/fmt.js';
 import { WATER_Y } from '../../world/layout.js';
-import { mergeColored, mat } from '../../core/geo.js';
+import { mergeColored, mat, disposeTree } from '../../core/geo.js';
 import { BOOK } from '../../books/current.js';
 import { SIDE } from '../questdata.js';
 
@@ -232,6 +232,7 @@ class FishingActivity {
     G.hud.setVisible(true);
     this.rod?.parent?.remove(this.rod);
     G.scene.remove(this.hook, this.line);
+    for (const o of [this.rod, this.hook, this.line]) if (o) disposeTree(o);
     this.clearFish();
   }
 }

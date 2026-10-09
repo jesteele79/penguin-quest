@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { withRim } from '../core/materials.js';
 import { glowTexture } from '../core/textures.js';
 import { damp } from '../core/mathutil.js';
+import { disposeTree } from '../core/geo.js';
 
 let furGeo = null;
 function fuzzyBody() {
@@ -168,5 +169,9 @@ export class Gloom {
 
   get gone() { return this.state === 'ascend' && this.rise > 3; }
 
-  dispose() { this.scene.remove(this.root); }
+  // The body and eyes are shared by every Gloom; the rest was made for this one.
+  dispose() {
+    this.scene.remove(this.root);
+    disposeTree(this.root, [furGeo, EYE, HAPPY_EYE]);
+  }
 }

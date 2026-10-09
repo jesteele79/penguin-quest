@@ -9,6 +9,9 @@ import { LOC } from '../../world/layout.js';
 import { BOOK } from '../../books/current.js';
 import { T } from '../../books/terms.js';
 
+// Every zap is the same thin open tube, stretched from the penguin to its Gloom.
+const BEAM = new THREE.CylinderGeometry(0.18, 0.18, 1, 10, 1, true);
+
 const WAVES = [3, 4, 5];
 const SPAWN_R = 13.5;
 
@@ -135,7 +138,7 @@ class BattleActivity {
     const from = G.player.pos.clone().add(V(0, 1.8, 0));
     const to = t.g.position.clone().add(V(0, 1.1, 0));
     const d = to.clone().sub(from);
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1, 10, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const m = new THREE.Mesh(BEAM, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
     m.position.copy(from).addScaledVector(d, 0.5);
     m.scale.set(1, d.length(), 1);
     m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
@@ -206,15 +209,20 @@ class BattleActivity {
     for (const b of this.beams) {
       b.life -= dt;
       b.m.material.opacity = Math.max(0, b.life * 1.8);
-      if (b.life <= 0) G.scene.remove(b.m);
+      if (b.life <= 0) this.dropBeam(b);
     }
     this.beams = this.beams.filter((b) => b.life > 0);
   }
+
+  dropBeam(b) { G.scene.remove(b.m); b.m.material.dispose(); }
 
   exit() {
     G.quiz.close();
     G.cam.release(1.0);
     this.cleanupGlooms();
+    // A beam still fading when the battle ends would otherwise hang in the air.
+    this.beams.forEach((b) => this.dropBeam(b));
+    this.beams = [];
     G.hearts = null;
   }
 }
