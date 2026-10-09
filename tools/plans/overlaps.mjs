@@ -9,7 +9,7 @@ export default async (page) => {
     const own = new Set(Object.values(G.npcs.list).map((n) => n.collider));
     const test = (what, x, z, r) => {
       for (const c of col.nearby(x, z, 8)) {
-        if (c.r === undefined || own.has(c) || c.active === false || ['rail', 'hush'].includes(c.tag)) continue;
+        if (c.r === undefined || own.has(c) || c.active === false || ['rail', 'hush', 'spire-shield'].includes(c.tag)) continue;
         const d = Math.hypot(x - c.x, z - c.z);
         if (d < c.r + r - 0.3 && d > 0.05) out.push(what + ' is inside ' + (c.tag ?? 'something') + ' at (' + c.x.toFixed(1) + ', ' + c.z.toFixed(1) + ')');
       }
@@ -24,7 +24,7 @@ export default async (page) => {
         for (let d = 0; d <= len; d += 1) {
           const x = ax + ((bx - ax) * d) / len, z = az + ((bz - az) * d) / len;
           for (const c of col.nearby(x, z, 6)) {
-            if (c.r === undefined || own.has(c) || c.active === false || ['rail', 'hush'].includes(c.tag)) continue;
+            if (c.r === undefined || own.has(c) || c.active === false || ['rail', 'hush', 'spire-shield'].includes(c.tag)) continue;
             if (Math.hypot(x - c.x, z - c.z) < c.r + 0.9) { out.push('road ' + k + ' is blocked by ' + (c.tag ?? 'something') + ' at (' + c.x.toFixed(1) + ', ' + c.z.toFixed(1) + ')'); break; }
           }
         }

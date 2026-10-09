@@ -76,9 +76,9 @@ export const CRYSTALS = {
 // Paths of packed golden sand. Shared nodes connect.
 export const ROADS = [
   // Arrival pier up to the camp, then north through the jungle to the forge.
-  [[0, 120], [0, 108], [-4, 96], [-10, 80], [-22, 62], [-30, 40], [-34, 18], [-38, -6], [-42, -28], [-44, -46]],
+  [[0, 120], [0, 108], [-1, 97], [-3, 88], [-10, 80], [-22, 62], [-30, 40], [-34, 18], [-38, -6], [-37.5, -28], [-40, -41], [-44, -46]],
   // Camp east along the coast to the harbor.
-  [[-4, 96], [14, 88], [36, 80], [60, 72], [82, 60], [100, 46], [114, 34]],
+  [[-1, 97], [14, 88], [36, 80], [60, 72], [82, 60], [100, 46], [104, 38]],
   // Harbor north to the lighthouse ramp.
   [[100, 46], [96, 20], [88, -6], [80, -32], [72, -56], [66, -74], [88, -90], [100, -100]],
   // Jungle crossroads west to the lagoon shore.
@@ -86,9 +86,9 @@ export const ROADS = [
   // Camp west along the south shore to the sandbar.
   [[-10, 80], [-30, 92], [-48, 104], [-54, 108]],
   // Forge up the volcano to the crater rim, in two switchbacks.
-  [[-44, -46], [-30, -58], [-14, -64], [-26, -76], [-14, -84], [-6, -82]],
+  [[-44, -46], [-39, -45], [-30, -58], [-14, -64], [-26, -76], [-14, -84], [-6, -82]],
   // The lookout camp on the east slope.
-  [[80, -32], [64, -48], [46, -62]],
+  [[80, -32], [64, -48], [52, -58]],
 ];
 
 // Pieces of sea glass. The first three are near the camp, for the tutorial.
@@ -127,7 +127,7 @@ export const TIDE_POOLS = [[-36, 116], [24, 120], [-42, 94]];
 
 export const CHICK_SPOTS = [[-32, 104], [30, 58], [-106, 28], [122, 54], [60, -40], [-70, -36], [101, -79], [-88, 140]];
 export const NURSERY = { x: 26, z: 114 };
-export const PATROL_BOARD = { x: 8, z: 92 };
+export const PATROL_BOARD = { x: 9, z: 96 };
 export const CAULDRON = { x: 122, z: 18 };
 export const FESTIVAL = { x: 0, z: 86 };
 // Down the ash slope on Mount Ember's south-east side.

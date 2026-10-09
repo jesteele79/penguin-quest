@@ -439,8 +439,8 @@ export function buildStructures(ctx) {
   for (const h of [LOC.hutA, LOC.hutB, LOC.hutC]) buildHut(ctx, h.x, h.z, faceYaw(h.x, h.z, LOC.huts.x, LOC.huts.z));
   buildSnackShack(ctx);
   buildCampfire(ctx);
-  addCrate(ctx, 110, 36, 0.3);
-  addBarrel(ctx, 109, 38.5);
+  addCrate(ctx, 114.5, 47, 0.3);
+  addBarrel(ctx, 113, 45);
   addBarrel(ctx, 134, 48);
 
   // Lake: fishing dock and floe launch jetty
