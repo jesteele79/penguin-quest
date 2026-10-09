@@ -34,6 +34,7 @@ class Screen {
     G.player.frozen = true;
     G.hud.setPrompt(null);
     requestAnimationFrame(() => {
+      if (G.top !== this) return;
       this.root.classList.add('show');
       this.focusFirst();
     });
@@ -51,6 +52,11 @@ class Screen {
   }
 
   close() { G.audio.play('close'); popActivity(this); }
+
+  // A menu opened from this one (the wardrobe from the pause menu, a lesson from the journal) takes its place
+  // until it closes, instead of showing on top of it.
+  onCover() { this.root.classList.remove('show'); }
+  onUncover() { this.root.classList.add('show'); this.focusFirst(); }
 
   onKey(e, inField) {
     if (e.key === 'Escape') { e.preventDefault(); this.close(); return; }
