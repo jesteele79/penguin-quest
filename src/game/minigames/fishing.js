@@ -6,6 +6,7 @@ import { toHTML } from '../../math/fmt.js';
 import { WATER_Y } from '../../world/layout.js';
 import { mergeColored, mat } from '../../core/geo.js';
 import { BOOK } from '../../books/current.js';
+import { SIDE } from '../questdata.js';
 
 const FISH_COLORS = [0xff9a3c, 0x4dd8ff, 0xff72c8, 0x7dff9a];
 let fishGeo = null;
@@ -59,7 +60,7 @@ class FishingActivity {
     G.scene.add(this.hook, this.line);
     this.hook.visible = this.line.visible = false;
     const panel = G.quiz;
-    panel.open({ title: this.tourney ? 'Big Fish Tournament' : 'Fishing', subtitle: 'Press the fish\'s number (or ←/→ then Enter) to cast', color: '#4dd8ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    panel.open({ title: this.tourney ? SIDE.find((q) => q.id === 'sq_tourney')?.title ?? 'Fishing Tournament' : 'Fishing', subtitle: 'Press the fish\'s number (or ←/→ then Enter) to cast', color: '#4dd8ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onHint: () => { if (this.round && !this.round.over) { this.round.hint(); G.audio.play('hint'); panel.showHint(this.round.p); } },
       onContinue: () => this.next(),

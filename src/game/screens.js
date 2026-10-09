@@ -495,7 +495,10 @@ export class JournalScreen extends Screen {
   // Every lesson the child can open: ones already seen, and ones for skills that are open now.
   lessons() {
     const seen = G.save.data.lessons ?? {};
-    const rows = Object.entries(LESSONS).filter(([id]) => seen[id] || G.tutor.isUnlocked(SKILLS[id])).map(([id, L]) => {
+    // This book's own grade first, then the rest, newest grade first.
+    const grade = bookById(ACTIVE).grade;
+    const rank = (id) => (SKILLS[id].grade === grade ? 0 : 10 - SKILLS[id].grade);
+    const rows = Object.entries(LESSONS).filter(([id]) => seen[id] || G.tutor.isUnlocked(SKILLS[id])).sort(([a], [b]) => rank(a) - rank(b)).map(([id, L]) => {
       const s = SKILLS[id];
       const done = seen[id] && !seen[id].skipped;
       return `<div class="lesson-row"><div><b>${escapeHTML(L.title)}</b><div class="note">${escapeHTML(DOMAINS[s.domain].name)} · grade ${s.grade}</div></div>
@@ -614,8 +617,8 @@ export class JournalScreen extends Screen {
     return `<div class="coll-grid">
       <div class="coll"><span>${ICON.flake} ${T.Flakes}</span><b>${s.snowflakes.length} / 30</b></div>
       <div class="coll"><span>Treasure chests</span><b>${s.chests.length} / 12</b></div>
-      <div class="coll"><span>Lost chicks home</span><b>${s.chicks.home.length} / 8</b></div>
-      <div class="coll"><span>Pirate treasures</span><b>${s.treasures.length} / 4</b></div>
+      <div class="coll"><span>Lost ${BOOK.young?.kind ?? 'chick'}s home</span><b>${s.chicks.home.length} / 8</b></div>
+      <div class="coll"><span>${T.treasures}</span><b>${s.treasures.length} / 4</b></div>
       <div class="coll"><span>${T.gloom} spots cheered</span><b>${s.counters.gloomSpots.length} / 8</b></div>
       <div class="coll"><span>${T.glooms} cheered up</span><b>${s.counters.glooms}</b></div>
       <div class="coll"><span>Fish caught</span><b>${s.counters.fish}</b></div>
@@ -623,10 +626,10 @@ export class JournalScreen extends Screen {
     </div>
     <h3>Medals</h3>
     <div class="coll-grid">
-      ${medal('slalom', 'Sledding Hill Slalom', (b) => `${b}s`)}
-      ${medal('fishing:tourney', 'Big Fish Tournament', (b) => `${b} misses`)}
-      ${medal('market:rush', 'Snack Shack Rush')}
-      ${medal('architect:sculpt', 'Snow Sculpture Contest')}
+      ${medal('slalom', T.slalom, (b) => `${b}s`)}
+      ${medal('fishing:tourney', SIDE.find((q) => q.id === 'sq_tourney')?.title ?? 'Fishing Tournament', (b) => `${b} misses`)}
+      ${medal('market:rush', BOOK.market.rushTitle)}
+      ${medal('architect:sculpt', BOOK.architect.contestTitle)}
     </div>`;
   }
 

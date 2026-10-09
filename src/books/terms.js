@@ -12,6 +12,7 @@ const GLACIER_BAY = {
   patrol: 'Aurora Patrol', stars: 'Aurora Stars', star: 'Aurora Star', legend: 'Aurora Legend', journal: 'Aurora Journal',
   praise: ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Ice work!', 'Cool thinking!', 'Aurora-some!', 'Spot on!', 'Waddle-ful!', 'Snow problem!', 'Perfect!'],
   dataPlace: 'Star charts at the easel',
+  treasures: 'Pirate treasures',
   swimPlace: 'Glimmer Lake', fishPlace: 'the dock', stall: 'Snack Shack', slalom: 'Sledding Hill Slalom', chart: 'Star Chart', chartPlace: 'the easel',
 };
 
@@ -25,6 +26,7 @@ const EMBER_ISLES = {
   patrol: 'Island Patrol', stars: 'Aurora Stars', star: 'Aurora Star', legend: 'Ember Legend', journal: 'Island Journal',
   praise: ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Shell-ebrate!', 'Hot stuff!', 'Sea-riously good!', 'Spot on!', 'Waddle-ful!', 'Wave-tastic!', 'Perfect!'],
   dataPlace: 'Tide charts at the camp',
+  treasures: 'Sea chart treasures',
   swimPlace: 'the sea', fishPlace: 'the harbor pier', stall: "Chef Marlo's stall", slalom: 'Ash Slope Slalom', chart: 'Tide Chart', chartPlace: 'the camp table',
 };
 
@@ -38,6 +40,7 @@ const SKYREACH = {
   patrol: 'Sky Patrol', stars: 'Aurora Stars', star: 'Aurora Star', legend: 'Sky Legend', journal: 'Sky Journal',
   praise: ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Sky-high!', 'Out of this world!', 'Star-tastic!', 'Spot on!', 'Waddle-ful!', 'Soaring!', 'Perfect!'],
   dataPlace: "Sky charts at the Professor's table",
+  treasures: 'Star chart treasures',
   swimPlace: null, fishPlace: 'the mooring pier', stall: "Nimbus's stall", slalom: 'Meadow Kite Run', chart: 'Sky Chart', chartPlace: "the Professor's table",
 };
 
