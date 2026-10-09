@@ -600,17 +600,23 @@ export class QuestEngine {
     return voyages(G.save.data, G.tutor, ACTIVE).find((b) => b.n > here.n) ?? null;
   }
 
-  // With the story done but the next book still waiting on mastery, the way on is practice: at the restored
-  // crystal whose subject has the most of this grade's skills left to master.
-  unlockPractice() {
+  // With the story done and only mastery holding the next book back: that book, how many more of this grade's
+  // skills it needs and which are still missing. Otherwise null.
+  openingNext() {
     const here = bookById(ACTIVE), next = nextBook(here);
     if (!next?.ready || isUnlocked(G.save.data, G.tutor, next)) return null;
     const st = bookStatus(G.save.data, G.tutor, here), togo = skillsToGo(st);
-    if (!st.storyDone || !togo) return null;
-    const left = (r) => st.missing.filter((s) => s.domain === domainOf(r)).length;
+    return st.storyDone && togo ? { next, togo, missing: st.missing } : null;
+  }
+
+  // Then the way on is practice, at the restored crystal whose subject has the most of those skills left.
+  unlockPractice() {
+    const need = this.openingNext();
+    if (!need) return null;
+    const left = (r) => need.missing.filter((s) => s.domain === domainOf(r)).length;
     const r = REGIONS.filter((x) => this.s.crystals[x] && left(x) > 0).sort((a, b) => left(b) - left(a))[0];
     if (!r) return null;
-    return { text: `Practice at the ${T.crystalOf(REGION_INFO[r].name)}: ${togo} more skill${togo > 1 ? 's' : ''} to master to open Book ${next.n}`, target: V(CRYSTALS[r].x, 0, CRYSTALS[r].z) };
+    return { text: `Practice at the ${T.crystalOf(REGION_INFO[r].name)}: ${need.togo} more skill${need.togo > 1 ? 's' : ''} to master to open Book ${need.next.n}`, target: V(CRYSTALS[r].x, 0, CRYSTALS[r].z) };
   }
 
   // Who in this book carries a penguin to that book. The Captain always sails and Cinder always flies, whatever

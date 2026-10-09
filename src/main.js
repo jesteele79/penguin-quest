@@ -331,7 +331,8 @@ function enterGame(isNew) {
       // Naming the skill tells the child what they got better at, not just that they earned something.
       G.addCoins(15, false);
       G.audio.play('chime');
-      G.toasts.showBanner('Skill mastered!', `${p.skillName ?? 'A new math skill'} · +15 fish coins`, '#ffd166', 3200);
+      const need = G.quests.openingNext();
+      G.toasts.showBanner('Skill mastered!', `${p.skillName ?? 'A new math skill'} · +15 fish coins${need ? ` · ${need.togo} more to open Book ${need.next.n}` : ''}`, '#ffd166', 3200);
     }
     return out;
   };
