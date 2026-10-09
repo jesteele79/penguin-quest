@@ -58,6 +58,7 @@ export class World {
     this.glow = new GlowField(scene, 1500);
     this.water = new (BIOME.Sea ?? Water)(scene, this.terrain, BIOME.water);
     this.roads = new Roads(scene, this.terrain);
+    this.roads.groundAt = (x, z, y) => this.groundAt(x, z, y).y;
     this.effects = new Effects(scene, this.terrain, BIOME.effects);
 
     const ctx = {

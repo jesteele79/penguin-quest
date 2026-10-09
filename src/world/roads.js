@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ROADS, WATER_Y } from './layout.js';
+import { ROADS, LINKS, WATER_Y } from './layout.js';
 
 const roadVert = /* glsl */ `
 attribute float aDist;
@@ -151,14 +151,14 @@ export class Roads {
       if (i < 0) { i = nodes.length; nodes.push({ x, z, edges: [] }); }
       return i;
     };
-    for (const road of ROADS) {
-      for (let k = 0; k < road.length - 1; k++) {
-        const a = find(road[k][0], road[k][1]), b = find(road[k + 1][0], road[k + 1][1]);
-        const d = Math.hypot(nodes[a].x - nodes[b].x, nodes[a].z - nodes[b].z);
-        nodes[a].edges.push({ to: b, d });
-        nodes[b].edges.push({ to: a, d });
-      }
-    }
+    const join = (p, q) => {
+      const a = find(p[0], p[1]), b = find(q[0], q[1]);
+      const d = Math.hypot(nodes[a].x - nodes[b].x, nodes[a].z - nodes[b].z);
+      nodes[a].edges.push({ to: b, d });
+      nodes[b].edges.push({ to: a, d });
+    };
+    for (const road of ROADS) for (let k = 0; k < road.length - 1; k++) join(road[k], road[k + 1]);
+    for (const [p, q] of LINKS) join(p, q);
     this.nodes = nodes;
   }
 
@@ -202,11 +202,11 @@ export class Roads {
     let tgt = 0, best = Infinity;
     this.nodes.forEach((n, i) => { const d = Math.hypot(n.x - bx, n.z - bz); if (d < best) { best = d; tgt = i; } });
     const { dist, prev } = this.dijkstra(tgt);
-    let entry = 0, bestCost = Infinity;
-    this.nodes.forEach((n, i) => {
-      const c = Math.hypot(n.x - ax, n.z - az) + dist[i];
-      if (c < bestCost) { bestCost = c; entry = i; }
-    });
+    // Join the paths where the cost is least, at a point the penguin can walk straight to (not across a gap
+    // between islands or up a cliff), unless no such point exists.
+    const order = this.nodes.map((n, i) => ({ i, c: Math.hypot(n.x - ax, n.z - az) + dist[i] })).filter((o) => o.c < Infinity).sort((p, q) => p.c - q.c);
+    const reach = order.find(({ i }) => Math.hypot(this.nodes[i].x - ax, this.nodes[i].z - az) < 10 || this.straightIsWalkable(ax, az, this.nodes[i].x, this.nodes[i].z)) ?? order[0];
+    const entry = reach?.i ?? 0, bestCost = reach?.c ?? Infinity;
     if (this.straightIsWalkable(ax, az, bx, bz) && direct < bestCost * 0.85) return [[ax, az], [bx, bz]];
     const path = [[ax, az]];
     for (let i = entry; i >= 0; i = prev[i]) {
@@ -244,6 +244,8 @@ export class Roads {
     }
     this.flow = (this.flow + dt * 5) % 1.6;
     const maxShow = Math.min(total, 42);
+    // Sparkles sit on whatever a penguin would walk on there: a bridge deck, a pier, or the ground.
+    let hint = player.y ?? this.terrain.heightAt(player.x, player.z);
     for (let k = 0; k < TRAIL_N; k++) {
       const s = 2.2 + k * 1.6 + this.flow;
       let a = 0;
@@ -255,7 +257,9 @@ export class Roads {
         z = seg.az + (seg.bz - seg.az) * u;
         a = Math.min(1, (s - 2.2) / 3) * Math.min(1, (maxShow - s) / 8) * this.trailVisible;
       }
-      const y = Math.max(this.terrain.heightAt(x, z), WATER_Y) + 0.55 + Math.sin(time * 3 + k * 0.7) * 0.12;
+      const ground = Math.max(this.groundAt ? this.groundAt(x, z, hint + 1.5) : this.terrain.heightAt(x, z), WATER_Y);
+      hint = ground;
+      const y = ground + 0.55 + Math.sin(time * 3 + k * 0.7) * 0.12;
       this.trailPos[k * 3] = x; this.trailPos[k * 3 + 1] = y; this.trailPos[k * 3 + 2] = z;
       this.trailAlpha[k] = a;
     }

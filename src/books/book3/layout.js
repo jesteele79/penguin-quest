@@ -106,6 +106,9 @@ export const ROADS = [
   [[20, -86], [8, -84], [3, -81]],
 ];
 
+// Every bridge joins the ends of two paths, so the guide trail can cross from island to island.
+export const LINKS = BRIDGES.map((B) => [B.from, B.to]);
+
 // Guild Town's round cottages: x, z and a colour index.
 export const COTTAGES = [[-14, 80, 1], [16, 52, 2], [-26, 64, 3], [26, 78, 4], [-6, 46, 5], [31, 71, 0], [-34, 80, 2]];
 export const cottageRadius = (i) => 2.3 + (i % 3) * 0.3;

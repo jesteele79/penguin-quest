@@ -159,3 +159,22 @@ test('book3: every bridge joins two islands and every updraft rises from solid g
   }
   for (const U of L3.UPDRAFTS) assert.ok(shape3.islandAt(U.x, U.z)?.d < -4, `updraft at (${U.x}, ${U.z}) is not on solid ground`);
 });
+
+// The guide trail follows the paths (and Skyreach's bridges), so every path must join up with every other.
+for (const id of ['book1', 'book2', 'book3']) {
+  test(`${id}: the paths and bridges form one connected network`, async () => {
+    const L = await import(`../src/books/${id}/layout.js`);
+    const key = ([x, z]) => `${x},${z}`;
+    const edges = new Map();
+    const join = (p, q) => {
+      for (const [a, b] of [[p, q], [q, p]]) { if (!edges.has(key(a))) edges.set(key(a), new Set()); edges.get(key(a)).add(key(b)); }
+    };
+    for (const road of L.ROADS) for (let k = 1; k < road.length; k++) join(road[k - 1], road[k]);
+    for (const [p, q] of L.LINKS ?? []) join(p, q);
+    const start = edges.keys().next().value;
+    const seen = new Set([start]), todo = [start];
+    while (todo.length) for (const n of edges.get(todo.pop())) if (!seen.has(n)) { seen.add(n); todo.push(n); }
+    const lost = [...edges.keys()].filter((n) => !seen.has(n));
+    assert.deepEqual(lost, [], `path points not joined to the rest: ${lost.join(' ')}`);
+  });
+}

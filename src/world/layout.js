@@ -14,6 +14,8 @@ export const WORLD_RADIUS = L.WORLD_RADIUS;
 export const LOC = L.LOC;
 export const CRYSTALS = L.CRYSTALS;
 export const ROADS = L.ROADS;
+// Walkable links that are not drawn as paths (Skyreach's rope bridges), so the guide trail can use them.
+export const LINKS = L.LINKS ?? [];
 export const SNOWFLAKES = L.SNOWFLAKES;
 export const CHESTS = L.CHESTS;
 export const GLOOM_SPOTS = L.GLOOM_SPOTS;
