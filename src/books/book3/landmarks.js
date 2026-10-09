@@ -165,11 +165,12 @@ export function buildStarwell(ctx) {
     collision.addCircle(x, z, 0.8, 'well-stone');
   }
   const g1 = glow.add(S.x, y + 1.5, S.z, 0x9a8aff, 14, 0.4);
-  // The Hush: a great soft cloud with sleepy eyes, curled round the island's rim.
+  // The Hush: a great soft cloud wrapped round the island's rim, standing taller than the rim until it is
+  // calmed. Its head rests on the north-east rim and turns to watch whoever comes near.
   const hush = new THREE.Group();
-  hush.position.set(W.x, W.h - 6, W.z);
+  hush.position.set(W.x, W.h, W.z);
   scene.add(hush);
-  const cloudMat = new THREE.MeshLambertMaterial({ color: 0x9a96c4, emissive: 0x2a2848, transparent: true, opacity: 0.94 });
+  const cloudMat = new THREE.MeshLambertMaterial({ color: 0xa8a6d2, emissive: 0x34325a, transparent: true, opacity: 0.94 });
   const puff = new THREE.IcosahedronGeometry(1, 2);
   const puffs = [];
   for (let i = 0; i < 26; i++) {
@@ -182,45 +183,94 @@ export function buildStarwell(ctx) {
     hush.add(m);
     puffs.push({ m, a, r, base: m.position.y, s });
   }
-  // Its face looks toward the Star Guild bridge, the way in.
-  const face = new THREE.Group();
-  const faceA = Math.atan2(-2, 1);
-  face.position.set(Math.cos(faceA) * (W.r + 12), 6, Math.sin(faceA) * (W.r + 12));
-  face.rotation.y = -faceA + Math.PI / 2;
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfff4c8 });
+  const headA = Math.atan2(-2, 1), headR = W.r + 9;
+  const head = new THREE.Group();
+  hush.add(head);
+  for (const [x, y, z, s] of [[0, 0, 0, 8.5], [-6.5, -2.5, -1, 5.5], [6.5, -2.5, -1, 6], [-3.5, 5, -2, 5.5], [3.5, 5.5, -2.5, 5]]) {
+    const m = new THREE.Mesh(puff, cloudMat);
+    m.position.set(x, y, z);
+    m.scale.set(s, s * 0.88, s);
+    head.add(m);
+  }
+  // A shy face: sleepy eyes that open as it calms, rosy cheeks, and a little mouth that becomes a smile.
+  const faceMat = new THREE.MeshBasicMaterial({ color: 0x3a3060, transparent: true });
   const eyes = [-1, 1].map((s) => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 10), eyeMat);
-    e.position.set(s * 3.4, 2, 0);
-    e.scale.set(1, 0.25, 0.5);
-    face.add(e);
+    const e = new THREE.Mesh(new THREE.SphereGeometry(1.2, 14, 10), faceMat);
+    e.position.set(s * 2.9, 1.2, 7.7);
+    e.scale.set(1, 0.2, 0.45);
+    head.add(e);
     return e;
   });
-  hush.add(face);
+  const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
+  const shines = eyes.map((e) => {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6), shineMat);
+    h.position.set(e.position.x + 0.4, 1.6, 8.1);
+    head.add(h);
+    return h;
+  });
+  const cheekMat = new THREE.MeshBasicMaterial({ color: 0xff9ac0, transparent: true, opacity: 0, depthWrite: false });
+  for (const s of [-1, 1]) {
+    const c = new THREE.Mesh(new THREE.CircleGeometry(1.1, 16), cheekMat);
+    c.position.set(s * 4.65, -0.6, 7.2);
+    c.rotation.y = s * 0.57;
+    head.add(c);
+  }
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.16, 6, 14, Math.PI), faceMat);
+  mouth.position.set(0, -1.1, 8.35);
+  mouth.rotation.z = Math.PI;
+  head.add(mouth);
   // Until it is calmed, the Hush wraps the island: nothing passes, walking or gliding.
   const ring = collision.addRing(W.x, W.z, W.r + 3, 1.4, null, 0, 'hush');
   const spire = {
     base: new THREE.Vector3(S.x, y + 0.5, S.z), top: new THREE.Vector3(S.x, y + 1, S.z),
-    open: false, finale: false, calm: 0, level: 0, hush, eyes,
-    setOpen(v) { this.open = v; ring.forEach((c) => { c.active = !v; }); },
-    setFinale(v) { this.finale = v; },
+    open: false, finale: false, calm: 0, gone: 0, level: 0, hush, head, eyes,
+    setOpen(v, instant = false) {
+      this.open = v;
+      ring.forEach((c) => { c.active = !v; });
+      if (instant && !this.finale) this.calm = v ? 0.35 : 0;
+    },
+    setFinale(v, instant = false) {
+      this.finale = v;
+      if (instant) { this.calm = v ? 1 : this.open ? 0.35 : 0; this.gone = v ? 1 : 0; }
+    },
   };
-  ctx.animated.push((dt, t) => {
+  const hp = new THREE.Vector3();
+  let look = headA + Math.PI / 2;
+  ctx.animated.push((dt, t, focus) => {
     spire.level = damp(spire.level, spire.finale ? 1 : spire.open ? 0.4 : 0.1, 1, dt);
     spire.calm = damp(spire.calm, spire.finale ? 1 : spire.open ? 0.35 : 0, 0.6, dt);
+    spire.gone = damp(spire.gone, spire.finale ? 1 : 0, 0.4, dt);
+    const { calm, gone } = spire;
     uniforms.uTime.value = t;
     uniforms.uLevel.value = spire.level;
     glow.set(g1, { color: 0x9a8aff, intensity: 0.3 + spire.level * 1.4, size: 14 + spire.level * 12 });
-    // Calmer, the Hush drifts lower and paler, opens its eyes, and finally floats off over the clouds.
+    // Calmer, the Hush sinks below the rim and draws back, paler; once the Star Map is whole it drifts off
+    // over the clouds and fades.
     for (const p of puffs) {
-      p.m.position.y = p.base + Math.sin(t * 0.5 + p.a * 3) * 0.8 - spire.calm * 8;
+      const r = p.r + calm * 4 + gone * 30;
+      p.m.position.set(Math.cos(p.a) * r, p.base + Math.sin(t * 0.5 + p.a * 3) * 0.8 - calm * 10 + gone * 12, Math.sin(p.a) * r);
       const breathe = 1 + Math.sin(t * 0.7 + p.a) * 0.04;
       p.m.scale.set(p.s * breathe, p.s * 0.8 * breathe, p.s * breathe);
     }
-    cloudMat.color.setRGB(0.6 + spire.calm * 0.38, 0.59 + spire.calm * 0.36, 0.77 + spire.calm * 0.2);
-    cloudMat.opacity = 0.94 - (spire.finale ? spire.calm * 0.5 : 0);
-    const open = 0.25 + spire.calm * 0.6 + (Math.sin(t * 0.3) > 0.97 ? -0.2 : 0);
-    for (const e of eyes) e.scale.y = Math.max(0.05, open);
-    hush.visible = cloudMat.opacity > 0.05;
+    head.position.set(Math.cos(headA) * (headR + gone * 30), 8 + Math.sin(t * 0.6) * 0.6 - calm * 6 + gone * 16, Math.sin(headA) * (headR + gone * 30));
+    head.scale.setScalar(1 + Math.sin(t * 0.7) * 0.025);
+    if (focus) {
+      head.getWorldPosition(hp);
+      const want = Math.atan2(focus.x - hp.x, focus.z - hp.z);
+      look += Math.atan2(Math.sin(want - look), Math.cos(want - look)) * (1 - Math.exp(-1.5 * dt));
+      head.rotation.y = look;
+    }
+    cloudMat.color.setRGB(0.66 + calm * 0.32, 0.65 + calm * 0.3, 0.82 + calm * 0.15);
+    cloudMat.opacity = 0.94 * (1 - gone);
+    const open = Math.max(0.05, 0.2 + calm * 0.65 + (Math.sin(t * 0.3) > 0.97 ? -0.2 : 0));
+    for (const e of eyes) e.scale.y = open;
+    const shine = Math.max(0, (open - 0.45) / 0.4);
+    for (const h of shines) h.scale.setScalar(Math.min(1, shine));
+    faceMat.opacity = 1 - gone;
+    shineMat.opacity = 1 - gone;
+    cheekMat.opacity = Math.max(0, calm - 0.3) * 0.9 * (1 - gone);
+    mouth.scale.set(0.55 + calm * 0.45, 0.15 + calm * 0.85, 1);
+    hush.visible = gone < 0.98;
   });
   ctx.spire = spire;
 }

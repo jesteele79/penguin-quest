@@ -94,7 +94,7 @@ export class World {
     this.water.update(dt, time);
     this.glow.update(time, h, camera.fov, this.scene.fog.density);
     this.effects.update(dt, time, camera, this.pixelScale);
-    for (const a of this.animated) a(dt, time);
+    for (const a of this.animated) a(dt, time, focus);
 
     // Moon shadow box follows the player, snapped to whole shadow-map texels so shadow edges don't crawl.
     const sc = this.moon.shadow.camera;

@@ -50,6 +50,8 @@ export class Player {
     this.coyote = 0;
     this.jumpBuffer = 0;
     this.frozen = false;
+    // Set while something carries the penguin (the balloon basket); the carrier moves pos.
+    this.riding = false;
     this.radius = 0.9;
     this.events = [];
     this.lastSafe = new THREE.Vector3();
@@ -102,6 +104,18 @@ export class Player {
       this.model.root.rotation.y = this.yaw;
       this.model.animate(dt, { speed: this.speed, grounded: true, sliding: true });
       this.model.updateAttachments(dt, this.groundY, true);
+      return;
+    }
+    if (this.riding) {
+      this.grounded = true;
+      this.swimming = false;
+      this.sliding = false;
+      this.gliding = false;
+      this.vy = 0;
+      this.speed = 0;
+      this.model.root.rotation.y = this.yaw;
+      this.model.animate(dt, { speed: 0, grounded: true, idleTime: 0 });
+      this.model.updateAttachments(dt, this.pos.y, true);
       return;
     }
     const fwdIn = this.frozen ? 0 : input.forward;

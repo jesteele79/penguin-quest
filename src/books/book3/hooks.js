@@ -52,13 +52,13 @@ export const HOOKS = {
   // The title screen flies over the islands with every constellation lit.
   titleWorld() {
     for (const r of [...SUBJECTS, 'crown']) G.world.sky.setRestored(r, true, true);
-    G.world.ctx.spire.setOpen(true);
+    G.world.ctx.spire.setOpen(true, true);
   },
 
   syncWorld(d, ctx) {
     G.world.sky.setRestored('crown', !!d.finale, true);
-    ctx.spire.setOpen(!!d.finale || G.quests.started('ch6'));
-    ctx.spire.setFinale(!!d.finale);
+    ctx.spire.setOpen(!!d.finale || G.quests.started('ch6'), true);
+    ctx.spire.setFinale(!!d.finale, true);
     if (d.q?.ch3?.done) ctx.clock.running = true;
   },
 
@@ -78,7 +78,7 @@ export const HOOKS = {
       case 'board': return V(PATROL_BOARD.x, 0, PATROL_BOARD.z);
       case 'towerTop': return V(LOC.tower.x + 6, 0, LOC.tower.z + 12);
       case 'meadow': return V(LOC.meadow.x, 0, LOC.meadow.z);
-      case 'vale': return V(LOC.vale.x + 4, 0, LOC.vale.z + 3);
+      case 'vale': return V(LOC.vale.x, 0, LOC.vale.z);
       case 'dome': return V(LOC.dome.x - 8, 0, LOC.dome.z);
       case 'clockFace': return V(LOC.clockFace.x - 2, 0, LOC.clockFace.z);
       case 'kiln': return V(LOC.kiln.x - 4, 0, LOC.kiln.z - 3);

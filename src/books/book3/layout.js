@@ -37,9 +37,13 @@ export const LOC = {
   swoop: { x: -92, z: -14 },
   tower: { x: -104, z: -20 },
   meadow: { x: -86, z: 10 },
-  // Cloud Valleys: low and misty, right at the cloud line.
-  well2: { x: -110, z: 108 },
-  vale: { x: -96, z: 94 },
+  // Cloud Valleys: low and misty, right at the cloud line. The balloon lift's landing reaches out over the
+  // clouds from the north-west rim (vale is its land end, lift the mast at its tip), by the misty well.
+  well2: { x: -123.6, z: 86.2 },
+  vale: { x: -129.2, z: 78.9 },
+  lift: { x: -135.7, z: 73.4 },
+  // Where the lift is watched from during the ride: inland and to one side, so the mast stays clear.
+  liftView: { x: -115.7, z: 83.8 },
   // Clockwork Observatory.
   tock: { x: 98, z: 24 },
   dome: { x: 114, z: 30 },

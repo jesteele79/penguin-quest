@@ -62,3 +62,16 @@ export function flavor(s) {
   for (const [re, to] of current.swaps) s = s.replace(re, to);
   return s;
 }
+
+// The words inside a picture (a title, table rows, tape labels, axis names) change with the book too. Kinds,
+// icons and colours name parts of the drawing, not things in the story, so they stay as they are.
+const DRAWING_KEYS = new Set(['kind', 'icon', 'color', 'colors', 'cls', 'shape']);
+export function flavorVisual(v) {
+  if (!current.swaps.length) return v;
+  if (typeof v === 'string') return flavor(v);
+  if (Array.isArray(v)) return v.map(flavorVisual);
+  if (v && Object.getPrototypeOf(v) === Object.prototype) {
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, DRAWING_KEYS.has(k) ? x : flavorVisual(x)]));
+  }
+  return v;
+}

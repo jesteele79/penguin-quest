@@ -205,6 +205,39 @@ export const symbolTexture = () => cached('symbols', () => {
   return toTexture(c);
 });
 
+// A tall number line from lo (bottom) to hi (top), labelled every 2: positive numbers rose, negative ones
+// blue on a lavender wash, zero gold. The left margin is kept clear for a sliding marker.
+export const heightBoardTexture = (lo, hi) => cached(`height-${lo}-${hi}`, () => {
+  const W = 192, H = 768, pad = 40;
+  const c = makeCanvas(W, H);
+  const g = c.getContext('2d');
+  const yOf = (v) => H - pad - ((v - lo) / (hi - lo)) * (H - pad * 2);
+  g.fillStyle = '#fbf3e2';
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = '#dfe0f6';
+  g.fillRect(0, yOf(0), W, H - yOf(0));
+  g.strokeStyle = '#4a3a5a';
+  g.lineWidth = 5;
+  g.beginPath(); g.moveTo(80, yOf(hi) - 10); g.lineTo(80, yOf(lo) + 10); g.stroke();
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.font = '700 36px Fredoka, "Trebuchet MS", sans-serif';
+  for (let v = lo; v <= hi; v++) {
+    const y = yOf(v), major = v % 2 === 0;
+    g.lineWidth = v === 0 ? 8 : major ? 4 : 2.5;
+    g.strokeStyle = v === 0 ? '#e0a020' : '#4a3a5a';
+    g.beginPath(); g.moveTo(v === 0 ? 58 : major ? 64 : 70, y); g.lineTo(v === 0 ? 106 : major ? 96 : 90, y); g.stroke();
+    if (major) {
+      g.fillStyle = v === 0 ? '#c88a10' : v > 0 ? '#c8487a' : '#3a5ab8';
+      g.fillText(v < 0 ? `−${-v}` : `${v}`, 112, y + 2);
+    }
+  }
+  g.strokeStyle = '#8a5c38';
+  g.lineWidth = 12;
+  g.strokeRect(6, 6, W - 12, H - 12);
+  return toTexture(c);
+});
+
 export function signTexture(lines) {
   return cached('sign-' + lines.join('|'), () => {
     const c = makeCanvas(512, 128 * lines.length);

@@ -1,7 +1,7 @@
 // Helpers shared by the skill generators.
 import { Frac } from './frac.js';
 import { fmtNum, fracMarkup, fracTyped } from './fmt.js';
-import { flavor } from './theme.js';
+import { flavor, flavorVisual } from './theme.js';
 
 // A problem's answer:
 //   { kind: 'num', value: Frac }                      whole numbers and decimals
@@ -89,7 +89,7 @@ export function P(def) {
     format: def.answer.kind === 'choice' ? 'choice' : 'input',
     ...def,
     text: flavor(def.text),
-    ...(def.visual?.title ? { visual: { ...def.visual, title: flavor(def.visual.title) } } : {}),
+    ...(def.visual ? { visual: flavorVisual(def.visual) } : {}),
     hint: flavor(def.hint),
     steps: def.steps.map(flavor),
     ...(choices ? { choices } : {}),

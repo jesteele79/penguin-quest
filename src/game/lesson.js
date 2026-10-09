@@ -14,11 +14,11 @@ import { SKILLS } from '../math/skills.js';
 import { Rng } from '../core/rng.js';
 import { NPCS, CAST } from './content.js';
 import { BOOK } from '../books/current.js';
-import { flavor } from '../math/theme.js';
+import { flavor, flavorVisual } from '../math/theme.js';
 
 const STAGES = ['Explore', 'See', 'Watch', 'Your turn'];
 // Lessons were written once; their words follow the book being played, like its word problems do.
-const themed = (v) => (v?.title ? { ...v, title: flavor(v.title) } : v);
+const themed = flavorVisual;
 
 export const lessonSeen = (id) => !!G.save.data.lessons?.[id];
 

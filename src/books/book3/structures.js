@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { lambert } from '../../core/materials.js';
 import { mat } from '../../core/geo.js';
-import { signTexture, awningTexture } from '../../core/textures.js';
+import { signTexture, awningTexture, heightBoardTexture, woodTexture } from '../../core/textures.js';
 import { PropBatch, buildPier, addSignpost, worldMat, shadowed, faceYaw, toWorld } from '../../world/structures.js';
 import { LOC, PATROL_BOARD, NURSERY, ISLANDS } from './layout.js';
 
@@ -179,20 +179,21 @@ function windGardens(ctx) {
     b.add(new THREE.BoxGeometry(D * 2 + 0.4, 0.14, 0.14), WOOD, mat(T.x, y + k * 3, T.z - D));
     b.add(new THREE.BoxGeometry(D * 2 + 0.4, 0.14, 0.14), WOOD, mat(T.x, y + k * 3, T.z + D));
   }
-  const deck = shadowed(new THREE.Mesh(new THREE.BoxGeometry(D * 2 + 1, 0.3, D * 2 + 1), lambert({ color: 0xc89a6a })));
+  const plankMat = lambert({ map: woodTexture(), color: 0xf0d8bc }, { strength: 0.15 });
+  const deck = shadowed(new THREE.Mesh(new THREE.BoxGeometry(D * 2 + 1, 0.3, D * 2 + 1), plankMat));
   deck.position.set(T.x, y + H, T.z);
   ctx.scene.add(deck);
   ctx.collision.addPlatform({ kind: 'box', x: T.x, z: T.z, hw: D + 0.5, hd: D + 0.5, rot: 0, top: y + H + 0.15 });
   for (const [lx, lz] of [[-D, -D], [D, -D], [-D, D], [D, D]]) ctx.collision.addCircle(T.x + lx, T.z + lz, 0.35, 'tower-leg');
-  // A flag of the Glider Guild on the deck.
-  b.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 5), 0xeeeeee, mat(T.x - D, y + H + 2, T.z - D));
-  b.add(new THREE.BoxGeometry(1.6, 0.9, 0.04), 0xffb000, mat(T.x - D + 0.85, y + H + 3.5, T.z - D));
+  // A flag of the Glider Guild on the deck, at the corner off to the side of the flight line.
+  b.add(new THREE.CylinderGeometry(0.06, 0.06, 4, 5), 0xeeeeee, mat(T.x - D, y + H + 2, T.z + D));
+  b.add(new THREE.BoxGeometry(1.6, 0.9, 0.04), 0xffb000, mat(T.x - D - 0.85, y + H + 3.5, T.z + D));
   // Two ramps zig-zag up the east side.
   const rampTo = (x0, z0, y0, x1, z1, y1) => {
     const len = Math.hypot(x1 - x0, z1 - z0), yaw = Math.atan2(x1 - x0, z1 - z0);
     ctx.collision.addPlatform({ kind: 'box', x: (x0 + x1) / 2, z: (z0 + z1) / 2, hw: 1.0, hd: len / 2, rot: yaw, top: y0, top1: y1 });
     const pitch = -Math.atan((y1 - y0) / len);
-    const plank = shadowed(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.2, len + 0.3), lambert({ color: 0xc89a6a })));
+    const plank = shadowed(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.2, len + 0.3), plankMat));
     plank.position.set((x0 + x1) / 2, (y0 + y1) / 2 - 0.1, (z0 + z1) / 2);
     plank.rotation.set(pitch, yaw, 0, 'YXZ');
     ctx.scene.add(plank);
@@ -273,25 +274,80 @@ function cloudValleys(ctx) {
     ctx.collision.addCircle(x, z, 0.7, 'standing-stone');
   }
   b.add(new THREE.CylinderGeometry(2.2, 2.4, 0.3, 16), STONE_D, mat(A.x, ay + 0.15, A.z));
-  // The balloon lift: a tall mast marked every metre above and below the cloud line, with a basket.
-  const L = LOC.vale;
-  const ly = ground(ctx, L.x, L.z);
+  // The balloon lift: a landing reaching out over the clouds, a tall mast marked every metre above and below
+  // the cloud line (the clouds hide the part below zero), and a basket that rides it.
+  const L = LOC.lift, E = LOC.vale;
+  const dl = Math.hypot(L.x - E.x, L.z - E.z), ox = (L.x - E.x) / dl, oz = (L.z - E.z) / dl;
+  const rx = -oz, rz = ox;
+  const deck = ground(ctx, E.x, E.z) + 0.2;
+  buildPier(ctx, { x: L.x - ox * 0.4, z: L.z - oz * 0.4, dirX: -ox, dirZ: -oz, w: 2.8, top: deck, cap: NO_CAP });
   const bottom = -10, top = 14;
   b.add(new THREE.CylinderGeometry(0.22, 0.26, top - bottom, 8), 0xe8e4f0, mat(L.x, (top + bottom) / 2, L.z));
   for (let m = bottom; m <= top; m++) {
-    b.add(new THREE.CylinderGeometry(0.34, 0.34, m === 0 ? 0.18 : 0.08, 10), m === 0 ? 0xffd166 : m < 0 ? 0x6a8ad8 : 0xf0a0c0, mat(L.x, m, L.z));
+    b.add(new THREE.CylinderGeometry(0.34, 0.34, m === 0 ? 0.3 : 0.08, 10), m === 0 ? 0xffd166 : m < 0 ? 0x6a8ad8 : 0xf0a0c0, mat(L.x, m, L.z));
   }
+  b.add(new THREE.SphereGeometry(0.4, 10, 8), 0xffd166, mat(L.x, top + 0.3, L.z));
   ctx.collision.addCircle(L.x, L.z, 0.6, 'lift-mast');
+  // The basket hangs beside the mast on a sliding collar, big enough for a penguin to ride. Its origin is
+  // the basket floor.
+  const dx = rx * 3.0 + ox * 2.2, dz = rz * 3.0 + oz * 2.2, R = Math.hypot(dx, dz);
   const basket = new THREE.Group();
-  const bk = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.9, 1.0, 12), lambert({ color: 0xb8864a })));
-  bk.position.y = 0.5;
-  const balloon = shadowed(new THREE.Mesh(new THREE.SphereGeometry(1.8, 16, 12), lambert({ color: 0xff8fc8 }, { strength: 0.2 })), true, false);
-  balloon.position.y = 4.4;
-  balloon.scale.y = 1.15;
-  basket.add(bk, balloon);
-  basket.position.set(L.x + 1.6, ly, L.z);
+  const bk = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.0, 1.6, 18), lambert({ map: woodTexture(), color: 0xf0d0a8 }, { strength: 0.15 })));
+  bk.position.y = 0.8;
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.14, 6, 28), lambert({ color: WOOD_D }));
+  lip.rotation.x = Math.PI / 2;
+  lip.position.y = 1.6;
+  const balloon = shadowed(new THREE.Mesh(new THREE.SphereGeometry(3.0, 22, 16), lambert({ color: 0xff8fc8 }, { strength: 0.2 })), true, false);
+  balloon.position.y = 7.6;
+  balloon.scale.y = 1.12;
+  const band = new THREE.Mesh(new THREE.TorusGeometry(3.02, 0.18, 6, 36), lambert({ color: 0xfff1b0 }));
+  band.rotation.x = Math.PI / 2;
+  band.position.y = 7.6;
+  basket.add(bk, lip, balloon, band);
+  const ropeMat = lambert({ color: 0x6a4a30 });
+  for (let k = 0; k < 4; k++) {
+    const a = Math.PI / 4 + (k * Math.PI) / 2;
+    const from = new THREE.Vector3(Math.cos(a) * 2.2, 1.6, Math.sin(a) * 2.2), to = new THREE.Vector3(Math.cos(a) * 1.6, 4.75, Math.sin(a) * 1.6);
+    const d = to.clone().sub(from);
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, d.length(), 4), ropeMat);
+    rope.position.copy(from).add(to).multiplyScalar(0.5);
+    rope.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+    basket.add(rope);
+  }
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.08, 6, 14), lambert({ color: BRASS }));
+  collar.rotation.x = Math.PI / 2;
+  collar.position.set(0, 1.0, -R);
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, R - 2.65, 5), lambert({ color: WOOD_D }));
+  arm.rotation.x = Math.PI / 2;
+  arm.position.set(0, 1.0, -(R + 1.75) / 2);
+  basket.add(collar, arm);
+  basket.rotation.y = Math.atan2(dx, dz);
+  basket.position.set(L.x + dx, deck, L.z + dz);
   ctx.scene.add(basket);
-  ctx.lift = { x: L.x, z: L.z, ground: ly, basket, bottom, top };
+  // The height board on the landing, turned toward where the lift is watched from: a number line from -10
+  // to 14 with an arrow that follows the basket, even down in the clouds.
+  const view = LOC.liftView;
+  const B = { x: L.x - ox * 1.7 - rx * 1.05, z: L.z - oz * 1.7 - rz * 1.05 };
+  const yaw = Math.atan2(view.x - B.x, view.z - B.z);
+  const BW = 1.4, BH = 5.6, by = deck + 0.5 + BH / 2;
+  const board = new THREE.Group();
+  board.position.set(B.x, by, B.z);
+  board.rotation.y = yaw;
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(BW, BH), lambert({ map: heightBoardTexture(bottom, top) }, { strength: 0.1 }));
+  face.position.z = 0.07;
+  const back = shadowed(new THREE.Mesh(new THREE.BoxGeometry(BW + 0.12, BH + 0.12, 0.12), lambert({ color: WOOD })));
+  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.34, 3), new THREE.MeshBasicMaterial({ color: 0xff7a2a }));
+  arrow.rotation.z = -Math.PI / 2;
+  arrow.position.set(-BW / 2 + 0.22, 0, 0.12);
+  board.add(back, face, arrow);
+  ctx.scene.add(board);
+  for (const s of [-1, 1]) b.add(new THREE.CylinderGeometry(0.08, 0.1, by + BH / 2 - deck, 6), WOOD_D, worldMat(B.x, deck, B.z, yaw, s * (BW / 2 + 0.1), (by + BH / 2 - deck) / 2, -0.05));
+  const pad = (40 / 768) * BH;
+  ctx.animated.push(() => {
+    const v = Math.max(bottom, Math.min(top, basket.position.y));
+    arrow.position.y = -BH / 2 + pad + ((v - bottom) / (top - bottom)) * (BH - pad * 2);
+  });
+  ctx.lift = { x: L.x, z: L.z, out: { x: ox, z: oz }, view, ground: deck, basket, bottom, top };
 }
 
 // The Clockwork Observatory: a brass dome, three great gears and the clock tower that faces the town.

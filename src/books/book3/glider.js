@@ -58,6 +58,8 @@ class GliderTrials {
     const p = this.deck.clone().addScaledVector(this.dir, -2);
     G.player.teleport(p.x, p.z, this.yaw, this.deck.y);
     G.cam.snap(G.player);
+    // Seen from above and behind the tower, the rings sit mid-screen, clear of the penguin and the quiz.
+    G.cam.setShot({ pos: this.deck.clone().addScaledVector(this.dir, -10).add(V(0, 9, 0)), look: this.center.clone().add(V(0, 5.5, 0)), fov: 60 }, 0.5);
     this.prevAlong = null;
     this.flying = false;
   }
@@ -187,6 +189,7 @@ class GliderTrials {
 
   exit() {
     G.quiz.close();
+    G.cam.release(0.6);
     for (const r of this.rings) this.removeRing(r);
   }
 }
@@ -199,6 +202,7 @@ export function startGliderTrials(params, onDone) {
 const safe = V(LOC.start.x, 12, LOC.start.z);
 let hotT = 0;
 export function skyFrame(dt, pl) {
+  if (pl.riding) return;
   for (const U of UPDRAFTS) {
     if (Math.hypot(pl.pos.x - U.x, pl.pos.z - U.z) < 3.2 && pl.pos.y < U.top && !pl.frozen) {
       pl.vy = Math.max(pl.vy, 10);

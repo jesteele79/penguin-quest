@@ -7,7 +7,7 @@ import { G, pushActivity } from '../../core/state.js';
 import { QuizActivity } from '../../game/activities.js';
 import { twoShot } from '../../game/minigames/common.js';
 import { todayStr } from '../../game/questengine.js';
-import { LOC, ISLANDS } from './layout.js';
+import { LOC } from './layout.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const at = (p, up = 0) => V(p.x, G.terrain.heightAt(p.x, p.z) + up, p.z);
@@ -45,27 +45,47 @@ export function startKiteMix(params, onDone) {
   }));
 }
 
-// The balloon lift: right answers that are heights send the basket to that height on the marked mast.
+// The balloon lift: the penguin rides the basket, and right answers that are heights send it to that height on
+// the marked mast, down into the clouds for negative ones. It is watched from inland, the mast and its height
+// board in the left half of the screen, clear of the quiz.
 export function startAltimeter(params, onDone) {
   const lift = G.world.ctx.lift;
-  const mast = V(lift.x, 2, lift.z);
+  const basket = lift.basket.position;
+  const pl = G.player;
+  const mast = V(lift.x, lift.ground + 5, lift.z);
+  const pos = V(lift.view.x, lift.ground + 10, lift.view.z);
+  const fwd = mast.clone().sub(pos).setY(0).normalize();
+  const look = mast.clone().addScaledVector(V(-fwd.z, 0, fwd.x), pos.distanceTo(mast) * 0.36);
   const target = { y: lift.ground };
-  const move = (dt) => { lift.basket.position.y += (target.y - lift.basket.position.y) * Math.min(1, dt * 2.2); };
+  lift.target = target;
+  pl.riding = true;
+  pl.yaw = Math.atan2(lift.view.x - basket.x, lift.view.z - basket.z);
+  let prev = basket.y;
+  const move = (dt) => {
+    basket.y += (target.y - basket.y) * Math.min(1, dt * 2.2);
+    // Dipping through the cloud line throws up a puff of cloud.
+    if (Math.sign(basket.y + 1) !== Math.sign(prev + 1)) G.world.effects.burst(V(basket.x, 0.6, basket.z), { count: 30, color: [0xf3e8ff, 0xffe4dc, 0xffffff], speed: 3, up: 2, life: 1.2, gravity: -0.3, size: 1.1 });
+    prev = basket.y;
+    if (pl.riding) pl.pos.set(basket.x, basket.y + 0.15, basket.z);
+  };
   G.world.animated.push(move);
+  const land = () => {
+    target.y = lift.ground;
+    pl.riding = false;
+    pl.teleport(lift.x - lift.out.x * 2.6, lift.z - lift.out.z * 2.6, Math.atan2(-lift.out.x, -lift.out.z));
+    setTimeout(() => G.world.animated.splice(G.world.animated.indexOf(move), 1), 3000);
+  };
   pushActivity(new QuizActivity({
     title: 'Balloon Lift', subtitle: '6 heights above and below the cloud line', color: '#7ab8ff', count: 6,
     pick: () => ({ domain: 'neg', skills: ['integers', 'abs_order', 'rational_line'] }),
-    shot: { pos: mast.clone().add(V(-16, 6, 14)), look: mast.clone().add(V(0, 1, 0)), fov: 55 },
+    shot: { pos, look, fov: 58 },
     onCorrect: (p) => {
       const v = p.answer?.kind === 'num' ? p.answer.value.value : null;
       target.y = v !== null && v >= lift.bottom && v <= lift.top ? v : lift.ground + 2 + Math.random() * 6;
       G.world.effects.burst(lift.basket.position.clone().add(V(0, 4, 0)), { count: 24, color: [0xff8fc8, 0xffffff], speed: 3, up: 3, life: 1.1, gravity: 1, size: 0.45 });
     },
-    onFinish: () => {
-      target.y = lift.ground;
-      setTimeout(() => G.world.animated.splice(G.world.animated.indexOf(move), 1), 3000);
-      onDone();
-    },
+    onFinish: () => { land(); onDone(); },
+    onClose: () => land(),
   }));
 }
 
@@ -145,17 +165,23 @@ export function startStarSurvey(params, onDone) {
   }));
 }
 
-// Chapter 6's finale on the Starwell: calm the Hush with a puzzle from every subject.
+// Chapter 6's finale on the Starwell: calm the Hush with a puzzle from every subject. Seen from behind the
+// penguin, the Hush's face sits in the left half of the screen, clear of the quiz.
 export function startHush(params, onDone) {
-  const W = ISLANDS.well;
   const spire = G.world.ctx.spire;
   const order = ['ratios', 'neg', 'ridge', 'cave', 'stars'];
   const S = LOC.spire;
   const pool = V(S.x, G.terrain.heightAt(S.x, S.z) + 1, S.z);
+  const head = spire.head.getWorldPosition(V());
+  const pl = G.player.pos;
+  const dir = head.clone().sub(pl).setY(0).normalize();
+  const right = V(-dir.z, 0, dir.x);
+  const pos = pl.clone().addScaledVector(dir, -9).addScaledVector(right, -2.5).setY(pl.y + 6);
+  const look = head.clone().addScaledVector(right, head.distanceTo(pos) * 0.34).setY(head.y - 3);
   pushActivity(new QuizActivity({
     title: 'Calm the Hush', subtitle: 'Answer gently · 8 puzzles from every subject', color: '#a8a0e0', count: 8, closable: true,
     pick: (i) => ({ domain: order[i % order.length], minTier: 2 }),
-    shot: { pos: pool.clone().add(V(12, 7, 18)), look: V(W.x + 20, W.h + 2, W.z - 30), fov: 58 },
+    shot: { pos, look, fov: 58 },
     onCorrect: (p, n) => {
       spire.calm = Math.max(spire.calm, 0.35 + (n / 8) * 0.5);
       G.world.sky.pulse(['lake', 'grove', 'huts', 'cave', 'ridge'][(n - 1) % 5], 2);
