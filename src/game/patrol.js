@@ -11,7 +11,9 @@ const POOL = [
   { id: 'inarow', weight: 2, make: () => ({ kind: 'inarow', need: 5, text: 'Get 5 answers right in a row (no hints)' }) },
   { id: 'gloom', weight: 2, when: () => G.quests.done('ch0'), make: () => ({ kind: 'gloom', need: 2, text: `Cheer up 2 wandering ${T.glooms}` }) },
   { id: 'slide', weight: 1, make: () => ({ kind: 'slide', need: 250, text: 'Belly-slide 250 meters' }) },
-  { id: 'swim', weight: 1, when: () => G.quests.done('ch0'), make: () => ({ kind: 'swim', need: 150, text: `Swim 150 meters in ${T.swimPlace}` }) },
+  // Skyreach has no water to swim in, but once the glider sail is earned there is a lot of sky.
+  { id: 'swim', weight: 1, when: () => G.quests.done('ch0') && !!T.swimPlace, make: () => ({ kind: 'swim', need: 150, text: `Swim 150 meters in ${T.swimPlace}` }) },
+  { id: 'glide', weight: 1, when: () => !!G.player?.canGlide, make: () => ({ kind: 'glide', need: 120, text: 'Glide 120 meters' }) },
   { id: 'fish', weight: 1, when: () => G.quests.started('sq_tourney'), make: () => ({ kind: 'fish', need: 5, text: `Catch 5 fish at ${T.fishPlace}` }) },
   { id: 'serve', weight: 1, when: () => G.quests.done('ch3'), make: () => ({ kind: 'serve', need: 4, text: `Serve 4 customers at the ${T.stall}` }) },
   { id: 'slalom', weight: 1, when: () => G.quests.started('sq_slalom'), make: () => ({ kind: 'slalom', need: 1, text: `Finish a run in the ${T.slalom}` }) },
@@ -51,7 +53,7 @@ export class Patrol {
     return true;
   }
 
-  // Called from game events. kind: solve | inarow | gloom | slide | swim | fish | serve | slalom | chart | chest | flake
+  // Called from game events. kind: solve | inarow | gloom | slide | swim | glide | fish | serve | slalom | chart | chest | flake
   event(kind, payload = {}) {
     if (!G.quests?.done('ch0')) return;
     this.ensureToday();

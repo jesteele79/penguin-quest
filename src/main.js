@@ -359,7 +359,7 @@ function enterGame(isNew) {
 function startLoop() {
   const timer = new THREE.Timer();
   timer.connect(document);
-  let time = 0, miniT = 0, saveT = 0, distT = { slide: 0, swim: 0 };
+  let time = 0, miniT = 0, saveT = 0, distT = { slide: 0, swim: 0, glide: 0 };
   let lastTarget = null;
   const { world, player, cam, camera, input } = G;
 
@@ -457,8 +457,10 @@ function startLoop() {
         distT.slide += sp * dt;
       }
       if (player.swimming) distT.swim += sp * dt;
+      if (player.gliding) distT.glide += sp * dt;
       if (distT.slide > 5) { G.patrol.event('slide', { amount: distT.slide }); d.counters.slide += distT.slide; distT.slide = 0; }
       if (distT.swim > 5) { G.patrol.event('swim', { amount: distT.swim }); d.counters.swim += distT.swim; distT.swim = 0; }
+      if (distT.glide > 5) { G.patrol.event('glide', { amount: distT.glide }); distT.glide = 0; }
       G.audio.setSlide(player.sliding ? Math.min(1, sp / 18) : player.swimming && sp > 2 ? 0.35 : 0, player.swimming);
 
       cam.update(dt, player, input);

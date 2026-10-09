@@ -38,7 +38,7 @@ const SKYREACH = {
   patrol: 'Sky Patrol', stars: 'Aurora Stars', star: 'Aurora Star', legend: 'Sky Legend', journal: 'Sky Journal',
   praise: ['Brilliant!', 'You got it!', 'Fin-tastic!', 'Sky-high!', 'Out of this world!', 'Star-tastic!', 'Spot on!', 'Waddle-ful!', 'Soaring!', 'Perfect!'],
   dataPlace: "Sky charts at the Professor's table",
-  swimPlace: 'the clouds', fishPlace: 'the mooring pier', stall: "Nimbus's stall", slalom: 'Meadow Kite Run', chart: 'Sky Chart', chartPlace: "the Professor's table",
+  swimPlace: null, fishPlace: 'the mooring pier', stall: "Nimbus's stall", slalom: 'Meadow Kite Run', chart: 'Sky Chart', chartPlace: "the Professor's table",
 };
 
 export const T = byBook({ book1: GLACIER_BAY, book2: EMBER_ISLES, book3: SKYREACH });
