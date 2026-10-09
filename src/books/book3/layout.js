@@ -91,19 +91,27 @@ export const UPDRAFTS = [
   { x: -86, z: 112, top: 22 },
 ];
 
-// Paths on the island tops.
+// Paths on the island tops. They pass around the plaza fountain, beside the Professor's camp, to the foot of
+// the launch tower's ramp and up to the Starwell's ring of stones (tools/plans/overlaps.mjs checks they stay open).
 export const ROADS = [
-  [[4, 100], [2, 88], [0, 76], [-6, 64], [-18, 54], [-30, 46]],
-  [[0, 76], [18, 66], [38, 58]],
+  [[4, 100], [2, 88], [0, 81], [-5, 76], [-11, 71], [-21, 60], [-30, 46]],
+  [[0, 81], [18, 66], [38, 58]],
   [[2, 88], [-14, 88], [-33, 88]],
   [[2, 88], [18, 92], [30, 98]],
-  [[-70, 14], [-84, 4], [-96, -10], [-104, -20]],
+  [[-70, 14], [-84, 4], [-95, -3], [-99, -6]],
   [[-77, 98], [-92, 98], [-106, 104]],
   [[77, 38], [92, 32], [106, 26], [104, 6], [102, -2]],
-  [[62, 114], [76, 120], [88, 128]],
+  [[62, 114], [70, 113], [80, 118], [88, 128]],
   [[86, -61], [80, -76], [76, -90], [62, -88], [50, -86]],
-  [[20, -86], [8, -84], [-4, -80]],
+  [[20, -86], [8, -84], [3, -81]],
 ];
+
+// Guild Town's round cottages: x, z and a colour index.
+export const COTTAGES = [[-14, 80, 1], [16, 52, 2], [-26, 64, 3], [26, 78, 4], [-6, 46, 5], [31, 71, 0], [-34, 80, 2]];
+export const cottageRadius = (i) => 2.3 + (i % 3) * 0.3;
+
+// Street lamps in Guild Town, beside the paths (never on them).
+export const LAMPS = [[6.4, 86.4], [-4, 82], [7.4, 68.9], [-8, 70], [14, 62], [-16, 50], [30, 58], [-26, 90.6], [19.2, 95.5], [2, 104]];
 
 // Sky feathers. The first three are near the mooring, for the tutorial.
 export const SNOWFLAKES = [
@@ -133,14 +141,14 @@ export const BEACONS = [];
 export const BEDS = [];
 export const SEEDS = [];
 export const PINWHEELS = [[-84, -10], [-110, 0], [-96, 16], [-118, -12]];
-export const GAUGES = [[-96, 106], [-114, 92], [-90, 98], [-108, 120]];
+export const GAUGES = [[-96, 106], [-114, 92], [-89, 94], [-108, 120]];
 export const GEARS = [[96, 22], [122, 36], [110, 10], [100, 40]];
 export const PRISMS = [[78, 134], [92, 116], [70, 124], [98, 136]];
 export const SCOPES = [[70, -98], [84, -80], [94, -90], [64, -82]];
 
 export const CHICK_SPOTS = [[-36, 74], [22, 44], [-100, -24], [-94, 112], [116, 40], [72, 120], [80, -78], [-10, -94]];
 export const NURSERY = { x: -24, z: 86 };
-export const PATROL_BOARD = { x: 10, z: 74 };
+export const PATROL_BOARD = { x: 10, z: 78 };
 export const CAULDRON = { x: 26, z: 70 };
 export const FESTIVAL = { x: 0, z: 74 };
 // The glide course: from the Starwell's rim down over the clouds to the town.

@@ -6,7 +6,7 @@ import { lambert } from '../../core/materials.js';
 import { mat } from '../../core/geo.js';
 import { signTexture, awningTexture, heightBoardTexture, woodTexture } from '../../core/textures.js';
 import { PropBatch, buildPier, addSignpost, worldMat, shadowed, faceYaw, toWorld } from '../../world/structures.js';
-import { LOC, PATROL_BOARD, NURSERY, ISLANDS } from './layout.js';
+import { LOC, PATROL_BOARD, NURSERY, ISLANDS, LAMPS, COTTAGES, cottageRadius } from './layout.js';
 import { gearGeometry } from './gear.js';
 
 const NO_CAP = null;
@@ -162,12 +162,14 @@ function mooring(ctx) {
 function nursery(ctx) {
   const N = NURSERY, b = ctx.batch;
   const y = ground(ctx, N.x, N.z);
-  b.add(new THREE.SphereGeometry(4, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0x6ac48a, mat(N.x - 3, y - 0.4, N.z - 3, 0, 0, 0, 1, 0.55, 1));
+  // The mound sits back from the road to the Cloud Valleys bridge, its burrow doors facing the road.
+  const M = { x: N.x - 3, z: N.z - 4.5 };
+  b.add(new THREE.SphereGeometry(4, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0x6ac48a, mat(M.x, y - 0.4, M.z, 0, 0, 0, 1, 0.55, 1));
   for (let k = 0; k < 4; k++) {
     const a = -0.9 + k * 0.6;
-    b.add(new THREE.CircleGeometry(0.42, 12), 0x2a2030, mat(N.x - 3 + Math.sin(a) * 3.6, y + 0.7, N.z - 3 + Math.cos(a) * 3.6, 0, a, 0));
+    b.add(new THREE.CircleGeometry(0.42, 12), 0x2a2030, mat(M.x + Math.sin(a) * 3.6, y + 0.7, M.z + Math.cos(a) * 3.6, 0, a, 0));
   }
-  ctx.collision.addCircle(N.x - 3, N.z - 3, 3.6, 'burrows');
+  ctx.collision.addCircle(M.x, M.z, 3.6, 'burrows');
 }
 
 // The Glider Guild: a launch tower with a ramp to its deck, windmills and kites over the meadow.
@@ -468,8 +470,8 @@ export function buildStructures(ctx) {
   ctx.lanternGlass = [];
   const H = LOC.home;
   // Guild Town: round cottages around the plaza, lamps along the paths.
-  [[-14, 80, 1], [16, 52, 2], [-26, 64, 3], [26, 78, 4], [-6, 46, 5], [32, 64, 0], [-34, 80, 2]].forEach(([x, z, k], i) => cottage(ctx, x, z, faceYaw(x, z, H.x, H.z), k + i, 2.3 + (i % 3) * 0.3));
-  for (const [x, z] of [[6, 88], [-4, 82], [8, 70], [-8, 70], [14, 62], [-16, 50], [30, 58], [-26, 88], [20, 94], [2, 104]]) lamp(ctx, x, z);
+  COTTAGES.forEach(([x, z, k], i) => cottage(ctx, x, z, faceYaw(x, z, H.x, H.z), k + i, cottageRadius(i)));
+  for (const [x, z] of LAMPS) lamp(ctx, x, z);
   const fy = ctx.terrain.heightAt(H.x, H.z + 4);
   ctx.batch.add(new THREE.CylinderGeometry(2.6, 2.9, 0.6, 20), STONE_D, mat(H.x, fy + 0.3, H.z + 4));
   ctx.batch.add(new THREE.CylinderGeometry(0.2, 0.25, 4.5, 8), 0xf0f0ff, mat(H.x, fy + 2.5, H.z + 4));

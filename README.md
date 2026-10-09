@@ -65,7 +65,8 @@ npm run dev       # unminified build with the playtest helpers on window.T and G
 npm run check     # quest sites on sensible terrain and not crowding each other
 node tools/shoot.mjs <plan.mjs> --size 1366x768 [--query book=book2]   # drive the dev build in headless Chrome
 node tools/mapdump.mjs book2 .cache/map-book2.ppm                        # top-down map of a book's terrain
-node tools/shoot.mjs tools/plans/overlaps.mjs --query book=book3          # friends and items inside something solid
+node tools/shoot.mjs tools/plans/overlaps.mjs --query book=book3          # things inside something solid, blocked roads
+node tools/shoot.mjs tools/plans/bridges.mjs --query book=book3           # walk across every sky bridge both ways
 ```
 
 A shoot plan exports `default async (page) => {...}` and uses `page.eval(js)`, `page.shot(name)` and

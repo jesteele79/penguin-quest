@@ -17,17 +17,28 @@ export function buildBridges(ctx) {
   const planks = [];
   ctx.bridges = [];
   for (const B of BRIDGES) {
-    // Start and end a few steps in from each rim, on solid ground.
+    // Start and end a few steps in from each rim, past the steep lip at the island's edge, so the deck carries a
+    // penguin over the lip and onto gentle ground.
     const dx = B.to[0] - B.from[0], dz = B.to[1] - B.from[1];
     const len0 = Math.hypot(dx, dz), ux = dx / len0, uz = dz / len0;
-    const ax = B.from[0] - ux * 4, az = B.from[1] - uz * 4, bx = B.to[0] + ux * 4, bz = B.to[1] + uz * 4;
+    const inset = (px, pz, sx, sz) => {
+      let k = 4;
+      while (k < 10 && terrain.slopeAt(px + sx * k, pz + sz * k) > 0.25) k += 0.5;
+      return k + 1;
+    };
+    const ka = inset(B.from[0], B.from[1], -ux, -uz), kb = inset(B.to[0], B.to[1], ux, uz);
+    const ax = B.from[0] - ux * ka, az = B.from[1] - uz * ka, bx = B.to[0] + ux * kb, bz = B.to[1] + uz * kb;
     const ha = terrain.heightAt(ax, az) + 0.15, hb = terrain.heightAt(bx, bz) + 0.15;
     const len = Math.hypot(bx - ax, bz - az);
     const yaw = Math.atan2(ux, uz);
-    // Gentle bridges sag in the middle; steep ones run straight so every step can be climbed.
+    // Gentle bridges sag in the middle; steep ones run straight so every step can be climbed. Near the ends the
+    // deck rests on the ground wherever the ground is higher than the sag, so there is never a lip to climb.
     const sag = Math.abs(hb - ha) / len > 0.25 ? 0 : Math.min(2.2, len * 0.035);
     const h = (t) => ha + (hb - ha) * t - sag * 4 * t * (1 - t);
-    const at = (t) => ({ x: ax + (bx - ax) * t, z: az + (bz - az) * t, y: h(t) });
+    const at = (t) => {
+      const x = ax + (bx - ax) * t, z = az + (bz - az) * t;
+      return { x, z, y: Math.max(h(t), terrain.heightAt(x, z) + 0.12) };
+    };
     const segs = Math.ceil(len / 2.5);
     for (let i = 0; i < segs; i++) {
       const t0 = i / segs, t1 = (i + 1) / segs;
@@ -38,7 +49,7 @@ export function buildBridges(ctx) {
     const n = Math.floor(len / 0.55);
     for (let i = 0; i <= n; i++) {
       const t = i / n, p = at(t);
-      const pitch = -Math.atan((h(Math.min(1, t + 0.01)) - h(Math.max(0, t - 0.01))) / (len * 0.02));
+      const pitch = -Math.atan((at(Math.min(1, t + 0.01)).y - at(Math.max(0, t - 0.01)).y) / (len * 0.02));
       planks.push(new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y - 0.09, p.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ')), new THREE.Vector3(1, 1, 1)));
     }
     // Rope rails on posts, and the colliders that keep walkers on the planks.

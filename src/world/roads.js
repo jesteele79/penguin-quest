@@ -78,6 +78,7 @@ export class Roads {
       polygonOffsetFactor: -2,
       polygonOffsetUnits: -4,
     });
+    this.list = ROADS;
     for (const road of ROADS) {
       if (road.length < 2) continue;
       const mesh = new THREE.Mesh(this.ribbon(road, 2.4), mat);

@@ -9,7 +9,7 @@ import { canopyTreeGeometry, bushGeometry, fernGeometry, rockGeometry } from '..
 import { islandAt } from './shape.js';
 import {
   LOC, WORLD_RADIUS, CRYSTALS, SNOWFLAKES, CHESTS, GLOOM_SPOTS, CHICK_SPOTS, NURSERY, PATROL_BOARD, FESTIVAL, SLALOM,
-  PINWHEELS, GAUGES, GEARS, PRISMS, SCOPES, BRIDGES, UPDRAFTS, WATER_Y, TREASURE_CLUES, gridToWorld,
+  PINWHEELS, GAUGES, GEARS, PRISMS, SCOPES, BRIDGES, UPDRAFTS, WATER_Y, TREASURE_CLUES, gridToWorld, COTTAGES, cottageRadius, LAMPS,
 } from './layout.js';
 
 const SOFT_RIM = { color: 0xf0e8ff, power: 2.6, strength: 0.22 };
@@ -25,6 +25,8 @@ for (const c of Object.values(CRYSTALS)) CLEAR.push({ ...c, r: 8 });
 for (const [x, z] of [...SNOWFLAKES, ...CHESTS, ...CHICK_SPOTS, ...PINWHEELS, ...GAUGES, ...GEARS, ...PRISMS, ...SCOPES]) CLEAR.push({ x, z, r: 4 });
 for (const g of GLOOM_SPOTS) CLEAR.push({ x: g.x, z: g.z, r: 6 });
 for (const t of TREASURE_CLUES) CLEAR.push({ ...gridToWorld(t.gx, t.gy), r: 6 });
+COTTAGES.forEach(([x, z], i) => CLEAR.push({ x, z, r: cottageRadius(i) + 1.6 }));
+for (const [x, z] of LAMPS) CLEAR.push({ x, z, r: 1.8 });
 for (const B of BRIDGES) for (const [x, z] of [B.from, B.to]) CLEAR.push({ x, z, r: 8 });
 for (const U of UPDRAFTS) CLEAR.push({ x: U.x, z: U.z, r: 6 });
 for (let k = 0; k <= 64; k += 4) {
@@ -148,7 +150,7 @@ export function buildNature(ctx) {
   for (let k = 0; k < 4000 && crystals.flat().length < 70; k++) {
     const x = rng.float(-40, 120), z = rng.float(-120, 160);
     const at = islandAt(x, z);
-    if (!at || (at.id !== 'crystal' && at.id !== 'well') || at.d > -1.5 || !isClear(x, z)) continue;
+    if (!at || (at.id !== 'crystal' && at.id !== 'well') || at.d > -1.5 || !isClear(x, z) || terrain.roadDistanceAt(x, z) < 2.5) continue;
     crystals[at.id === 'well' ? 1 : 0].push({ x, z, y: terrain.heightAt(x, z) - 0.1, s: rng.float(0.8, 1.6), ry: rng.float(0, 6) });
   }
   const crystalMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x2a2048, flatShading: true, transparent: true, opacity: 0.9 });
