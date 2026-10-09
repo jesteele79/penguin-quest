@@ -6,12 +6,13 @@ import { twoShot, V } from './common.js';
 import { CAULDRON, LOC } from '../../world/layout.js';
 import { lambert } from '../../core/materials.js';
 import { todayStr } from '../questengine.js';
+import { T } from '../../books/terms.js';
 
 export function startWarmup(params, onDone) {
   const order = ['lake', 'grove', 'huts', 'cave', 'ridge', 'lake'];
   const prof = G.npcs.get('professor').pos;
   pushActivity(new QuizActivity({
-    title: 'Warm-up', subtitle: 'One puzzle from every corner of the bay', color: '#ffd166', count: 6,
+    title: 'Warm-up', subtitle: `One puzzle from every subject, ${T.where}`, color: '#ffd166', count: 6,
     pick: (i) => ({ domain: order[i % order.length] }),
     onWrong: (p) => G.tutor.calibrate(p.domain, false),
     shot: twoShot(G.player.pos, prof),
