@@ -49,7 +49,8 @@ export class Treasure {
     setTimeout(() => G.world.effects.sparkle(new THREE.Vector3(spot.x, spot.y + 1.2, spot.z), 0xffd166, 50), 500);
     G.addCoins(30);
     const left = this.spots.length - G.save.data.treasures.length;
-    G.toasts.toast(`Treasure found at (${spot.gx}, ${spot.gy})! <b>+30</b>${left ? ` · ${left} to go` : ''}`, { kind: 'gold', ms: 4200 });
+    const num = (v) => (v < 0 ? `\u2212${-v}` : v);
+    G.toasts.toast(`Treasure found at (${num(spot.gx)}, ${num(spot.gy)})! <b>+30</b>${left ? ` · ${left} to go` : ''}`, { kind: 'gold', ms: 4200 });
     G.saveSoon();
     if (!left) G.quests.advance('sq_map');
   }

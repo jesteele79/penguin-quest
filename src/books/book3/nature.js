@@ -9,7 +9,7 @@ import { canopyTreeGeometry, bushGeometry, fernGeometry, rockGeometry } from '..
 import { islandAt } from './shape.js';
 import {
   LOC, WORLD_RADIUS, CRYSTALS, SNOWFLAKES, CHESTS, GLOOM_SPOTS, CHICK_SPOTS, NURSERY, PATROL_BOARD, FESTIVAL, SLALOM,
-  PINWHEELS, GAUGES, GEARS, PRISMS, SCOPES, BRIDGES, UPDRAFTS, WATER_Y,
+  PINWHEELS, GAUGES, GEARS, PRISMS, SCOPES, BRIDGES, UPDRAFTS, WATER_Y, TREASURE_CLUES, gridToWorld,
 } from './layout.js';
 
 const SOFT_RIM = { color: 0xf0e8ff, power: 2.6, strength: 0.22 };
@@ -24,6 +24,7 @@ const CLEAR = [
 for (const c of Object.values(CRYSTALS)) CLEAR.push({ ...c, r: 8 });
 for (const [x, z] of [...SNOWFLAKES, ...CHESTS, ...CHICK_SPOTS, ...PINWHEELS, ...GAUGES, ...GEARS, ...PRISMS, ...SCOPES]) CLEAR.push({ x, z, r: 4 });
 for (const g of GLOOM_SPOTS) CLEAR.push({ x: g.x, z: g.z, r: 6 });
+for (const t of TREASURE_CLUES) CLEAR.push({ ...gridToWorld(t.gx, t.gy), r: 6 });
 for (const B of BRIDGES) for (const [x, z] of [B.from, B.to]) CLEAR.push({ x, z, r: 8 });
 for (const U of UPDRAFTS) CLEAR.push({ x: U.x, z: U.z, r: 6 });
 for (let k = 0; k <= 64; k += 4) {

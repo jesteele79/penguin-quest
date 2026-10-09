@@ -78,7 +78,8 @@ export const HOOKS = {
       case 'board': return V(PATROL_BOARD.x, 0, PATROL_BOARD.z);
       case 'towerTop': return V(LOC.tower.x + 6, 0, LOC.tower.z + 12);
       case 'meadow': return V(LOC.meadow.x, 0, LOC.meadow.z);
-      case 'vale': return V(LOC.vale.x, 0, LOC.vale.z);
+      // A couple of steps inland from the balloon lift's landing.
+      case 'vale': return V(LOC.vale.x + (LOC.vale.x - LOC.lift.x) * 0.25, 0, LOC.vale.z + (LOC.vale.z - LOC.lift.z) * 0.25);
       case 'dome': return V(LOC.dome.x - 8, 0, LOC.dome.z);
       case 'clockFace': return V(LOC.clockFace.x - 2, 0, LOC.clockFace.z);
       case 'kiln': return V(LOC.kiln.x - 4, 0, LOC.kiln.z - 3);

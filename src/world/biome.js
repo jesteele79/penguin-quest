@@ -42,6 +42,8 @@ const SKYREACH = {
   water: {},
   effects: { motes: { color: 0xe8e4ff, fall: 0.05, sway: 1.4, size: 1.2, twinkle: 1, amount: 0.25 }, spray: [0xb8e8c8, 0xf0f8ff], footprint: 0x6a9a7a },
   gloom: 0x6a6890, gloomGlow: [0.06, 0.06, 0.12],
+  // On the map the cloud sea is lilac, paler along the cliffs.
+  mapSea: { shallow: [0.7, 0.68, 0.92], deep: [0.52, 0.5, 0.8] },
 };
 
 export const BIOME = byBook({ book1: GLACIER_BAY, book2: EMBER_ISLES, book3: SKYREACH });

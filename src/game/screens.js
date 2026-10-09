@@ -358,7 +358,7 @@ export class MapScreen extends Screen {
       el('div', { class: 'legend-row', html: '<span class="lg-npc"></span> Friend' }),
       el('div', { class: 'legend-row', html: '<span class="lg-new"></span> Friend with a new quest' }),
       el('div', { class: 'legend-row', html: '<span class="lg-site"></span> Quest spot' }),
-      treasure ? el('div', { class: 'map-clue', html: `<b>Treasure map</b><br>${escapeHTML(clue)}<br><span class="note">Count across for x, then up for y.</span>` }) : null,
+      treasure ? el('div', { class: 'map-clue', html: `<b>Treasure map</b><br>${escapeHTML(clue)}<br><span class="note">${GRID.origin ? 'Start at 0. Count across for x (left of 0 is negative), then up or down for y (below 0 is negative).' : 'Count across for x, then up for y.'}</span>` }) : null,
       el('p', { class: 'note', html: 'Close with <kbd>M</kbd> or <kbd>Esc</kbd>' }),
       btn('Close', () => this.close(), 'primary'));
     this.root.append(el('div', { class: 'panel map-panel' }, canvas, legend));
@@ -367,7 +367,9 @@ export class MapScreen extends Screen {
 
   draw(canvas, grid) {
     const c = canvas.getContext('2d'), W = canvas.width;
-    const src = WORLD_HALF * 0.86;
+    // A four-quadrant chart is drawn closer in, so its squares are big enough to number every line.
+    const o = grid ? GRID.origin ?? 0 : 0;
+    const src = o ? Math.min(WORLD_HALF * 0.86, (GRID.n / 2) * GRID.cell + 30) : WORLD_HALF * 0.86;
     const s = W / (src * 2);
     const X = (x) => W / 2 + x * s, Z = (z) => W / 2 + z * s;
     c.fillStyle = '#0b1033'; c.fillRect(0, 0, W, W);
@@ -377,26 +379,16 @@ export class MapScreen extends Screen {
     if (!grid) { c.beginPath(); c.arc(W / 2, W / 2, W / 2 - 6, 0, Math.PI * 2); c.clip(); }
     c.drawImage(img, (WORLD_HALF - src) * k, (WORLD_HALF - src) * k, src * 2 * k, src * 2 * k, 0, 0, W, W);
     c.restore();
+    const gx = (i) => X(GRID.x0 + i * GRID.cell), gz = (i) => Z(GRID.z0 - i * GRID.cell);
     if (grid) {
-      c.strokeStyle = 'rgba(255, 209, 102, 0.8)';
-      c.lineWidth = 2;
+      // A chart with an origin in the middle has four quadrants: its two zero lines are the axes.
       for (let i = 0; i <= GRID.n; i++) {
-        const x = X(GRID.x0 + i * GRID.cell), z = Z(GRID.z0 - i * GRID.cell);
-        c.beginPath(); c.moveTo(x, Z(GRID.z0)); c.lineTo(x, Z(GRID.z0 - GRID.n * GRID.cell)); c.stroke();
-        c.beginPath(); c.moveTo(X(GRID.x0), z); c.lineTo(X(GRID.x0 + GRID.n * GRID.cell), z); c.stroke();
+        const axis = o > 0 && i === o;
+        c.strokeStyle = axis ? 'rgba(255, 244, 214, 1)' : 'rgba(255, 209, 102, 0.8)';
+        c.lineWidth = axis ? 4 : 2;
+        c.beginPath(); c.moveTo(gx(i), gz(0)); c.lineTo(gx(i), gz(GRID.n)); c.stroke();
+        c.beginPath(); c.moveTo(gx(0), gz(i)); c.lineTo(gx(GRID.n), gz(i)); c.stroke();
       }
-      // Big outlined numbers just inside the edges, so they stay readable over snow.
-      c.font = '700 26px Fredoka, sans-serif';
-      c.textBaseline = 'middle';
-      c.lineWidth = 6;
-      c.strokeStyle = 'rgba(11,16,51,0.95)';
-      c.fillStyle = '#ffd166';
-      const label = (t, x, y) => { c.strokeText(t, x, y); c.fillText(t, x, y); };
-      c.textAlign = 'center';
-      for (let i = 0; i <= GRID.n; i++) label(String(i), X(GRID.x0 + i * GRID.cell), Math.min(W - 16, Z(GRID.z0) - 14));
-      c.textAlign = 'left';
-      for (let i = 1; i <= GRID.n; i++) label(String(i), Math.max(8, X(GRID.x0) + 6), Z(GRID.z0 - i * GRID.cell));
-      c.textBaseline = 'alphabetic';
     }
     for (const m of G.quests.markers(true)) {
       c.save(); c.translate(X(m.x), Z(m.z)); c.scale(1.2, 1.2); drawMarker(c, m.kind, false, m.color); c.restore();
@@ -410,6 +402,35 @@ export class MapScreen extends Screen {
       c.fillRect(X(r.x) - w / 2, Z(r.z) - 42, w, 26);
       c.fillStyle = '#eef5ff';
       c.fillText(r.name, X(r.x), Z(r.z) - 23);
+    }
+    if (grid) {
+      // The chart's numbers go on top of everything. Big and outlined, they stay readable over snow and clouds.
+      c.font = `700 ${o ? 19 : 26}px Fredoka, sans-serif`;
+      c.textBaseline = 'middle';
+      c.lineWidth = 6;
+      c.strokeStyle = 'rgba(11,16,51,0.95)';
+      c.fillStyle = '#ffd166';
+      const label = (t, x, y) => { c.strokeText(t, x, y); c.fillText(t, x, y); };
+      const num = (v) => (v < 0 ? `\u2212${-v}` : String(v));
+      if (o) {
+        // Numbers run along the axes: negative to the left of zero and below it.
+        c.textAlign = 'center';
+        for (let i = 0; i <= GRID.n; i++) if (i !== o) label(num(i - o), gx(i), gz(o) + 15);
+        c.textAlign = 'right';
+        for (let i = 0; i <= GRID.n; i++) if (i !== o) label(num(i - o), gx(o) - 7, gz(i));
+        label('0', gx(o) - 7, gz(o) + 15);
+        c.font = '700 26px Fredoka, sans-serif';
+        c.textAlign = 'left';
+        label('x', gx(GRID.n) + 8, gz(o));
+        c.textAlign = 'center';
+        label('y', gx(o), gz(GRID.n) - 18);
+      } else {
+        c.textAlign = 'center';
+        for (let i = 0; i <= GRID.n; i++) label(String(i), gx(i), Math.min(W - 16, gz(0) - 14));
+        c.textAlign = 'left';
+        for (let i = 1; i <= GRID.n; i++) label(String(i), Math.max(8, gx(0) + 6), gz(i));
+      }
+      c.textBaseline = 'alphabetic';
     }
     const p = G.player.pos;
     c.save();

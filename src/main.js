@@ -6,6 +6,7 @@ import { Quality, PRESETS } from './core/quality.js';
 import { damp } from './core/mathutil.js';
 import { World } from './world/world.js';
 import { terrainColor } from './world/terrain.js';
+import { BIOME } from './world/biome.js';
 import { Player } from './actors/player.js';
 import { FollowCam } from './actors/camera.js';
 import { Buddy } from './actors/buddy.js';
@@ -127,6 +128,7 @@ function buildMapImage(terrain) {
   const img = g.createImageData(S, S);
   const col = [0, 0, 0];
   const k = (WORLD_HALF * 2) / S;
+  const sea = BIOME.mapSea ?? { shallow: [0.15, 0.75, 0.8], deep: [0.05, 0.4, 0.55] };
   for (let py = 0; py < S; py++) {
     for (let px = 0; px < S; px++) {
       const x = -WORLD_HALF + (px + 0.5) * k, z = -WORLD_HALF + (py + 0.5) * k;
@@ -138,7 +140,10 @@ function buildMapImage(terrain) {
       terrainColor(x, z, h, slope, terrain.roadDist[Math.max(0, Math.min(terrain.roadDist.length - 1, i))], col);
       const shade = Math.max(0.45, Math.min(1.2, 1 + (gx + gz) * 0.35));
       let r = col[0] * shade, gg = col[1] * shade, b = col[2] * shade;
-      if (h < WATER_Y) { const d = Math.min(1, -h / 5); r = 0.15 - d * 0.1; gg = 0.75 - d * 0.35; b = 0.8 - d * 0.25; }
+      if (h < WATER_Y) {
+        const d = Math.min(1, -h / 5), [s0, s1, s2] = sea.shallow, [d0, d1, d2] = sea.deep;
+        r = s0 + (d0 - s0) * d; gg = s1 + (d1 - s1) * d; b = s2 + (d2 - s2) * d;
+      }
       const o = (py * S + px) * 4;
       img.data[o] = Math.min(255, r * 235); img.data[o + 1] = Math.min(255, gg * 235); img.data[o + 2] = Math.min(255, b * 245); img.data[o + 3] = 255;
     }

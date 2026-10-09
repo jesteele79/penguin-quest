@@ -115,3 +115,47 @@ test('book2: every snorkel ring floats in water deep enough to swim', () => {
     }
   });
 });
+
+const L3 = await import('../src/books/book3/layout.js');
+const shape3 = await import('../src/books/book3/shape.js');
+
+test('book3: things you walk to stand on an island, a few steps in from the rim', () => {
+  const { SITE_SETS } = BOOKS.book3.story;
+  const spots = [
+    ...L3.SNOWFLAKES.map(([x, z]) => ['feather', x, z]),
+    ...L3.CHESTS.map(([x, z]) => ['chest', x, z]),
+    ...L3.CHICK_SPOTS.map(([x, z]) => ['puffling', x, z]),
+    ...L3.GLOOM_SPOTS.map(({ x, z }) => ['hushling', x, z]),
+    ...Object.entries(L3.CRYSTALS).map(([k, { x, z }]) => [`anchor ${k}`, x, z]),
+    ...Object.entries(BOOKS.book3.cast.NPCS).filter(([, n]) => n.pos).map(([k, n]) => [`npc ${k}`, n.pos.x, n.pos.z]),
+    ...Object.entries(SITE_SETS).filter(([, s]) => s.points).flatMap(([k, s]) => s.points.map(([x, z]) => [k, x, z])),
+    ...L3.TREASURE_CLUES.map((c) => { const w = L3.gridToWorld(c.gx, c.gy); return [`treasure (${c.gx}, ${c.gy})`, w.x, w.z]; }),
+    ...['vale', 'meadow', 'towerTop', 'arena', 'dome', 'clockFace', 'kiln', 'scope'].map((k) => { const p = BOOKS.book3.hooks.anchor(k, {}); return [`game spot ${k}`, p.x, p.z]; }),
+    ['balloon lift view', L3.LOC.liftView.x, L3.LOC.liftView.z],
+  ];
+  for (const [what, x, z] of spots) {
+    const at = shape3.islandAt(x, z);
+    assert.ok(at && at.d < -3, `${what} at (${x}, ${z}) is ${at ? 'too close to the rim' : 'over the clouds'}`);
+  }
+  assert.ok(!shape3.islandAt(L3.LOC.lift.x, L3.LOC.lift.z), 'the balloon lift mast stands out over the clouds');
+});
+
+test('book3: the treasure chart reaches every clue', () => {
+  const { GRID } = L3;
+  for (const c of L3.TREASURE_CLUES) {
+    assert.ok(Math.abs(c.gx) <= GRID.origin && Math.abs(c.gy) <= GRID.origin, `(${c.gx}, ${c.gy}) is off the chart`);
+    const w = L3.gridToWorld(c.gx, c.gy);
+    assert.equal(w.x, GRID.x0 + (c.gx + GRID.origin) * GRID.cell);
+    assert.equal(w.z, GRID.z0 - (c.gy + GRID.origin) * GRID.cell);
+  }
+});
+
+test('book3: every bridge joins two islands and every updraft rises from solid ground', () => {
+  for (const B of L3.BRIDGES) {
+    const dx = B.to[0] - B.from[0], dz = B.to[1] - B.from[1], l = Math.hypot(dx, dz);
+    const a = shape3.islandAt(B.from[0] - (dx / l) * 4, B.from[1] - (dz / l) * 4);
+    const b = shape3.islandAt(B.to[0] + (dx / l) * 4, B.to[1] + (dz / l) * 4);
+    assert.ok(a && b && a.id !== b.id, `the bridge from (${B.from}) to (${B.to}) does not join two islands`);
+  }
+  for (const U of L3.UPDRAFTS) assert.ok(shape3.islandAt(U.x, U.z)?.d < -4, `updraft at (${U.x}, ${U.z}) is not on solid ground`);
+});

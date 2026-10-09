@@ -30,7 +30,7 @@ export const LOC = {
   easel: { x: -20, z: 68 },
   kids: { x: 18, z: 84 },
   vela: { x: 8, z: 60 },
-  cinder: { x: 9, z: 104 },
+  cinder: { x: 8, z: 100 },
   nimbus: { x: 25, z: 66 },
   counter: { x: 21, z: 62 },
   // Wind Gardens: the Glider Guild's launch tower and the kite meadows.
@@ -87,8 +87,8 @@ export const BRIDGES = [
 // Updrafts: columns of rising wind that lift a penguin to a higher island or into a glide.
 export const UPDRAFTS = [
   { x: 14, z: 42, top: 40 },
-  { x: -70, z: -30, top: 58 },
-  { x: -84, z: 118, top: 22 },
+  { x: -76, z: -22, top: 58 },
+  { x: -86, z: 112, top: 22 },
 ];
 
 // Paths on the island tops.
@@ -111,7 +111,7 @@ export const SNOWFLAKES = [
   [-24, 76], [28, 82], [-10, 46], [24, 48], [-112, -18], [-80, -22], [-118, 14], [-86, 22],
   [-120, 98], [-96, 112], [-88, 86], [96, 44], [120, 36], [112, 8], [90, 18], [72, 132],
   [96, 140], [100, 118], [64, -80], [90, -100], [86, -76], [-16, -96], [10, -92], [-2, -66],
-  [-40, 70], [34, 88], [-72, 8],
+  [-36, 70], [34, 88], [-72, 8],
 ];
 
 export const CHESTS = [
@@ -146,9 +146,9 @@ export const FESTIVAL = { x: 0, z: 74 };
 // The glide course: from the Starwell's rim down over the clouds to the town.
 export const SLALOM = { top: { x: -116, z: -26 }, toward: { x: -72, z: 8 } };
 
-// Tock's star chart: a grid with (0, 0) in the middle, 15 units a square, so treasure hides in all four
-// quadrants. origin says which line is zero.
-export const GRID = { x0: -90, z0: 90, cell: 15, n: 12, origin: 6 };
+// Tock's star chart: a grid with (0, 0) in the middle of the sky, 15 units a square, running from -8 to 8
+// both ways, so treasure hides in all four quadrants. origin says which line is zero.
+export const GRID = { x0: -120, z0: 120, cell: 15, n: 16, origin: 8 };
 export const gridToWorld = (gx, gy) => ({ x: gx * GRID.cell, z: -gy * GRID.cell });
 export const TREASURE_CLUES = [
   { gx: -6, gy: 2, clue: 'Tock says: (−6, 2).' },
