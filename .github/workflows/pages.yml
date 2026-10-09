@@ -1,9 +1,11 @@
-# Tests, builds and publishes the installable game to GitHub Pages on every push to master.
+# Tests, builds and publishes the installable game to GitHub Pages when a version tag is pushed
+# (git tag v1.0.1 && git push origin v1.0.1). Pushes to master only run the tests (tests.yml), so the game a
+# child has installed changes only on a release.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:

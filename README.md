@@ -6,7 +6,10 @@ multiplication and division, fractions, decimals and place value, geometry and m
 sense, algebra and data.
 
 **Play:** https://jesteele79.github.io/penguin-quest/ (in Chrome, use the install icon in the address
-bar to add it as an app; it then works offline and updates itself after each push).
+bar to add it as an app; it then works offline and updates itself after each release).
+
+**Parents:** the [parent guide](https://jesteele79.github.io/penguin-quest/parents.html) covers installing on a
+Chromebook, setup, the grown-up lock, backups and troubleshooting.
 
 ## The books
 
@@ -74,6 +77,7 @@ node tools/shoot.mjs tools/plans/trailwalk.mjs --query book=book2         # foll
 TRAILWALK_FROM=random:40 node tools/shoot.mjs tools/plans/trailwalk.mjs  # ...from 40 random spots instead of camp
 node tools/shoot.mjs tools/plans/fullrun.mjs --query book=book3           # play the whole story, report any errors
 node tools/shoot.mjs tools/plans/leaks.mjs --query book=book2             # repeat games, check nothing piles up unfreed
+node tools/shoot.mjs tools/plans/grownups.mjs                             # fresh start, grown-up PIN, backups, reset
 ```
 
 A shoot plan exports `default async (page) => {...}` and uses `page.eval(js)`, `page.shot(name)` and
@@ -82,7 +86,23 @@ A shoot plan exports `default async (page) => {...}` and uses `page.eval(js)`, `
 `npx http-server dist` (or any static server) serves the build locally; the dev build is at
 `/PenguinQuest.html` and the installable version at `/pwa/`.
 
-Pushing to `master` runs the tests, builds, and publishes `dist/pwa` to GitHub Pages.
+## Releasing
+
+The live game changes only when a version tag is pushed, so the copy a child has installed stays put while
+work goes on. Pushes to `master` run the tests and a build (`.github/workflows/tests.yml`) without publishing.
+To release, set the version in `package.json` (the grown-ups screen and the parent guide show it), commit, then:
+
+```bash
+git tag v1.0.1
+```
+
+```bash
+git push origin master v1.0.1
+```
+
+The tag runs `.github/workflows/pages.yml`: tests, build, and `dist/pwa` (the game, the parent guide from
+`src/parents.html`, the offline service worker) published to GitHub Pages. Installed copies pick up the release
+the next time they open with internet. Saves made before 1.0 are cleared once when 1.0 first starts.
 
 ## Layout
 

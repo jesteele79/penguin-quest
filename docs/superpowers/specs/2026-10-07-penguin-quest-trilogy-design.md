@@ -481,3 +481,7 @@ All five phases are done and deployed: the three books are playable from start t
   confirms them, so review takes at most about a quarter of the problems (in Book 2 it had taken half).
 - Long sessions are checked for leaks (`tools/plans/leaks.mjs`): every mini-game in all three books is played
   over and over while the graphics memory and scene are counted, and nothing grows after the first round.
+- Release 1.0: the live site publishes only from version tags, so an installed copy changes only on a release.
+  The grown-ups screen adds backups (one file holding every book), an optional grown-up PIN that also guards New
+  Adventure, a link to the parent guide (`src/parents.html`, published beside the game) and the version number.
+  Saves from before 1.0 are cleared once when it first starts, so every child begins fresh.

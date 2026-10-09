@@ -431,6 +431,16 @@ sup { font-size: 0.62em; }
 
 .confirm-panel { width: min(460px, 100%) !important; }
 .pause-panel { width: min(440px, 100%) !important; }
+.pin-panel { width: min(360px, 100%) !important; text-align: center; }
+.pin-msg { min-height: 1.4em; }
+.pin-msg.warn { color: var(--bad); font-weight: 700; }
+.pin-dots { display: flex; justify-content: center; gap: 14px; margin: 14px 0 18px; }
+.pin-dots span { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--frost); }
+.pin-dots span.on { background: var(--lantern); border-color: var(--lantern); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.pin-key { justify-content: center; font-size: 1.4em; font-weight: 700; padding: 0.6em 0; }
+.gu-version { margin-top: 18px; text-align: right; opacity: 0.7; }
+a.btn { text-decoration: none; }
 .pause-stats { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 16px; color: var(--frost); font-weight: 600; }
 .pause-stats span { display: inline-flex; align-items: center; gap: 5px; }
 .menu-list { display: flex; flex-direction: column; gap: 9px; }

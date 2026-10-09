@@ -1,6 +1,9 @@
+import { freshStart } from '../game/save.js';
+
 // The book being played is fixed for the life of the page: switching books saves and reloads, so every
 // module can pick its book's data once, at load. A ?book= address (for testing) wins over the save.
 const SAVE_KEY = 'penguinquest.save.v2';
+try { freshStart(globalThis.localStorage); } catch { /* storage blocked */ }
 const IDS = ['book1', 'book2', 'book3'];
 
 function readActive() {

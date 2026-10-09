@@ -188,6 +188,8 @@ function boot() {
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.3, 1400);
 
   G.save = new SaveStore();
+  // Ask Chrome to keep the saved game even when the disk runs low (an installed app is usually granted this).
+  navigator.storage?.persist?.().catch(() => {});
   const peek = G.save.peek();
   if (peek && (peek.active ?? 'book1') !== ACTIVE) { G.save.load(); G.save.switchBook(ACTIVE); G.save.save(); }
   const world = new World(scene, renderer);

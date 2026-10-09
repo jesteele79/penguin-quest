@@ -10,12 +10,15 @@ import { REGION_COLORS } from '../core/materials.js';
 import { REGIONS, WORLD_HALF, GRID } from '../world/layout.js';
 import { orbitShot } from './minigames/common.js';
 import { ExploreActivity } from './activities.js';
+import { lock, readBackup } from './save.js';
 import { BOOKS, BOOK_ICONS, bookStatus, isUnlocked, skillsToGo, UNLOCK_MASTERY, bookById, nextBook, placeName } from '../books/books.js';
 import { T } from '../books/terms.js';
 import { ACTIVE } from '../books/active.js';
 import { BOOK } from '../books/current.js';
 import { LESSONS } from '../math/lessons.js';
 import { SKILLS } from '../math/skills.js';
+
+const VERSION = typeof __VERSION__ === 'undefined' ? 'dev' : __VERSION__;
 
 const NAME_IDEAS = ['Pip', 'Waddles', 'Frosty', 'Nova', 'Pebble', 'Blizzard', 'Sprinkles', 'Tux', 'Iggy', 'Aurora', 'Flipper', 'Comet'];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -92,7 +95,7 @@ export class TitleScreen extends Screen {
       const ch = chapterNumber(d);
       const where = d.festival ? T.legend : ch === 0 ? 'Prologue' : `Chapter ${ch}`;
       menu.append(btn(`<span class="big">Continue</span><span class="small">${escapeHTML(d.profile.name)} · ${where} · ${crystals} of 5 ${T.crystals}</span>`, () => this.onContinue(), 'primary title-btn', { autofocus: true }));
-      menu.append(btn('<span class="big">New Adventure</span>', () => this.confirmNew(), 'title-btn'));
+      menu.append(btn('<span class="big">New Adventure</span>', () => asGrownup(() => this.confirmNew()), 'title-btn'));
     } else {
       menu.append(btn('<span class="big">Start Adventure</span>', () => this.onNew(), 'primary title-btn', { autofocus: true }));
     }
@@ -105,7 +108,7 @@ export class TitleScreen extends Screen {
       menu,
       bookShelf(d),
       el('div', { class: 'title-foot' },
-        btn('For grown-ups', () => pushActivity(new GrownupsScreen()), 'ghost small'),
+        btn('For grown-ups', () => asGrownup(() => pushActivity(new GrownupsScreen())), 'ghost small'),
         el('span', { class: 'title-hint keys-only', html: 'Use <kbd>↑</kbd><kbd>↓</kbd> and <kbd>Enter</kbd>, or click' })),
     );
   }
@@ -289,7 +292,7 @@ export class PauseScreen extends Screen {
       btn('Wardrobe', () => pushActivity(new ShopScreen(false))),
       btn('Skill Book', () => pushActivity(new SkillBookScreen())),
       btn('Settings', () => pushActivity(new SettingsScreen())),
-      btn('For grown-ups', () => pushActivity(new GrownupsScreen())),
+      btn('For grown-ups', () => asGrownup(() => pushActivity(new GrownupsScreen()))),
       btn('Save and quit to title', () => { G.saveNow(); popActivity(this); G.toTitle(); }, 'ghost'));
     this.root.append(el('div', { class: 'panel pause-panel' },
       el('h1', { text: 'Paused' }),
@@ -842,6 +845,74 @@ export class SkillBookScreen extends Screen {
   }
 }
 
+// ------------------------------------------------------------ Grown-up lock
+// Four digits, typed or tapped. With check, the PIN to match; without, a new PIN chosen and typed twice.
+export class PinScreen extends Screen {
+  constructor({ check = null, onDone }) {
+    super('pin-screen');
+    Object.assign(this, { check, onDone, entry: '', first: null, msg: '' });
+  }
+
+  render() {
+    this.root.innerHTML = '';
+    const title = this.check ? 'Grown-ups only' : this.first ? 'Type it again' : 'Choose a PIN';
+    const note = this.msg || (this.check ? 'Type the grown-up PIN.' : this.first ? 'The same four digits, to be sure.' : 'Four digits only grown-ups know.');
+    const pad = el('div', { class: 'pin-pad' });
+    for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']) {
+      pad.append(k ? btn(k, () => this.press(k), 'pin-key', { 'aria-label': k === '⌫' ? 'Delete' : k }) : el('span'));
+    }
+    this.root.append(el('div', { class: 'panel pin-panel' },
+      el('h1', { text: title }),
+      el('p', { class: this.msg ? 'note pin-msg warn' : 'note pin-msg', text: note, 'aria-live': 'polite' }),
+      el('div', { class: 'pin-dots', 'aria-label': `${this.entry.length} of 4 digits` }, ...[0, 1, 2, 3].map((i) => el('span', { class: i < this.entry.length ? 'on' : '' }))),
+      pad,
+      btn('Cancel', () => this.close(), 'ghost')));
+  }
+
+  press(k) {
+    if (k === '⌫') this.entry = this.entry.slice(0, -1);
+    else if (this.entry.length < 4) this.entry += k;
+    this.msg = '';
+    if (this.entry.length === 4) { this.submit(); return; }
+    this.render();
+    this.root.querySelector(`[aria-label="${k === '⌫' ? 'Delete' : k}"]`)?.focus();
+  }
+
+  submit() {
+    const pin = this.entry;
+    this.entry = '';
+    if (this.check) {
+      if (pin === this.check) { popActivity(this); this.onDone(); return; }
+      this.msg = 'That is not the PIN. Try again.';
+    } else if (!this.first) {
+      this.first = pin;
+    } else if (pin === this.first) {
+      popActivity(this);
+      this.onDone(pin);
+      return;
+    } else {
+      this.first = null;
+      this.msg = 'The two did not match. Choose a PIN again.';
+    }
+    G.audio.play(this.msg ? 'wrong' : 'click');
+    this.render();
+    this.focusFirst();
+  }
+
+  onKey(e, inField) {
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); this.press(e.key); return; }
+    if (e.key === 'Backspace') { e.preventDefault(); this.press('⌫'); return; }
+    super.onKey(e, inField);
+  }
+}
+
+// Straight through, or past the PIN screen first when a grown-up lock is set.
+function asGrownup(then) {
+  const pin = lock.get();
+  if (!pin) { then(); return; }
+  pushActivity(new PinScreen({ check: pin, onDone: then }));
+}
+
 // ------------------------------------------------------------ Grown-ups dashboard
 export class GrownupsScreen extends Screen {
   constructor() { super('grownups-screen'); }
@@ -907,10 +978,68 @@ export class GrownupsScreen extends Screen {
       el('div', { class: 'set-row' }, el('div', {}, el('div', { class: 'label', text: 'Story pace' }), el('div', { class: 'note', text: 'With one chapter per day, the next chapter opens the morning after the last one is finished. Side quests, the daily patrol and practice are always open.' })), paceSel),
       el('h2', { text: 'Books' }),
       ...bookRows,
+      el('h2', { text: 'This device' }),
+      el('div', { class: 'set-row' },
+        el('div', {}, el('div', { class: 'label', text: 'Backups' }), el('div', { class: 'note', text: 'Progress is saved only on this device. A backup file brings it back after browsing data is cleared, after a reset, or on another computer.' })),
+        el('div', { class: 'row' }, btn('Save a backup', () => this.backup()), btn('Load a backup', () => this.loadBackup()))),
+      el('div', { class: 'set-row' },
+        el('div', {}, el('div', { class: 'label', text: 'Grown-up lock' }), el('div', { class: 'note', text: lock.get() ? 'On. This screen and New Adventure ask for the PIN.' : 'Off. Set a PIN so only a grown-up can open this screen or start a new adventure.' })),
+        el('div', { class: 'row' }, ...(lock.get()
+          ? [btn('Change PIN', () => this.choosePin()), btn('Turn off', () => { lock.clear(); this.render(); this.say('The grown-up lock is off.'); }, 'ghost')]
+          : [btn('Set a PIN', () => this.choosePin())]))),
+      el('div', { class: 'set-row' },
+        el('div', {}, el('div', { class: 'label', text: 'Parent guide' }), el('div', { class: 'note', text: 'Installing, settings, backups and what to expect, on one page.' })),
+        el('a', { class: 'btn', href: 'parents.html', target: '_blank', rel: 'noopener', text: 'Open the guide' })),
       el('div', { class: 'row' },
         btn('Copy report', () => this.copy(data, tut), ''),
         btn('Reset all progress', () => pushActivity(new ConfirmScreen('Reset all progress?', 'This erases the saved game and the practice history on this device. It cannot be undone.', 'Erase everything', () => { G.save.wipe(); location.reload(); })), 'danger ghost')),
-      el('p', { class: 'note copy-note', 'aria-live': 'polite' })));
+      el('p', { class: 'note copy-note', 'aria-live': 'polite' }),
+      el('p', { class: 'note gu-version', text: `Penguin Quest ${VERSION}` })));
+  }
+
+  say(text) {
+    const note = this.root.querySelector('.copy-note');
+    if (note) note.textContent = text;
+  }
+
+  // The whole save, every book, as a file in Downloads.
+  backup() {
+    if (G.inGame) G.saveNow();
+    const text = G.save.backupText();
+    if (!text) { this.say('There is no saved game to back up yet.'); return; }
+    const name = `penguin-quest-backup-${new Date().toLocaleDateString('en-CA')}.json`;
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const a = el('a', { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    this.say(`Saved ${name} to the Downloads folder.`);
+  }
+
+  loadBackup() {
+    const input = el('input', { type: 'file', accept: '.json,application/json' });
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      let b;
+      try { b = readBackup(await file.text()); } catch (e) { this.say(e.message); return; }
+      const when = b.saved && !Number.isNaN(b.saved.getTime()) ? ` from ${b.saved.toLocaleDateString()}` : '';
+      const body = `${b.data.profile.name}'s game${when}, in ${bookById(b.data.active).title}. It replaces the progress on this device.`;
+      pushActivity(new ConfirmScreen('Load this backup?', body, 'Load backup', () => {
+        if (G.save.restore(b.data)) location.reload();
+        else this.say('Could not load the backup: this browser is blocking saving.');
+      }));
+    });
+    input.click();
+  }
+
+  choosePin() {
+    pushActivity(new PinScreen({ onDone: (pin) => {
+      lock.set(pin);
+      this.render();
+      this.say('Locked. This screen and New Adventure now ask for the PIN. Write it down somewhere safe.');
+    } }));
   }
 
   copy(d, tut) {

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penguin Quest: Parent guide</title>
+<meta name="description" content="Installing Penguin Quest on a Chromebook, setting it up, backups and what to expect.">
+<style>
+  :root { --ink: #1b2240; --soft: #4a5378; --line: #dfe4f3; --paper: #ffffff; --wash: #f4f6fc; --accent: #2f6fe4; --gold: #e0a422; --warn: #c25a12; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #eef2ff; --soft: #b6c0e4; --line: #2c3566; --paper: #121a42; --wash: #0b1033; --accent: #7fb2ff; --gold: #ffc45c; --warn: #ffad5c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--wash); color: var(--ink); font: 17px/1.55 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+  header { margin-bottom: 18px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 6px; }
+  .sub { color: var(--soft); margin: 0; }
+  section { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 14px 0; }
+  h2 { font-size: 20px; margin: 0 0 10px; }
+  h2 .n { display: inline-block; min-width: 1.6em; color: var(--gold); }
+  p { margin: 8px 0; }
+  ol, ul { margin: 8px 0; padding-left: 1.3em; }
+  li { margin: 5px 0; }
+  a { color: var(--accent); }
+  code, kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.9em; background: var(--wash); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+  .warn { border-left: 4px solid var(--warn); }
+  .tip { color: var(--soft); font-size: 0.95em; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.95em; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--soft); font-weight: 600; }
+  footer { color: var(--soft); font-size: 0.9em; text-align: center; margin-top: 24px; }
+  @media print { body { background: #fff; color: #000; } section { break-inside: avoid; border-color: #ccc; } a { color: #000; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Penguin Quest: parent guide</h1>
+  <p class="sub">Version {{VERSION}}. Installing on a Chromebook, setting up, backups and what to expect.</p>
+</header>
+
+<section>
+  <h2>What it is</h2>
+  <p>A 3D adventure where a penguin explores islands, helps friends and solves math along the way. There are three books:
+    <b>Aurora Rescue</b> (grade 4), <b>The Ember Isles</b> (grade 5) and <b>Skyreach</b> (grade 6). Each book has a story told in a
+    prologue and seven chapters, about 200 math problems woven into puzzles and mini-games, and short lessons that teach a new idea
+    the first time it comes up. Problems get harder when he is doing well, and easier, with hints, when he is stuck.</p>
+  <p>There are no ads, accounts, purchases or chat, and the game sends nothing over the internet.</p>
+</section>
+
+<section>
+  <h2><span class="n">1</span>Install it on the Chromebook</h2>
+  <ol>
+    <li>Open Chrome and go to <a href="https://jesteele79.github.io/penguin-quest/">jesteele79.github.io/penguin-quest</a>.
+      The first time needs the internet; after that the game also works offline.</li>
+    <li>When the title screen appears, click the install icon at the right end of the address bar. If it is not there,
+      open Chrome's <b>⋮</b> menu and choose <b>Install Penguin Quest</b> (in newer versions of Chrome it is under
+      <b>Cast, save and share</b>).</li>
+    <li>The game opens in its own window and appears in the Launcher. To pin it to the shelf, right-click its icon and
+      choose <b>Pin</b>.</li>
+  </ol>
+  <p class="tip">A school-managed Chromebook may not allow installing apps or opening the site. If so, ask the school, or
+    play it in a normal Chrome tab.</p>
+</section>
+
+<section>
+  <h2><span class="n">2</span>Set it up before handing it over</h2>
+  <ol>
+    <li><b>Optional quick test.</b> Play for a few minutes. Movement should be smooth and you should hear music.
+      If it stutters, see "Troubleshooting" below.</li>
+    <li><b>Start him fresh.</b> If you played, open <b>For grown-ups</b> (bottom left of the title screen) and choose
+      <b>Reset all progress</b>. Progress from versions before 1.0 is cleared automatically.</li>
+    <li><b>Let him make his penguin:</b> a name, his <b>real school grade</b> (this sets the difficulty) and a scarf.</li>
+    <li><b>Choose your settings</b> in For grown-ups:
+      <ul>
+        <li><b>Story pace.</b> "One chapter per day" (the default) opens the next chapter the morning after he finishes one.
+          Side quests, the daily patrol board and practice are always open. "No limit" lets him play straight through.</li>
+        <li><b>Grown-up lock.</b> Set a four-digit PIN so only you can open For grown-ups or start a new adventure,
+          which would erase his progress. Write the PIN down.</li>
+        <li><b>Save a first backup</b> (see section 4).</li>
+      </ul>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">3</span>What to expect</h2>
+  <ul>
+    <li><b>The next book opens</b> when he has finished the story <i>and</i> mastered 80% of that grade's skills.
+      Strong students usually get there as the story ends. Most children need some extra practice first: the game
+      shows how many skills are left and points him to a crystal where practice serves exactly those skills. You can
+      also open the next book early in For grown-ups, under Books.</li>
+    <li><b>If he is already past a grade,</b> open the next book early. He can then switch books from the bookshelf on the
+      title screen, or, after the prologue, ask the captain at the dock to sail him there.</li>
+    <li><b>Help built in:</b> a hint button on every puzzle, step-by-step explanations after a few misses, and the lessons,
+      which he can replay from the journal. In Settings: read-aloud for questions and story, larger text, easy-reading
+      spacing, and Gentle mode (battle creatures wait instead of advancing).</li>
+    <li><b>Lost or stuck?</b> The pause menu has <b>Back to the start</b>. The gold sparkle trail always leads to the next goal.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Controls</h2>
+  <table>
+    <tr><th></th><th>Keyboard</th><th>Touchscreen</th><th>Game controller</th></tr>
+    <tr><td>Walk and turn</td><td><kbd>W</kbd> or <kbd>↑</kbd>, <kbd>A</kbd> <kbd>D</kbd></td><td>Drag on the left side</td><td>Left stick</td></tr>
+    <tr><td>Look around</td><td>Drag with the mouse or trackpad</td><td>Drag on the right side</td><td>Right stick</td></tr>
+    <tr><td>Jump (hold to glide in Skyreach)</td><td><kbd>Space</kbd></td><td>Jump button</td><td>Bottom button (✕ / A)</td></tr>
+    <tr><td>Belly-slide, swim faster</td><td><kbd>Shift</kbd></td><td>Slide button</td><td>Right button (○ / B)</td></tr>
+    <tr><td>Talk, use</td><td><kbd>E</kbd></td><td>Tap the bubble</td><td>Left button (□ / X)</td></tr>
+    <tr><td>Journal (quests and lessons)</td><td><kbd>J</kbd></td><td>Book button</td><td>Top button (△ / Y)</td></tr>
+    <tr><td>Map</td><td><kbd>M</kbd></td><td>Tap the little map</td><td>Create / View button</td></tr>
+    <tr><td>Hint</td><td><kbd>H</kbd></td><td>Hint button</td><td>Left button (□ / X)</td></tr>
+    <tr><td>Pause menu</td><td><kbd>Esc</kbd></td><td>☰ button</td><td>Options / Menu button</td></tr>
+  </table>
+  <p class="tip">The instructions in the game follow whatever he used last, so they talk about buttons and taps when he
+    plays with a controller or a touchscreen.</p>
+</section>
+
+<section class="warn">
+  <h2><span class="n">4</span>Backups: please read</h2>
+  <p>His progress lives only in Chrome on that Chromebook. It is erased by clearing browsing data with
+    "Cookies and other site data" ticked, by uninstalling the app, by removing his account from the Chromebook, or by a
+    Powerwash. It does not follow him to another computer.</p>
+  <ul>
+    <li><b>Save a backup:</b> For grown-ups &rarr; <b>Save a backup</b>. A file called
+      <code>penguin-quest-backup-<i>date</i>.json</code> lands in the Downloads folder. Do this every week or two and copy
+      the file to Google Drive, since the Downloads folder itself is not backed up.</li>
+    <li><b>Restore:</b> For grown-ups &rarr; <b>Load a backup</b>, then pick the file. It replaces the progress on that
+      device (all three books).</li>
+    <li><b>New Chromebook:</b> save a backup on the old one, install the game on the new one, then load the backup.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><b>Choppy or slow:</b> Settings &rarr; Graphics &rarr; <b>Low</b>. (Auto lowers it by itself after a few seconds of
+      slow play, but Low is the smoothest.) Close other tabs, and plug in the charger: many Chromebooks slow down on
+      battery.</li>
+    <li><b>No sound:</b> check the Chromebook's volume and Settings &rarr; Music and Sound effects. Sound starts after the
+      first click or key press.</li>
+    <li><b>Something looks wrong:</b> close the game window and open it again. Progress is saved as he plays.</li>
+    <li><b>Updates:</b> when a new version comes out, the installed game picks it up by itself the next time it is opened
+      with internet (sometimes on the second opening). The version number is at the bottom of For grown-ups.</li>
+    <li><b>Forgot the PIN:</b> in the game window press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>J</kbd>, type
+      <code>localStorage.removeItem('penguinquest.lock')</code> and press Enter, then close and reopen the game. This
+      removes only the lock; progress stays. (If the Chromebook blocks that panel, the PIN cannot be recovered, so keep it
+      written down.)</li>
+  </ul>
+</section>
+
+<footer>Penguin Quest {{VERSION}}. Made for one curious kid.</footer>
+</main>
+</body>
+</html>

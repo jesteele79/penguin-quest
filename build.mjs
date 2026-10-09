@@ -1,13 +1,15 @@
 // Bundles the game into self-contained HTML files:
 //   dist/PenguinQuest.html     full document, works offline from a file (Chromebook: open in Chrome)
 //   dist/artifact/index.html   body-only page for publishing as a claude.ai artifact
-//   dist/pwa/                  installable web app (needs HTTPS hosting)
+//   dist/pwa/                  installable web app (needs HTTPS hosting), with the parent guide
 import * as esbuild from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const dev = process.argv.includes('--dev');
 const t0 = Date.now();
+// The version players and grown-ups see (the grown-ups screen), from package.json.
+const { version: VERSION } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 const result = await esbuild.build({
   entryPoints: ['src/main.js'],
@@ -17,7 +19,7 @@ const result = await esbuild.build({
   write: false,
   target: ['chrome100'],
   legalComments: 'none',
-  define: { __DEV__: dev ? 'true' : 'false' },
+  define: { __DEV__: dev ? 'true' : 'false', __VERSION__: JSON.stringify(VERSION) },
   logLevel: 'warning',
 });
 const js = result.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
@@ -60,7 +62,7 @@ const pwaHead = `<link rel="manifest" href="manifest.webmanifest">
 const swReg = `<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>`;
 fs.writeFileSync('dist/pwa/index.html', `${head(pwaHead)}\n${body}\n<script>${js}</script>\n${swReg}\n</body>\n</html>\n`);
 fs.writeFileSync('dist/pwa/manifest.webmanifest', JSON.stringify({
-  name: 'Penguin Quest: Aurora Rescue',
+  name: 'Penguin Quest',
   short_name: 'Penguin Quest',
   description: 'An open-world 3D math adventure for grades 4 to 6.',
   start_url: './',
@@ -74,9 +76,10 @@ fs.writeFileSync('dist/pwa/manifest.webmanifest', JSON.stringify({
     { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
   ],
 }, null, 2));
-const version = Date.now().toString(36);
-fs.writeFileSync('dist/pwa/sw.js', `const CACHE='pq-${version}';
-const FILES=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.png'];
+// Every build gets its own cache, so an installed copy picks up a new release on its next launch.
+const build = `${VERSION}-${Date.now().toString(36)}`;
+fs.writeFileSync('dist/pwa/sw.js', `const CACHE='pq-${build}';
+const FILES=['./','index.html','parents.html','manifest.webmanifest','icon-192.png','icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)))});
@@ -85,6 +88,10 @@ for (const size of [192, 512]) {
   const src = `assets/icon-${size}.png`;
   if (fs.existsSync(src)) fs.copyFileSync(src, `dist/pwa/icon-${size}.png`);
 }
+// The parent guide sits beside the game (the grown-ups screen links to it) and is cached for offline reading.
+const guide = fs.readFileSync('src/parents.html', 'utf8').replaceAll('{{VERSION}}', VERSION);
+fs.writeFileSync('dist/pwa/parents.html', guide);
+fs.writeFileSync('dist/parents.html', guide);
 
 const kb = (f) => (fs.statSync(f).size / 1024).toFixed(0) + ' KB';
 console.log(`built in ${Date.now() - t0} ms: dist/PenguinQuest.html ${kb('dist/PenguinQuest.html')}`);
