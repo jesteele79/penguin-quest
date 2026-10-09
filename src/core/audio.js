@@ -21,7 +21,21 @@ const ISLAND_MOODS = {
 };
 // A calypso bass bar: [eighth position in the bar, semitones above the chord root].
 const CALYPSO = [[0, 0], [1.5, 7], [2, 0], [3, 7], [3.5, 12]];
-const PALETTES = { book1: { moods: MOODS, ambience: 'wind', ground: 'snow' }, book2: { moods: ISLAND_MOODS, ambience: 'surf', ground: 'sand' } };
+// Skyreach's band is airy and slow, still in D: a harp rolling through open chords, a glass celesta, a
+// breathy flute, and a ticking clock only when things get exciting.
+const SKY_MOODS = {
+  title: { bpm: 64, chords: [[50, 57, 61, 64], [47, 54, 57, 61], [43, 50, 54, 57], [45, 52, 57, 59]], box: 0.5, bass: true, sky: true },
+  explore: { bpm: 70, chords: [[50, 57, 61, 64], [43, 50, 54, 57], [47, 54, 57, 61], [45, 52, 54, 59]], box: 0.55, bass: true, layered: true, sky: true },
+  quiz: { bpm: 76, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [47, 54, 59, 62], [45, 52, 57, 61]], box: 0.3, bass: true, pluck: true, sky: true },
+  battle: { bpm: 104, chords: [[47, 54, 59, 62], [43, 50, 55, 59], [50, 57, 62, 66], [45, 52, 57, 61]], box: 0.35, bass: true, kick: true, pluck: true, drive: true, sky: true },
+  boss: { bpm: 92, chords: [[40, 47, 52, 55], [48, 55, 60, 64], [50, 57, 62, 66], [47, 54, 59, 63]], box: 0.35, bass: true, kick: true, pluck: true, drive: true, scale: [4, 7, 9, 11, 2], sky: true },
+  finale: { bpm: 78, chords: [[50, 57, 62, 66], [43, 50, 55, 59], [45, 52, 57, 61], [50, 57, 62, 69]], box: 0.7, bass: true, pluck: true, sky: true },
+};
+const PALETTES = {
+  book1: { moods: MOODS, ambience: 'wind', ground: 'snow' },
+  book2: { moods: ISLAND_MOODS, ambience: 'surf', ground: 'sand' },
+  book3: { moods: SKY_MOODS, ambience: 'breeze', ground: 'grass' },
+};
 
 const PENTA = [0, 2, 4, 7, 9];
 // D major pentatonic (same notes as B minor pentatonic), as pitch classes.
@@ -82,7 +96,9 @@ export class AudioEngine {
     this.musicSend = c.createGain(); this.musicSend.gain.value = 0.55; this.musicSend.connect(this.reverb);
     this.sfxSend = c.createGain(); this.sfxSend.gain.value = 0.22; this.sfxSend.connect(this.reverb);
     this.noiseBuf = this.makeNoise(2);
-    if (this.palette.ambience === 'surf') this.startSurf(); else this.startWind();
+    if (this.palette.ambience === 'surf') this.startSurf();
+    else if (this.palette.ambience === 'breeze') this.startBreeze();
+    else this.startWind();
     this.startSlideLoop();
     this.sched = setInterval(() => this.tick(), 60);
     this.resume();
@@ -216,6 +232,36 @@ export class AudioEngine {
     this.birds = true;
   }
 
+  // High, thin air: a soft breeze that rises and falls, and now and then wind chimes somewhere in town.
+  startBreeze() {
+    const c = this.ctx;
+    const src = c.createBufferSource();
+    src.buffer = this.noiseBuf; src.loop = true;
+    const f = c.createBiquadFilter();
+    f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = 0.45;
+    const g = c.createGain();
+    g.gain.value = 0.018 * this.sfxVol;
+    const lfo = c.createOscillator(); lfo.frequency.value = 0.05;
+    const lfoG = c.createGain(); lfoG.gain.value = 420;
+    lfo.connect(lfoG).connect(f.frequency);
+    const lfo2 = c.createOscillator(); lfo2.frequency.value = 0.09;
+    const lfo2G = c.createGain(); lfo2G.gain.value = 0.009;
+    lfo2.connect(lfo2G).connect(g.gain);
+    src.connect(f).connect(g).connect(this.master);
+    src.start(); lfo.start(); lfo2.start();
+    this.windGain = g;
+    this.chimes = true;
+  }
+
+  windChime(when) {
+    const n = 3 + Math.floor(Math.random() * 4);
+    let t = when;
+    for (let i = 0; i < n; i++) {
+      this.bell(midi(D5 + 12 + PENTA[Math.floor(Math.random() * 5)] + (Math.random() < 0.3 ? 12 : 0)), t, 0.012, 2.2);
+      t += 0.12 + Math.random() * 0.3;
+    }
+  }
+
   seabird(when) {
     const n = 2 + Math.floor(Math.random() * 3), f = 2100 + Math.random() * 900;
     for (let i = 0; i < n; i++) this.tone({ f, to: f * 1.32, type: 'sine', dur: 0.11, vol: 0.011, a: 0.01, r: 0.06, when: when + i * 0.16 });
@@ -224,6 +270,33 @@ export class AudioEngine {
   marimba(f, when, vol, bus = 'music') {
     this.tone({ f, type: 'sine', dur: 0.55, vol, a: 0.003, r: 0.5, when, bus });
     this.tone({ f: f * 3.93, type: 'sine', dur: 0.09, vol: vol * 0.3, a: 0.002, r: 0.08, when, bus, send: false });
+  }
+
+  harp(f, when, vol) {
+    this.tone({ f, type: 'triangle', dur: 1.1, vol, a: 0.003, r: 1.0, when, bus: 'music', lp: 2600 });
+    this.tone({ f: f * 2, type: 'sine', dur: 0.45, vol: vol * 0.3, a: 0.002, r: 0.4, when, bus: 'music', send: false });
+  }
+
+  // A breathy flute: a sine with a gentle vibrato that swells in, and a puff of breath at the start.
+  flute(f, when, vol, dur) {
+    const c = this.ctx;
+    const t0 = c.currentTime + when;
+    const o = c.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const vib = c.createOscillator(); vib.frequency.value = 5.2;
+    const vibG = c.createGain(); vibG.gain.setValueAtTime(0, t0); vibG.gain.linearRampToValueAtTime(f * 0.006, t0 + dur * 0.5);
+    vib.connect(vibG).connect(o.frequency);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.12, dur * 0.3));
+    g.gain.setValueAtTime(vol, t0 + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(this.musicBus);
+    g.connect(this.musicSend);
+    o.start(t0); vib.start(t0);
+    o.stop(t0 + dur + 0.05); vib.stop(t0 + dur + 0.05);
+    this.noise({ dur: 0.08, vol: vol * 0.25, f: 2400, q: 0.8, when, bus: 'music' });
   }
 
   steelDrum(f, when, vol, dur) {
@@ -259,6 +332,7 @@ export class AudioEngine {
       case 'step':
         if (o.wood) this.tone({ f: 170 + r() * 40, type: 'triangle', dur: 0.06, vol: 0.09, send: false });
         else if (this.palette.ground === 'sand') this.noise({ dur: 0.09, vol: 0.075, f: 600 + r() * 500, q: 0.7, type: 'lowpass' });
+        else if (this.palette.ground === 'grass') this.noise({ dur: 0.07, vol: 0.05, f: 2200 + r() * 1000, q: 0.5, type: 'bandpass' });
         else this.noise({ dur: 0.08, vol: 0.09, f: 1400 + r() * 1200, q: 1.2, type: 'bandpass' });
         break;
       case 'jump':
@@ -401,6 +475,7 @@ export class AudioEngine {
     const c = this.ctx;
     if (!c || !this.moodDef || c.state !== 'running') return;
     if (this.birds && Math.random() < 0.006) this.seabird(0.05);
+    if (this.chimes && Math.random() < 0.003) this.windChime(0.05);
     while (this.nextTime < c.currentTime + 0.25) {
       if (this.pending && this.beat % 4 === 0) {
         this.mood = this.pending;
@@ -432,6 +507,7 @@ export class AudioEngine {
     // Exploring, the band grows with the aurora: each restored crystal adds a layer.
     const layers = m.layered ? this.layers : 5;
     if (m.island) { this.islandEighth(w, m, spb, chord, posInBar, posInChord, layers); return; }
+    if (m.sky) { this.skyEighth(w, m, spb, chord, posInBar, posInChord, layers); return; }
     if (m.bass && layers >= 2 && (posInBar === 0 || posInBar === 2 || (m.drive && Number.isInteger(this.beat)))) {
       this.tone({ f: midi(chord[0] - 12), type: m.drive ? 'triangle' : 'sine', dur: spb * (m.drive ? 0.9 : 1.8), vol: m.drive ? 0.07 : 0.06, a: 0.02, r: 0.4, when: w, bus: 'music', send: false });
     }
@@ -459,6 +535,36 @@ export class AudioEngine {
     if ((m.pluck || (m.layered && layers >= 3)) && Number.isInteger(this.beat)) {
       const n = chord[(Math.floor(this.beat) + 1) % chord.length] + 12;
       this.tone({ f: midi(n), type: 'triangle', dur: 0.25, vol: 0.03, a: 0.003, r: 0.2, when: w, bus: 'music' });
+    }
+  }
+
+  // One eighth note of the sky band.
+  skyEighth(w, m, spb, chord, posInBar, posInChord, layers) {
+    const root = chord[0];
+    // A soft low root on one and its fifth on three.
+    if (m.bass && layers >= 2 && (posInBar === 0 || posInBar === 2)) {
+      this.tone({ f: midi(root - 12 + (posInBar === 2 ? 7 : 0)), type: 'sine', dur: spb * 1.9, vol: 0.055, a: 0.03, r: spb, when: w, bus: 'music', send: false });
+    }
+    // The harp rolls up through the chord over two octaves and back down, an eighth at a time.
+    if (m.pluck || !m.layered || layers >= 3) {
+      const notes = [...chord, ...chord.map((n) => n + 12)];
+      const i = Math.round(posInChord * 2) % 16;
+      this.harp(midi(notes[i < 8 ? i : 15 - i] + 12), w, m.drive ? 0.024 : 0.018);
+    }
+    // When things get exciting, a soft kick and a clock that ticks every eighth.
+    if (m.kick && (posInBar === 0 || posInBar === 2)) this.tone({ f: 110, to: 45, type: 'sine', dur: 0.2, vol: 0.09, when: w, bus: 'music', send: false });
+    if (m.drive || (m.layered && layers >= 4)) this.tone({ f: Number.isInteger(this.beat) ? 2400 : 1900, type: 'sine', dur: 0.025, vol: m.drive ? 0.022 : 0.012, when: w, bus: 'music', send: false });
+    // Glass celesta: chord tones up high, ringing a long time, like stars coming out.
+    if (Math.random() < m.box * (m.layered ? 0.35 + layers * 0.1 : 0.8)) {
+      const pcs = Math.random() < 0.7 ? chord.map((n) => n % 12) : (m.scale ?? SCALE_D);
+      const pc = pcs[Math.floor(Math.random() * pcs.length)];
+      const octave = Math.random() < 0.5 ? 84 : 96;
+      this.bell(midi(octave + ((pc - (octave % 12)) + 12) % 12), w, 0.02, 2.0, 'music');
+    }
+    // Flute: a slow answering phrase each chord.
+    if ((!m.layered || layers >= 5) && posInChord === 4) {
+      const start = Math.floor(Math.random() * 3) + 1;
+      [0, 1, 2].forEach((k, i) => this.flute(midi(penta(start + (i === 2 ? -1 : k)) - 12), w + i * spb, 0.03, spb * (i === 2 ? 1.8 : 0.95)));
     }
   }
 
