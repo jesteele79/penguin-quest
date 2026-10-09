@@ -43,7 +43,7 @@ export class HUD {
     this.controls = el('div', { class: 'hud-controls', html: `
       <div><kbd>W</kbd><kbd>↑</kbd> walk</div>
       <div><kbd>A</kbd><kbd>D</kbd> turn</div>
-      <div><kbd>Space</kbd> jump</div>
+      <div><kbd>Space</kbd> jump<span class="glide-hint hidden"> · hold to glide</span></div>
       <div><kbd>Shift</kbd> belly-slide</div>
       <div><kbd>E</kbd> talk / use</div>
       <div><kbd>J</kbd> journal · <kbd>M</kbd> map</div>
@@ -55,6 +55,13 @@ export class HUD {
   }
 
   setVisible(v) { this.root.classList.toggle('hidden', !v); }
+
+  // Once the penguin has a glider sail, the controls card says how to use it.
+  setGlide(on) {
+    if (on === this.last.glide) return;
+    this.last.glide = on;
+    this.controls.querySelector('.glide-hint').classList.toggle('hidden', !on);
+  }
 
   setPlayer({ name, hearts, maxHearts, coins, stars, flakes, flakesTotal, scarfColor, hat }) {
     if (name !== this.last.name) { this.nameEl.textContent = name; this.last.name = name; }

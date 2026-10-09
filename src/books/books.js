@@ -14,7 +14,7 @@ export const BOOKS = [
     blurb: 'Sail to a warm volcanic archipelago where the Heart-Ember is cooling.', colors: ['#5a1e3a', '#ff6b35', '#2ec4b6'], icon: 'flame',
   },
   {
-    id: 'book3', n: 3, title: 'Skyreach', grade: 6, world: 'Skyreach', final: 'ch7', ready: false, travel: 'fly',
+    id: 'book3', n: 3, title: 'Skyreach', grade: 6, world: 'Skyreach', final: 'ch7', ready: true, travel: 'fly',
     blurb: 'Glide between floating islands and rebuild the Star Map.', colors: ['#2d2a6e', '#c9b6ff', '#ffb38a'], icon: 'star',
   },
 ];

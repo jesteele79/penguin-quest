@@ -102,6 +102,7 @@ export const HOOKS = {
   // Glider wings come from Captain Swoop once the wind pinwheels are balanced.
   update(q) {
     G.player.canGlide = q.done('ch1') || (q.active('ch1') && q.st('ch1').step >= 2);
+    G.hud.setGlide(G.player.canGlide);
   },
 
   regionDomain: { lake: 'ratios', grove: 'neg', huts: 'ridge', cave: 'cave', ridge: 'stars' },

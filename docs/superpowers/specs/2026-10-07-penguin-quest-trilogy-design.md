@@ -417,7 +417,7 @@ Each phase ends playable, tested and deployed.
 
 ## Status (October 2026)
 
-Phases 1 to 4 are done and deployed; Book 2 is playable from start to finish.
+All five phases are done and deployed: the three books are playable from start to finish.
 
 **Built for Book 2, and where it differs from the plan above:**
 
@@ -441,5 +441,27 @@ Phases 1 to 4 are done and deployed; Book 2 is playable from start to finish.
   shelf can switch books too.
 - Book 3 is named **Skyreach** in the game; Cinder's last lines in Book 2 point to it.
 
-**Next:** grade 6 skills and lessons (ratios and rates, negative numbers, expressions and equations, area
-and nets, statistics), then Book 3's world, cast, story and games.
+**Built for Book 3, and where it differs from the plan above:**
+
+- Named **Skyreach**: seven flat-topped sky islands over a sea of clouds (Guild Town, the Wind Gardens, the
+  Cloud Valleys, the Clockwork Observatory, the Crystal Workshop, the Star Guild and the Starwell), joined
+  by rope bridges, with updrafts and gliding (hold Space while falling). Falling into the clouds lifts the
+  penguin back to the last safe ground. Twilight sky, a lilac cloud sea, floating islets, pastel cloud trees.
+- The villain became **the Hush**, a great shy cloud wrapped round the Starwell. It is calmed, not beaten:
+  its face watches the player, opens its eyes and smiles as the final puzzles are answered, then drifts
+  away when the Star Map is whole. Hushlings replace Glooms and Sootlings.
+- Cinder from Book 2 carries the penguin up in the airship and back down again; the Professor comes too.
+  New friends: Captain Swoop of the Glider Guild, Vela the cloud-gauge reader, Tock the clockmaker,
+  Guildmaster Astra, Nimbus's candy stall and wardrobe, Wren and her pufflings, Rocco again.
+- Chapter games as built: the Glider Trials (jump from the tower and glide through the ring with the right
+  ratio), Kite Mix, the balloon lift (the penguin rides to heights above and below the cloud line, with a
+  height board that keeps reading under the clouds), Tock's balance gears and great clock, Rocco's lantern
+  nets, Astra's star survey, a four-quadrant treasure chart (-8 to 8), and calming the Hush.
+- Grade 6 skills (ratios, rates and percents, negative numbers and the coordinate plane, expressions,
+  equations and inequalities, area, volume, nets and surface area, statistics) with 31 lessons taught by
+  Skyreach's friends and new hands-on models: a balance scale, a growing ratio table, number cards for
+  median and quartiles, histogram bins, shapes to copy and turn, a box net to paint, rows of multiples and
+  distances from the mean. Labels inside problem pictures follow the book's words like the problems do.
+- Music palette: harp arpeggios, a glass celesta and a breathy flute, with a high breeze and wind chimes.
+- Layout tests keep everything the player walks to on an island and away from the rim, every bridge
+  joining two islands and every updraft on solid ground.

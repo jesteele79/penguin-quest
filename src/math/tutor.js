@@ -69,7 +69,7 @@ export class Tutor {
     const { skills, exclude } = opts;
     let pool;
     if (skills) {
-      const all = skills.map((id) => SKILLS[id]).filter(Boolean);
+      const all = skills.map((id) => SKILLS[id]).filter((s) => s && (!exclude || !exclude.includes(s.id)));
       const open = all.filter((s) => this.isUnlocked(s));
       pool = open.length ? open : all.sort((a, b) => a.grade - b.grade).slice(0, 1);
     } else {
@@ -113,16 +113,20 @@ export class Tutor {
   // opts: { format: 'choice'|'input'|'any', minChoices, skills: [ids], maxTier, exclude }
   next(domain, opts = {}) {
     const format = opts.format ?? 'any';
+    // A skill that keeps making the wrong kind of problem (all choices when typing is wanted) steps aside, so the
+    // next pick in the domain gets its turn.
+    const exclude = [...(opts.exclude ?? [])], misses = {};
+    const miss = (id) => { misses[id] = (misses[id] ?? 0) + 1; if (misses[id] >= 3) exclude.push(id); };
     let problem = null;
-    for (let attempt = 0; attempt < 24 && !problem; attempt++) {
-      const skill = this.pickSkill(domain, opts);
+    for (let attempt = 0; attempt < 40 && !problem; attempt++) {
+      const skill = this.pickSkill(domain, { ...opts, exclude });
       if (!skill) break;
       let tier = this.tierFor(skill.id);
       if (opts.maxTier) tier = Math.min(tier, opts.maxTier);
       if (opts.minTier) tier = Math.max(tier, opts.minTier);
       const p = skill.gen(this.rng, tier);
-      if (format === 'input' && p.format !== 'input') continue;
-      if (format === 'choice' && (!p.choices || p.choices.length < (opts.minChoices ?? 3))) continue;
+      if (format === 'input' && p.format !== 'input') { miss(skill.id); continue; }
+      if (format === 'choice' && (!p.choices || p.choices.length < (opts.minChoices ?? 3))) { miss(skill.id); continue; }
       if (format === 'choice') p.format = 'choice';
       p.domain = skill.domain;
       p.skillName = skill.name;

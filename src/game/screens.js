@@ -123,6 +123,9 @@ function switchToBook(id) {
   location.reload();
 }
 
+const BOAT_SVG = '<svg viewBox="0 0 64 40"><path d="M6 26 L58 26 L50 36 L14 36 Z" fill="#8a5c38"/><rect x="31" y="4" width="2.5" height="22" fill="#5a3a22"/><path d="M34 6 L52 22 L34 22 Z" fill="#fff4ec"/><path d="M30 8 L16 22 L30 22 Z" fill="#ff5a4e"/><path d="M0 38 Q8 34 16 38 T32 38 T48 38 T64 38" stroke="#7fe0d0" stroke-width="2.5" fill="none"/></svg>';
+const AIRSHIP_SVG = '<svg viewBox="0 0 64 40"><path d="M11 12 L3 6 L3 18 Z" fill="#b04a3a"/><ellipse cx="33" cy="12" rx="22" ry="10" fill="#e8c89a"/><path d="M19 5 Q33 1 47 5 M11 12 H55 M19 19 Q33 23 47 19" stroke="#b04a3a" stroke-width="1.6" fill="none"/><path d="M25 21 L27 28 M41 21 L39 28" stroke="#3a2a20" stroke-width="1.2"/><rect x="24" y="27" width="18" height="6" rx="2" fill="#8a5c38"/><circle cx="28" cy="30" r="1" fill="#ffd98a"/><circle cx="33" cy="30" r="1" fill="#ffd98a"/><circle cx="38" cy="30" r="1" fill="#ffd98a"/><rect x="43" y="28" width="1.6" height="5" fill="#5a5a64"/><path d="M0 38 Q6 35 12 38 Q18 35 24 38 Q30 35 36 38 Q42 35 48 38 Q54 35 60 38" stroke="#e8e4ff" stroke-width="2.5" fill="none"/></svg>';
+
 // Captain Flipper's boat or Cinder's airship: travel to another open book. The world fades and the page
 // reloads there.
 export class VoyageScreen extends Screen {
@@ -151,7 +154,7 @@ export class VoyageScreen extends Screen {
     G.audio.play('whoosh');
     this.root.classList.add('sailing');
     this.root.querySelector('.voyage-panel').replaceChildren(
-      el('div', { class: 'voyage-boat', html: '<svg viewBox="0 0 64 40"><path d="M6 26 L58 26 L50 36 L14 36 Z" fill="#8a5c38"/><rect x="31" y="4" width="2.5" height="22" fill="#5a3a22"/><path d="M34 6 L52 22 L34 22 Z" fill="#fff4ec"/><path d="M30 8 L16 22 L30 22 Z" fill="#ff5a4e"/><path d="M0 38 Q8 34 16 38 T32 38 T48 38 T64 38" stroke="#7fe0d0" stroke-width="2.5" fill="none"/></svg>' }),
+      el('div', { class: 'voyage-boat', html: this.book.travel === 'fly' ? AIRSHIP_SVG : BOAT_SVG }),
       el('h1', { text: `${this.book.travel === 'fly' ? 'Flying' : 'Sailing'} to ${placeName(this.book.world)}...` }));
     setTimeout(() => switchToBook(this.book.id), 1600);
   }
@@ -540,7 +543,16 @@ export class JournalScreen extends Screen {
   nextBook() {
     const s = G.save.data;
     const cur = bookById(s.active ?? 'book1'), next = nextBook(cur);
-    if (!next) return '';
+    if (!next) {
+      // The last book: once its story is done, count the finished books of the series.
+      const done = BOOKS.filter((b) => bookStatus(s, G.tutor, b).storyDone);
+      if (!done.includes(cur)) return '';
+      const all = done.length === BOOKS.length;
+      return `<section class="quest-card next-book" style="--c:${cur.colors[1]}">
+        <div class="qc-head"><h3>${all ? 'The whole series is done!' : `${escapeHTML(cur.title)} is done!`}</h3><span class="pill ok">${done.length} of ${BOOKS.length} books</span></div>
+        <p class="note">${all ? 'Every world is saved. ' : ''}Any open book can be played again from the shelf on the title screen${all ? '' : ', and the ones not finished yet are waiting'}.</p>
+      </section>`;
+    }
     const st = bookStatus(s, G.tutor, cur);
     const open = isUnlocked(s, G.tutor, next);
     const pct = Math.round(st.pct * 100);

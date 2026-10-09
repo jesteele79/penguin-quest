@@ -61,3 +61,20 @@ test('each book teaches its own grade, with review below and a few previews abov
   assert.ok([...seen2].some((id) => SKILLS[id].grade === 5), 'book 2 opens grade 5 for a 4th grader');
   assert.equal(t2.isUnlocked(SKILLS.mul_facts), false, 'grade 3 is not part of book 2');
 });
+
+// Typed-answer games (the cheer-up battle, the boss) ask for these domains in every book.
+test('every book can always serve a typed problem for the battles', () => {
+  for (const id of ['book1', 'book2', 'book3']) {
+    for (const grade of [4, 5, 6]) {
+      const t = new Tutor(emptyTutorState(), grade, 11, bookScope(id));
+      // The hard case: the only skills free of a waiting lesson are ones that never ask for typing.
+      t.lessonGate = (sid) => !['write_expr', 'inequality', 'equiv_expr', 'expr_read'].includes(sid);
+      for (const domain of ['lake', 'ridge']) {
+        for (let i = 0; i < 60; i++) {
+          const p = t.next(domain, { format: 'input' });
+          assert.ok(p && p.format === 'input', `${id} grade ${grade}: no typed ${domain} problem`);
+        }
+      }
+    }
+  }
+});
