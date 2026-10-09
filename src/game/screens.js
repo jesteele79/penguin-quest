@@ -579,7 +579,7 @@ export class JournalScreen extends Screen {
         <li class="${togo === 0 ? 'done' : ''}">${tick(togo === 0)} Master ${Math.round(UNLOCK_MASTERY * 100)}% of the grade ${cur.grade} skills (${st.mastered} of ${st.total})</li>
       </ul>
       <div class="mini-track wide"><div style="width:${pct}%"></div></div>
-      ${togo && st.missing.length ? `<p class="note">Practise at a restored ${T.crystal} to master: ${st.missing.slice(0, 4).map((x) => escapeHTML(x.name)).join(', ')}${st.missing.length > 4 ? ', and more' : ''}.</p>` : ''}
+      ${togo && st.missing.length ? `<p class="note">Practice at a restored ${T.crystal} to master: ${st.missing.slice(0, 4).map((x) => escapeHTML(x.name)).join(', ')}${st.missing.length > 4 ? ', and more' : ''}.</p>` : ''}
     </section>`;
   }
 

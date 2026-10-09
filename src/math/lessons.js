@@ -286,7 +286,7 @@ export const LESSONS = {
     title: 'Measuring angles', mentor: 'pebble',
     hook: 'A protractor measures how wide an angle opens. The trick is reading the right row of numbers.',
     explore: { model: 'protractor', prompt: 'Drag the yellow ray to make an angle of 120°.', success: '120° is wider than a square corner!', cfg: { target: 120, from: 'right', start: 30 } },
-    see: { text: 'Put the centre on the corner and one ray on **0**. Read along the row that starts at that 0.', visual: { kind: 'protractor', deg: 120, from: 'right' } },
+    see: { text: 'Put the center on the corner and one ray on **0**. Read along the row that starts at that 0.', visual: { kind: 'protractor', deg: 120, from: 'right' } },
     watch: {
       text: 'Check where the first ray points before you read.',
       steps: ['This angle starts on the left.', 'So read the row that starts at 0 on the left.', 'The other ray points to 45: the angle is 45°.', 'The other row says 135. That is the wrong row!'],
