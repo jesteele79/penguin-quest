@@ -161,9 +161,11 @@ export class Player {
     const stepLen = Math.hypot(dx, dz);
     if (stepLen > 1e-5 && !this.swimming) {
       const nx = this.pos.x + dx, nz = this.pos.z + dz;
-      const hNew = world.groundAt(nx, nz, this.pos.y).y;
-      const rise = hNew - this.pos.y;
-      if (this.grounded && rise > 0.2 && rise / stepLen > MAX_SLOPE) {
+      const gNew = world.groundAt(nx, nz, this.pos.y);
+      const rise = gNew.y - this.pos.y;
+      // A low edge of a deck, pad or stepping stone is a step up, not a slope.
+      const step = gNew.platform && rise <= 0.45;
+      if (this.grounded && !step && rise > 0.2 && rise / stepLen > MAX_SLOPE) {
         // Slide along the slope's contour instead of climbing it.
         const g = world.terrain.gradient(nx, nz);
         const gl = Math.hypot(g.x, g.z) || 1;

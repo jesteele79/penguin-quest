@@ -435,6 +435,8 @@ export class Penguin {
   }
 
   setHat(id, color) {
+    // Each hat is built fresh, so the old one's shapes are freed (its materials are shared and stay).
+    this.hatSlot.traverse((m) => { if (m.isMesh) m.geometry.dispose(); });
     this.hatSlot.clear();
     // The tuft pokes up through open hats (bow, flowers, crown) but hides under full ones.
     this.tuft.visible = !TUFT_HIDDEN.has(id);

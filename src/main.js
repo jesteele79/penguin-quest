@@ -398,11 +398,14 @@ function startLoop() {
   // Dev builds can drive the simulation without rAF (hidden preview panes never fire it).
   if (__DEV__) {
     G.dev = {
-      step(seconds = 1, { keys = [], fps = 30 } = {}) {
-        keys.forEach((k) => input.held.add(k));
+      // keys are held for the whole step; press keys are pressed at its start (a jump) and then held too.
+      step(seconds = 1, { keys = [], press = [], fps = 30 } = {}) {
+        const all = [...keys, ...press];
+        all.forEach((k) => input.held.add(k));
+        press.forEach((k) => input.pressedSet.add(k));
         const n = Math.max(1, Math.round(seconds * fps));
         for (let i = 0; i < n; i++) tick(1 / fps, i === n - 1);
-        keys.forEach((k) => input.held.delete(k));
+        all.forEach((k) => input.held.delete(k));
       },
       key(code, opts = {}) {
         const target = opts.target ?? document.activeElement ?? window;
@@ -413,6 +416,7 @@ function startLoop() {
       tp(x, z, yaw = 0) { player.teleport(x, z, yaw); cam.snap(player); tick(1 / 30, true); },
       // The book's opening cutscene, as a brand-new game shows it.
       intro() { BOOK.intro(); tick(1 / 30, true); },
+      book: BOOK,
       typed: typedValue,
       games: GAMES,
       newGame(profile = { name: 'Pip', grade: 5, scarf: 'coral' }) {

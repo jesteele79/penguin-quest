@@ -1,6 +1,7 @@
 // The Lava Hop: basalt stepping stones rise out of the lava pool by Rocco's forge, one row per puzzle. Only the
 // stone with the right answer is cool enough to stand on; the others crack and sink. Lava never hurts: it pops
-// the penguin back to the last safe spot. The finished path stays as a bridge to the forge vent's island.
+// the penguin back to the last safe spot. The finished path stays, knitted into a causeway out to the forge vent's
+// island.
 import * as THREE from 'three';
 import { G, pushActivity, popActivity } from '../../core/state.js';
 import { Round } from '../../game/minigames/common.js';
@@ -69,18 +70,79 @@ function scorch(pl) {
   G.toasts.toast('Hot hot hot! Back to a safe spot.', { kind: 'hot', ms: 1600 });
 }
 
-// The bridge left behind by a finished hop.
+// The bridge left behind by a finished hop: the five cool stones, knitted together by smaller basalt columns into a
+// causeway. The story sends the penguin back and forth to the vent's island, and that must not need a run of
+// perfect jumps with no help steering them.
 let bridge = null;
-export function buildLavaBridge(zs) {
+export function buildLavaBridge(zs, { rise = false } = {}) {
   if (!zs?.length || bridge) return;
-  bridge = P.rows.map((x, i) => {
+  const stones = P.rows.map((x, i) => {
     const s = makeStone(x, zs[i] ?? P.z, TOP);
     s.mesh.material.emissive.set(COOL);
     return s;
   });
+  const path = [[LOC.lavaStart.x, LOC.lavaStart.z], ...P.rows.map((x, i) => [x, zs[i] ?? P.z]), [P.isle.x - P.isle.r + 1.5, P.isle.z]];
+  bridge = { stones, way: causeway(path, rise) };
+  // The guide trail walks the causeway to the vent's island.
+  G.world.roads.addPath(path);
 }
+
+// Smaller columns fill every gap along the path. Where the bank and the island stand higher than the stones, a
+// taller column at the edge makes a step up onto them. A fresh causeway rises out of the lava.
+function causeway(path, rise) {
+  const geo = stoneGeometry(), parts = [], platforms = [];
+  const add = ([x, z], r, top) => {
+    parts.push({ geo, color: geo.attributes.color.array, matrix: mat(x, top, z, 0, Math.random() * Math.PI, 0, r / R, 1, r / R) });
+    platforms.push(G.world.collision.addPlatform({ kind: 'circle', x, z, r, top, active: !rise }));
+  };
+  const last = path.length - 2;
+  for (let k = 0; k <= last; k++) {
+    const [ax, az] = path[k], [bx, bz] = path[k + 1];
+    const len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len;
+    const at = (s) => [ax + ux * s, az + uz * s];
+    const high = (s) => G.terrain.heightAt(...at(s)) >= TOP + 0.05;
+    let s0 = k === 0 ? 0 : R - 0.2, s1 = k === last ? len : len - R + 0.2;
+    if (k === 0) {
+      while (s0 < s1 && high(s0)) s0 += 0.1;
+      add(at(s0 - 0.35), 1, TOP + 0.25);
+      s0 += 0.3;
+    }
+    if (k === last) {
+      while (s1 > s0 && high(s1)) s1 -= 0.1;
+      add(at(s1 + 0.35), 1, TOP + 0.25);
+      s1 -= 0.3;
+    }
+    const n = Math.ceil((s1 - s0) / 1.6);
+    for (let i = 0; i < n; i++) add(at(s0 + ((i + 0.5) * (s1 - s0)) / n), 1.1 + Math.random() * 0.12, TOP - Math.random() * 0.08);
+  }
+  const mesh = new THREE.Mesh(mergeColored(parts), lambert({ vertexColors: true, flatShading: true, emissive: COOL }, { color: 0xff7a2a, strength: 0.45 }));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  G.scene.add(mesh);
+  const out = { mesh, platforms, risen: !rise };
+  if (rise) {
+    let t = 0;
+    mesh.position.y = SUNK - TOP;
+    G.world.animated.push((dt) => {
+      if (out.risen) return;
+      t = Math.min(1, t + dt / 1.6);
+      mesh.position.y = (SUNK - TOP) * Math.pow(1 - t, 3);
+      if (t < 1) return;
+      out.risen = true;
+      for (const p of platforms) p.active = mesh.visible;
+      G.audio.play('sizzle');
+      for (const p of platforms) G.world.effects.burst(V(p.x, P.lavaY + 0.4, p.z), { count: 3, color: [0x8a8088, 0x6a6068], speed: 1, up: 2.5, life: 1.3, gravity: -1, size: 0.9, drag: 2 });
+    });
+  }
+  return out;
+}
+
 function showBridge(on) {
-  bridge?.forEach((s) => { s.mesh.visible = on; s.platform.active = on; });
+  if (!bridge) return;
+  for (const s of bridge.stones) { s.mesh.visible = on; s.platform.active = on; }
+  const w = bridge.way;
+  w.mesh.visible = on;
+  for (const p of w.platforms) p.active = on && w.risen;
 }
 
 class LavaHopActivity {
@@ -214,7 +276,7 @@ class LavaHopActivity {
     for (const s of [...this.stones, ...this.kept]) removeStone(s);
     this.stones = [];
     this.kept = [];
-    buildLavaBridge(flags.lavaBridge);
+    buildLavaBridge(flags.lavaBridge, { rise: true });
     popActivity(this);
     this.onDone?.();
   }

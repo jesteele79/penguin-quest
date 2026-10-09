@@ -59,6 +59,10 @@ export class World {
     this.water = new (BIOME.Sea ?? Water)(scene, this.terrain, BIOME.water);
     this.roads = new Roads(scene, this.terrain);
     this.roads.groundAt = (x, z, y) => this.groundAt(x, z, y).y;
+    // Walls, huts and other big solid things that a straight line of the guide trail must not pass through. Trees,
+    // posts and lamps are stepped around; low things a penguin can hop onto, rails and swim barriers do not count.
+    this.roads.solidAt = (x, z, r) => this.collision.nearby(x, z, r + 4).find((c) => c.r !== undefined && c.r >= 1.3 && c.active !== false
+      && !c.onlySwim && (c.top === undefined || c.top - this.terrain.heightAt(c.x, c.z) > 1.2) && Math.hypot(x - c.x, z - c.z) < c.r + r);
     this.effects = new Effects(scene, this.terrain, BIOME.effects);
 
     const ctx = {

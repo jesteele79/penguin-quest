@@ -69,6 +69,7 @@ node tools/shoot.mjs <plan.mjs> --size 1366x768 [--query book=book2]   # drive t
 node tools/mapdump.mjs book2 .cache/map-book2.ppm                        # top-down map of a book's terrain
 node tools/shoot.mjs tools/plans/overlaps.mjs --query book=book3          # things inside something solid, blocked roads
 node tools/shoot.mjs tools/plans/bridges.mjs --query book=book3           # walk across every sky bridge both ways
+node tools/shoot.mjs tools/plans/trailwalk.mjs --query book=book2         # follow the gold trail on foot to every place
 ```
 
 A shoot plan exports `default async (page) => {...}` and uses `page.eval(js)`, `page.shot(name)` and

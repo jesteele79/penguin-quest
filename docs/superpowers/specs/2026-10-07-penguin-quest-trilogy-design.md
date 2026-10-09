@@ -426,7 +426,8 @@ All five phases are done and deployed: the three books are playable from start t
   sunset dome), sea, plants, cast models (Tortuga the turtle and Shelldon the crab are their own critters)
   and Sootlings in place of Glooms.
 - Chapter games as built: Rocco's siphon valves, the **Lava Hop** (stepping stones over a lava pool to the
-  forge vent's island; it stays as a bridge), Rocco's glass orders, the coral beds, the **Snorkel Trail**
+  forge vent's island; afterwards the stones knit into a walkable basalt causeway, since the story sends the
+  penguin back and forth), Rocco's glass orders, the coral beds, the **Snorkel Trail**
   (answer rings through the lagoon; the reef fish that follow you settle at the vent), Chef Marlo's kelp
   recipe, cargo scales and deliveries, Tortuga's sea-chart dive and the Temple Builder, the signal lamps
   and the Sootling battle at the old lookout, the siphon machine on the crater rim, the Legend Trials and
@@ -468,3 +469,7 @@ All five phases are done and deployed: the three books are playable from start t
   festival plays the music-box, steel-drum and flute versions together.
 - Layout tests keep everything the player walks to on an island and away from the rim, every bridge
   joining two islands and every updraft on solid ground.
+- Navigation is checked by walking, not teleporting, in all three books: tools walk every sky bridge both ways
+  and follow the gold guide trail on foot from the start to every friend, crystal, quest spot, game and
+  treasure. The trail keeps to the paths, crosses bridges and stepping stones, avoids walls, huts and lava,
+  and joins a path at its nearest point rather than doubling back.

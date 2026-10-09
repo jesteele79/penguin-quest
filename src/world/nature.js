@@ -246,12 +246,12 @@ export function buildNature(ctx) {
     const glowCol = kind === 'gloom' ? 0x7a4ad8 : CRYSTAL_COLORS[kind];
     glow.add(x, y + 1.2 * s, z, glowCol, 6 * s, kind === 'gloom' ? 0.5 : 0.85);
   };
-  const ring = (kind, cx, cz, r0, r1, count, s0, s1) => {
+  const ring = (kind, cx, cz, r0, r1, count, s0, s1, skip = null) => {
     let placed = 0;
     for (let a = 0; a < 200 && placed < count; a++) {
       const ang = rng.float(0, Math.PI * 2), d = rng.float(r0, r1);
       const x = cx + Math.cos(ang) * d, z = cz + Math.sin(ang) * d;
-      if (terrain.roadDistanceAt(x, z) < 3) continue;
+      if (terrain.roadDistanceAt(x, z) < 3 || skip?.(x, z, ang)) continue;
       const h = terrain.heightAt(x, z);
       if (h < 0.2) continue;
       addCluster(kind, x, z, rng.float(s0, s1));
@@ -271,7 +271,16 @@ export function buildNature(ctx) {
   }
   ring('green', LOC.grove.x, LOC.grove.z, 9, 17, 8, 0.9, 1.6);
   ring('cyan', LOC.grove.x, LOC.grove.z, 12, 22, 8, 0.8, 1.4);
-  ring('violet', 104, 124, 4, 11, 9, 0.8, 1.6);
+  // Inside the ice cave the clusters grow along the walls, clear of the way in and of the three ice mirrors
+  // (placed as in game/sites.js), so every mirror can be walked up to.
+  {
+    const C = LOC.caveDome, l = Math.hypot(LOC.lake.x - C.x, LOC.lake.z - C.z);
+    const dx = (LOC.lake.x - C.x) / l, dz = (LOC.lake.z - C.z) / l, px = -dz, pz = dx;
+    const mirrors = [[8, 1], [-8, 1], [-3, -7]].map(([u, w]) => [C.x + px * u + dx * w, C.z + pz * u + dz * w]);
+    const entrance = Math.atan2(dz, dx);
+    ring('violet', C.x, C.z, 9.2, 11.2, 9, 0.8, 1.5, (x, z, ang) => Math.abs(Math.atan2(Math.sin(ang - entrance), Math.cos(ang - entrance))) < 0.8
+      || mirrors.some(([mx, mz]) => Math.hypot(x - mx, z - mz) < 3.6));
+  }
   ring('pink', LOC.huts.x, LOC.huts.z, 24, 30, 5, 0.7, 1.1);
   ring('gloom', LOC.ridge.x, LOC.ridge.z, 12, 30, 10, 0.8, 1.5);
   ring('violet', LOC.spire.x, LOC.spire.z, 10, 16, 10, 0.9, 1.7);

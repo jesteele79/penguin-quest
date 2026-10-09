@@ -41,6 +41,9 @@ export function buildFloeBridge(xs) {
       f.platform.top = f.mesh.position.y + 0.43;
     });
   });
+  // The guide trail hops along the floes from the launch jetty to the island.
+  const I = LOC.island;
+  G.world.roads.addPath([[LOC.launch.x0, LOC.launch.z1], ...LOC.floeRows.map((z, i) => [xs[i] ?? 0, z]), [I.x, I.z + I.r - 1.5]]);
 }
 
 class FloeHopActivity {

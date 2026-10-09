@@ -83,10 +83,12 @@ export const ROADS = [
   [[100, 46], [96, 20], [88, -6], [80, -32], [72, -56], [66, -74], [88, -90], [100, -100]],
   // Jungle crossroads west to the lagoon shore.
   [[-34, 18], [-58, 16], [-80, 16], [-98, 18]],
+  // On down to the snorkel beach, where the reef trail starts.
+  [[-98, 18], [-108, 28], [-115, 35]],
   // Camp west along the south shore to the sandbar.
   [[-10, 80], [-30, 92], [-48, 104], [-54, 108]],
   // Forge up the volcano to the crater rim, in two switchbacks.
-  [[-44, -46], [-39, -45], [-30, -58], [-14, -64], [-26, -76], [-14, -84], [-6, -82]],
+  [[-40, -41], [-36, -47], [-30, -58], [-14, -64], [-26, -76], [-14, -84], [-6, -82]],
   // The lookout camp on the east slope.
   [[80, -32], [64, -48], [52, -58]],
 ];

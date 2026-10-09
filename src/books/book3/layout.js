@@ -98,6 +98,7 @@ export const ROADS = [
   [[0, 81], [18, 66], [38, 58]],
   [[2, 88], [-14, 88], [-33, 88]],
   [[2, 88], [18, 92], [30, 98]],
+  [[18, 92], [24, 88], [29, 84]],
   [[-70, 14], [-84, 4], [-95, -3], [-99, -6]],
   [[-77, 98], [-92, 98], [-106, 104]],
   [[77, 38], [92, 32], [106, 26], [104, 6], [102, -2]],
@@ -106,8 +107,24 @@ export const ROADS = [
   [[20, -86], [8, -84], [3, -81]],
 ];
 
-// Every bridge joins the ends of two paths, so the guide trail can cross from island to island.
-export const LINKS = BRIDGES.map((B) => [B.from, B.to]);
+// Every bridge joins the ends of two paths, so the guide trail can cross from island to island; so does the
+// mooring pier, out to where the sky carp bite.
+export const LINKS = [...BRIDGES.map((B) => [B.from, B.to]), [[29, 84], [54, 84]]];
+
+// Each path meets its bridge head-on: its last few metres run along the bridge's line, so a penguin following
+// the path walks straight onto the deck instead of into the end of a rope rail and off the rim beside it.
+for (const B of BRIDGES) {
+  const dx = B.to[0] - B.from[0], dz = B.to[1] - B.from[1], l = Math.hypot(dx, dz), ux = dx / l, uz = dz / l;
+  for (const [end, sgn] of [[B.from, -1], [B.to, 1]]) {
+    for (const road of ROADS) {
+      const k = road.findIndex((p) => p[0] === end[0] && p[1] === end[1]);
+      if (k < 0 || (k !== 0 && k !== road.length - 1)) continue;
+      const [px, pz] = road[k === 0 ? 1 : k - 1], vx = px - end[0], vz = pz - end[1], vl = Math.hypot(vx, vz);
+      if (vl < 9 || (vx * sgn * ux + vz * sgn * uz) / vl > 0.995) continue;
+      road.splice(k === 0 ? 1 : k, 0, [+(end[0] + sgn * ux * 7).toFixed(1), +(end[1] + sgn * uz * 7).toFixed(1)]);
+    }
+  }
+}
 
 // Guild Town's round cottages: x, z and a colour index.
 export const COTTAGES = [[-14, 80, 1], [16, 52, 2], [-26, 64, 3], [26, 78, 4], [-6, 46, 5], [31, 71, 0], [-34, 80, 2]];

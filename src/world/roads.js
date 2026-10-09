@@ -151,15 +151,19 @@ export class Roads {
       if (i < 0) { i = nodes.length; nodes.push({ x, z, edges: [] }); }
       return i;
     };
-    const join = (p, q) => {
+    const segs = [];
+    const join = (p, q, link = false) => {
       const a = find(p[0], p[1]), b = find(q[0], q[1]);
       const d = Math.hypot(nodes[a].x - nodes[b].x, nodes[a].z - nodes[b].z);
       nodes[a].edges.push({ to: b, d });
       nodes[b].edges.push({ to: a, d });
+      segs.push({ a, b, link });
     };
     for (const road of ROADS) for (let k = 0; k < road.length - 1; k++) join(road[k], road[k + 1]);
-    for (const [p, q] of LINKS) join(p, q);
+    for (const [p, q] of LINKS) join(p, q, true);
     this.nodes = nodes;
+    this.segs = segs;
+    this.join = join;
   }
 
   // Shortest distances from node `src` to every node.
@@ -181,34 +185,66 @@ export class Roads {
     return { dist, prev };
   }
 
+  // A straight walk is clear when the ground allows it and nothing big and solid (a wall, a hut) stands in the
+  // way. Whatever stands at either end (the friend or crystal being walked to) does not count.
+  straightIsClear(ax, az, bx, bz) {
+    if (!this.straightIsWalkable(ax, az, bx, bz)) return false;
+    if (!this.solidAt) return true;
+    const len = Math.hypot(bx - ax, bz - az);
+    const atEnd = (c) => Math.hypot(ax - c.x, az - c.z) < c.r + 2.5 || Math.hypot(bx - c.x, bz - c.z) < c.r + 2.5;
+    for (let d = 1; d < len - 1; d += 1) {
+      const c = this.solidAt(ax + ((bx - ax) * d) / len, az + ((bz - az) * d) / len, 0.6);
+      if (c && !atEnd(c)) return false;
+    }
+    return true;
+  }
+
+  // Walkable means no climb steeper than a penguin can walk up, no drop off a cliff and no hazard (lava, open
+  // sky), checked every metre and a half. Water is measured at its surface, where a penguin swims.
   straightIsWalkable(ax, az, bx, bz) {
     const len = Math.hypot(bx - ax, bz - az);
-    const steps = Math.ceil(len / 3);
-    let prevH = this.terrain.heightAt(ax, az);
+    const steps = Math.max(1, Math.ceil(len / 1.5)), step = len / steps;
+    let prevH = Math.max(this.terrain.heightAt(ax, az), WATER_Y);
     for (let i = 1; i <= steps; i++) {
       const x = ax + ((bx - ax) * i) / steps, z = az + ((bz - az) * i) / steps;
-      const h = this.terrain.heightAt(x, z);
-      if (h - prevH > 3 * 1.0) return false;
-      if (this.terrain.slopeAt(x, z) > 1.1) return false;
+      const h = Math.max(this.terrain.heightAt(x, z), WATER_Y);
+      if (h - prevH > step * 0.95 || prevH - h > step * 1.6) return false;
+      if (this.hazardAt?.(x, z)) return false;
+      // The very end may sit on a rim (a bridge starts there), so its slope does not count.
+      if (i < steps && this.terrain.slopeAt(x, z) > 1.1) return false;
       prevH = h;
     }
     return true;
   }
 
-  // Polyline of [x, z] from a to b, preferring roads when the direct line is blocked or much longer.
+  // Polyline of [x, z] from a to b: straight when that walk is short and clear, otherwise along the paths.
   computeRoute(ax, az, bx, bz) {
-    const direct = Math.hypot(bx - ax, bz - az);
-    if (direct < 26 || (direct < 80 && this.straightIsWalkable(ax, az, bx, bz))) return [[ax, az], [bx, bz]];
-    let tgt = 0, best = Infinity;
-    this.nodes.forEach((n, i) => { const d = Math.hypot(n.x - bx, n.z - bz); if (d < best) { best = d; tgt = i; } });
+    if (Math.hypot(bx - ax, bz - az) < 80 && this.straightIsClear(ax, az, bx, bz)) return [[ax, az], [bx, bz]];
+    // Leave the paths at the junction nearest the goal that has a clear walk to it.
+    const byGoal = this.nodes.map((n, i) => ({ i, d: Math.hypot(n.x - bx, n.z - bz) })).sort((p, q) => p.d - q.d);
+    const tgt = (byGoal.slice(0, 8).find(({ i, d }) => d < 4 || this.straightIsClear(this.nodes[i].x, this.nodes[i].z, bx, bz)) ?? byGoal[0]).i;
     const { dist, prev } = this.dijkstra(tgt);
-    // Join the paths where the cost is least, at a point the penguin can walk straight to (not across a gap
-    // between islands or up a cliff), unless no such point exists.
-    const order = this.nodes.map((n, i) => ({ i, c: Math.hypot(n.x - ax, n.z - az) + dist[i] })).filter((o) => o.c < Infinity).sort((p, q) => p.c - q.c);
-    const reach = order.find(({ i }) => Math.hypot(this.nodes[i].x - ax, this.nodes[i].z - az) < 10 || this.straightIsWalkable(ax, az, this.nodes[i].x, this.nodes[i].z)) ?? order[0];
-    const entry = reach?.i ?? 0, bestCost = reach?.c ?? Infinity;
-    if (this.straightIsWalkable(ax, az, bx, bz) && direct < bestCost * 0.85) return [[ax, az], [bx, bz]];
+    // Ways onto the paths: straight to a junction the penguin can walk to (not across a gap between islands or
+    // up a cliff), or onto the closest point of a path close by and along it to either end, so a penguin
+    // partway along a path never doubles back. A bridge is only joined from its own deck. Walking off the
+    // paths counts extra, so the trail keeps to them rather than cutting across camps and gardens.
+    const OFF = 1.6;
+    const order = this.nodes.map((n, i) => ({ i, via: null, c: Math.hypot(n.x - ax, n.z - az) * OFF + dist[i] })).filter((o) => o.c < Infinity);
+    for (const { a, b, link } of this.segs) {
+      const A = this.nodes[a], B = this.nodes[b];
+      const dx = B.x - A.x, dz = B.z - A.z, l2 = dx * dx + dz * dz || 1e-9;
+      const t = Math.max(0, Math.min(1, ((ax - A.x) * dx + (az - A.z) * dz) / l2));
+      const qx = A.x + dx * t, qz = A.z + dz * t, d = Math.hypot(ax - qx, az - qz);
+      if (d > (link ? 1.6 : 6)) continue;
+      for (const k of [a, b]) if (dist[k] < Infinity) order.push({ i: k, via: [qx, qz], c: d * OFF + Math.hypot(this.nodes[k].x - qx, this.nodes[k].z - qz) + dist[k] });
+    }
+    order.sort((p, q) => p.c - q.c);
+    // Only junctions within a short walk are tried, cheapest first, so far-off ones are never joined across country.
+    const near = order.filter(({ i, via }) => via || Math.hypot(this.nodes[i].x - ax, this.nodes[i].z - az) < 45);
+    const reach = near.slice(0, 12).find(({ i, via }) => via || Math.hypot(this.nodes[i].x - ax, this.nodes[i].z - az) < 4 || this.straightIsClear(ax, az, this.nodes[i].x, this.nodes[i].z)) ?? near[0] ?? order[0];
+    const entry = reach?.i ?? 0;
     const path = [[ax, az]];
+    if (reach?.via && Math.hypot(reach.via[0] - ax, reach.via[1] - az) > 0.3) path.push(reach.via);
     for (let i = entry; i >= 0; i = prev[i]) {
       path.push([this.nodes[i].x, this.nodes[i].z]);
       if (i === tgt) break;
@@ -218,6 +254,17 @@ export class Roads {
   }
 
   setTarget(target) { this.target = target; this.routeTimer = 0; }
+
+  // A way across that a game leaves behind (a causeway, a floe bridge): the trail can follow it point by
+  // point. Its first point is joined to the nearest path junction, if one is close.
+  addPath(points) {
+    const [x0, z0] = points[0];
+    let near = null, best = 20;
+    for (const n of this.nodes) { const d = Math.hypot(n.x - x0, n.z - z0); if (d < best) { best = d; near = n; } }
+    if (near) this.join([near.x, near.z], points[0]);
+    for (let k = 1; k < points.length; k++) this.join(points[k - 1], points[k], true);
+    this.route = null;
+  }
 
   update(time, dt = 1 / 60, player = null, show = true, viewportScale = 500) {
     this.uniforms.uTime.value = time;
