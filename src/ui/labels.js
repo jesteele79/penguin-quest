@@ -14,8 +14,10 @@ export class WorldLabels {
   }
 
   // clear: an answer the player must read; it slides down rather than hide under a panel at the top of the screen.
-  add(html, { cls = '', pos = new THREE.Vector3(), offsetY = 0, maxDist = 90, clear = false } = {}) {
-    const node = el('div', { class: `wlabel ${cls}`, html });
+  // onTap: the label is itself a button, for a finger or a mouse.
+  add(html, { cls = '', pos = new THREE.Vector3(), offsetY = 0, maxDist = 90, clear = false, onTap = null } = {}) {
+    const node = el('div', { class: `wlabel ${cls}${onTap ? ' interactive' : ''}`, html });
+    if (onTap) node.addEventListener('pointerdown', (e) => { e.preventDefault(); onTap(); });
     this.layer.append(node);
     const item = {
       node, pos: pos.clone(), offsetY, maxDist, clear, visible: true,

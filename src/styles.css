@@ -368,6 +368,7 @@ sup { font-size: 0.62em; }
 /* ------------------------------------------------ world labels */
 .labels { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .wlabel { position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform; font-weight: 700; }
+.wlabel.interactive { cursor: pointer; touch-action: manipulation; }
 .quest-mark span {
   display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-family: var(--display); font-size: 24px; color: #3a2400;
   background: radial-gradient(circle at 40% 35%, #fff4c0, #ffd166 55%, #e0a020); border: 2px solid #fff; box-shadow: 0 0 18px rgba(255, 209, 102, 0.9);

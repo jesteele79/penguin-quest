@@ -60,7 +60,9 @@ class FishingActivity {
     G.scene.add(this.hook, this.line);
     this.hook.visible = this.line.visible = false;
     const panel = G.quiz;
-    panel.open({ title: this.tourney ? SIDE.find((q) => q.id === 'sq_tourney')?.title ?? 'Fishing Tournament' : 'Fishing', subtitle: 'Press the fish\'s number (or ←/→ then Enter) to cast', color: '#4dd8ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    const how = { touch: 'Tap the fish with the right answer to cast', pad: 'Pick the right fish with ← →, then press to cast' }[G.input.mode]
+      ?? 'Click the right fish, or press its number, to cast';
+    panel.open({ title: this.tourney ? SIDE.find((q) => q.id === 'sq_tourney')?.title ?? 'Fishing Tournament' : 'Fishing', subtitle: how, color: '#4dd8ff', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onHint: () => { if (this.round && !this.round.over) { this.round.hint(); G.audio.play('hint'); panel.showHint(this.round.p); } },
       onContinue: () => this.next(),
@@ -84,7 +86,10 @@ class FishingActivity {
       m.position.copy(lane);
       m.scale.setScalar(1.6);
       G.scene.add(m);
-      const label = G.labels.add(`<b class="k">${i + 1}</b><span>${toHTML(c.label)}</span>`, { cls: 'fish-label', pos: lane, offsetY: 1.9, maxDist: 60, clear: true });
+      const label = G.labels.add(`<b class="k">${i + 1}</b><span>${toHTML(c.label)}</span>`, {
+        cls: 'fish-label', pos: lane, offsetY: 1.9, maxDist: 60, clear: true,
+        onTap: () => { if (this.state !== 'aim') return; this.sel = i; this.highlight(); this.cast(i); },
+      });
       this.fish.push({ mesh: m, lane, label, phase: Math.random() * 6, alive: true, i, leave: 0 });
     });
     this.sel = Math.min(this.sel, n - 1);
