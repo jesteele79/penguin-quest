@@ -1,8 +1,8 @@
 import { helpers } from './fullrun.mjs';
 
-// Plays the same things over and over and reports whether geometry, textures, scene objects or page elements
-// keep growing, which would mean something is never freed. The first round may add shapes that are built once
-// and kept; after that each count should hold steady.
+// Plays the same things over and over and reports whether geometry, textures, shader programs, scene objects or
+// page elements keep growing, which would mean something is never freed. The first round may add shapes that are
+// built once and kept; after that each count should hold steady.
 // Run: node tools/shoot.mjs tools/plans/leaks.mjs --size 800x500 [--query book=book2]
 // LEAK_GAMES=fishing,crystal,hats,battle,market picks what is repeated (any mini-game name works); LEAK_ROUNDS how often.
 export default async (page) => {
@@ -14,7 +14,7 @@ export default async (page) => {
     G.dev.sync(); G.dev.step(0.5);
     let g = 0; while (G.top?.constructor.name !== 'ExploreActivity' && g++ < 30) { G.dev.key('Enter'); G.dev.step(0.3); }
     window.__count = () => { const R = G.quality.renderer; let objs = 0; G.scene.traverse(() => objs++);
-      return { geo: R.info.memory.geometries, tex: R.info.memory.textures, objs, dom: document.getElementsByTagName('*').length, anim: G.world.animated.length }; };
+      return { geo: R.info.memory.geometries, tex: R.info.memory.textures, prog: R.info.programs.length, objs, dom: document.getElementsByTagName('*').length, anim: G.world.animated.length }; };
     return 1;`);
   const games = (process.env.LEAK_GAMES ?? 'fishing,crystal,hats,battle,market').split(',');
   for (let round = 0; round < +(process.env.LEAK_ROUNDS ?? 5); round++) {
