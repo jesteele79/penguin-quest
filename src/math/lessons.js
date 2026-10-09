@@ -8,6 +8,7 @@
 // Markup: {3/4} is a fraction, {2 1/4} a mixed number, **bold** is a key word.
 import { num, frac } from './build.js';
 import { lcm, Frac } from './frac.js';
+import { LESSONS6 } from './lessons6.js';
 
 const same = (a, b) => a[0] * b[1] === b[0] * a[1] && a[0] > 0;
 
@@ -891,3 +892,6 @@ export const LESSONS = {
 // Lessons for these skills start automatically the first time the skill comes up (ideas above the
 // child's grade); every other lesson starts after a first struggle, and all of them can be replayed.
 export const lessonFor = (skillId) => LESSONS[skillId] ?? null;
+
+// The grade 6 lessons live in their own file.
+Object.assign(LESSONS, LESSONS6);

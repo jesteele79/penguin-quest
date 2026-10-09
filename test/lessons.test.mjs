@@ -6,8 +6,10 @@ import { checkAnswer } from '../src/math/check.js';
 import { typedValue } from '../src/math/build.js';
 import { Rng } from '../src/core/rng.js';
 
-const MODELS = ['strips', 'hundred', 'numberline', 'area', 'protractor', 'place', 'cubes', 'share', 'steptap', 'tape', 'fracgrid', 'plot', 'slide', 'jumps', 'level', 'tags', 'paren', 'rows2'];
-const MENTORS = ['professor', 'captain', 'fern', 'mittens', 'pebble', 'skipper', 'isa', 'rocco', 'marlo', 'tortuga', 'lumi'];
+const MODELS = ['strips', 'hundred', 'numberline', 'area', 'protractor', 'place', 'cubes', 'share', 'steptap', 'tape', 'fracgrid', 'plot', 'slide', 'jumps', 'level', 'tags', 'paren', 'rows2',
+  'balance', 'ratiotable', 'cards', 'bins', 'shapecut', 'net', 'multiples', 'spread'];
+const MENTORS = ['professor', 'captain', 'fern', 'mittens', 'pebble', 'skipper', 'isa', 'rocco', 'marlo', 'tortuga', 'lumi', 'swoop', 'vela', 'tock', 'nimbus', 'astra'];
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const clean = (s) => typeof s === 'string' && s.length > 0 && !/undefined|NaN|Infinity|\[object/.test(s) && !/[{}]/.test(s.replace(/\{-?[\d?]+( [\d?]+)?\/[\d?]+\}/g, ''));
 
 for (const [id, L] of Object.entries(LESSONS)) {
@@ -31,7 +33,21 @@ for (const [id, L] of Object.entries(LESSONS)) {
     if (L.explore.model === 'cubes') assert.ok(cfg.l * cfg.w * cfg.h <= 60, `${id} too many cubes to draw`);
     if (L.explore.model === 'share') assert.ok(cfg.total > cfg.groups);
     if (L.explore.model === 'fracgrid') assert.ok(cfg.goalRows > 0 && cfg.goalRows <= cfg.rows && cfg.goalCols > 0 && cfg.goalCols <= cfg.cols);
-    if (L.explore.model === 'plot') assert.ok(cfg.targets.every(([x, y]) => x >= 0 && y >= 0 && x <= cfg.n && y <= cfg.n));
+    if (L.explore.model === 'plot') { const lo = cfg.min ?? 0; assert.ok(cfg.targets.every(([x, y]) => x >= lo && y >= lo && x <= cfg.n && y <= cfg.n)); }
+    if (L.explore.model === 'balance') assert.equal(cfg.bags * cfg.x + cfg.ones, cfg.right, `${id} the scale does not balance`);
+    if (L.explore.model === 'ratiotable') {
+      // The target column can be reached with the buttons the lesson offers.
+      const { a, b, target, ops = ['add'] } = cfg, k = target.value / (target.row === 0 ? a : b);
+      const ok = (ops.includes('add') && Number.isInteger(k) && k >= 1 && k <= 7) || (ops.includes('times') && (cfg.times ?? [2, 3, 5, 10]).includes(k))
+        || (ops.includes('divide') && (cfg.divide ?? [2, 3, 4]).includes(1 / k) && a % (1 / k) === 0 && b % (1 / k) === 0);
+      assert.ok(ok, `${id} the ratio table never reaches ${target.value}`);
+    }
+    if (L.explore.model === 'cards') assert.ok(cfg.values.length >= 3 && cfg.values.length <= 9 && ['order', 'median', 'range', 'quartiles'].includes(cfg.mode));
+    if (L.explore.model === 'bins') assert.ok(cfg.values.every((v) => cfg.bins.filter(([lo, hi]) => v >= lo && v <= hi).length === 1), `${id} a value fits no bin, or two`);
+    if (L.explore.model === 'shapecut') assert.ok(cfg.shape === 'L' ? cfg.cw < cfg.W && cfg.ch < cfg.H : cfg.b > 0 && cfg.h > 0 && (cfg.shape !== 'trap' || cfg.b2 < cfg.b));
+    if (L.explore.model === 'net') assert.ok([cfg.l, cfg.w, cfg.h].every((v) => Number.isInteger(v) && v > 0));
+    if (L.explore.model === 'multiples') { const l = (cfg.a * cfg.b) / gcd(cfg.a, cfg.b); assert.ok(l / cfg.a <= 12 && l / cfg.b <= 12, `${id} rows too long to reach the LCM`); }
+    if (L.explore.model === 'spread') assert.ok(cfg.values.every((v) => v >= cfg.min && v <= cfg.max));
     if (L.explore.model === 'slide') {
       const r = Number(cfg.target) / Number(cfg.start);
       const k = Math.round(Math.log10(r));
@@ -70,4 +86,9 @@ test('the order-of-operations lesson ends on a whole number', () => {
     t.splice(best - 1, 3, F[t[best]](t[best - 1], t[best + 1]));
   }
   assert.equal(t[0], 10);
+});
+
+test('every grade 6 skill with a new idea has a lesson', () => {
+  const later = Object.values(SKILLS).filter((k) => k.grade === 6 && k.id !== 'dec_ops');
+  for (const k of later) assert.ok(LESSONS[k.id], `${k.id} has no lesson`);
 });

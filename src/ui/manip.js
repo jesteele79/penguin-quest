@@ -1,41 +1,11 @@
 // Hands-on models for lessons (the "concrete" step): the child changes the model until it matches a goal.
-// Every model: new Model(host, cfg, onChange) renders into host; `.done` says the goal is met; `.solve()`
-// shows the answer (the "Show me" button); `.describe()` says what the model shows now, for read-aloud.
+// The shared base class and SVG helpers are in manipkit.js; the grade 6 models are in manip6.js.
 import { el } from './dom.js';
 import { renderVisual } from '../math/visuals.js';
+import { Model, svgEl, svgRoot, txt, svgPoint, gcd, signed } from './manipkit.js';
+import { GRADE6_MODELS } from './manip6.js';
 
-const NS = 'http://www.w3.org/2000/svg';
-const svgEl = (tag, attrs = {}) => {
-  const n = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
-  return n;
-};
-const svgRoot = (w, h, label) => svgEl('svg', { class: 'vis manip-svg', viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': label });
-const txt = (x, y, s, cls = 'v-t', size = 16, anchor = 'middle') => {
-  const t = svgEl('text', { x, y, class: cls, 'font-size': size, 'text-anchor': anchor, 'dominant-baseline': 'middle' });
-  t.textContent = s;
-  return t;
-};
-// Pointer position in SVG units.
-function svgPoint(svg, e) {
-  const p = svg.createSVGPoint();
-  p.x = e.clientX; p.y = e.clientY;
-  return p.matrixTransform(svg.getScreenCTM().inverse());
-}
-const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
 const fracLabel = (n, d) => `${n}/${d}`;
-
-class Model {
-  constructor(host, cfg, onChange) {
-    this.host = host; this.cfg = cfg; this.onChange = onChange;
-    this.root = el('div', { class: `manip ${this.constructor.kind ?? ''}` });
-    host.append(this.root);
-  }
-
-  changed() { this.render(); this.onChange?.(this); }
-
-  destroy() { this.root.remove(); }
-}
 
 // ------------------------------------------------------------ fraction strips
 // rows: [{ parts, filled, fixed, wholes = 1, name }]; goal(values) -> bool, values are fractions as [n, d].
@@ -149,9 +119,9 @@ export class NumberLine extends Model {
   solve() { const [tn, td] = this.cfg.target; this.k = Math.round((tn * this.cfg.den) / td) - this.base; this.changed(); }
 
   label(n, d) {
-    if (this.cfg.decimal) return (n / d).toFixed(this.cfg.places ?? String(d).length - 1);
-    if (n % d === 0) return String(n / d);
-    return fracLabel(n, d);
+    const a = Math.abs(n);
+    const body = a % d === 0 ? String(a / d) : this.cfg.decimal ? (a / d).toFixed(this.cfg.places ?? String(d).length - 1) : fracLabel(a, d);
+    return n < 0 ? `\u2212${body}` : body;
   }
 
   describe() { const [n, d] = this.value; return `The marker is at ${this.label(n, d)}.`; }
@@ -647,27 +617,32 @@ export class Plot extends Model {
 
   solve() { this.pts = this.cfg.targets.map((p) => [...p]); this.last = null; this.changed(); }
 
-  describe() { return this.pts.length ? `Points at ${this.pts.map((p) => `(${p[0]}, ${p[1]})`).join(', ')}.` : 'No points yet.'; }
+  describe() { return this.pts.length ? `Points at ${this.pts.map((p) => `(${signed(p[0])}, ${signed(p[1])})`).join(', ')}.` : 'No points yet.'; }
 
   render() {
-    const n = this.cfg.n, S = Math.min(34, 330 / n), pad = 34;
-    const W = pad * 2 + n * S;
-    const X = (v) => pad + v * S, Y = (v) => pad + (n - v) * S;
+    // min below zero gives all four quadrants, with the axes crossing in the middle.
+    const n = this.cfg.n, lo = this.cfg.min ?? 0, span = n - lo, S = Math.min(34, 330 / span), pad = 34;
+    const W = pad * 2 + span * S;
+    const X = (v) => pad + (v - lo) * S, Y = (v) => pad + (n - v) * S;
     const svg = svgRoot(W, W, 'coordinate grid');
     svg.style.maxWidth = 'min(400px, 46vh)';
-    for (let v = 0; v <= n; v++) {
-      svg.append(svgEl('line', { x1: X(v), y1: Y(0), x2: X(v), y2: Y(n), class: 'v-gridline' }));
-      svg.append(svgEl('line', { x1: X(0), y1: Y(v), x2: X(n), y2: Y(v), class: 'v-gridline' }));
-      svg.append(txt(X(v), Y(0) + 16, String(v), 'v-t2', 12));
-      if (v) svg.append(txt(X(0) - 12, Y(v), String(v), 'v-t2', 12));
+    for (let v = lo; v <= n; v++) {
+      svg.append(svgEl('line', { x1: X(v), y1: Y(lo), x2: X(v), y2: Y(n), class: 'v-gridline' }));
+      svg.append(svgEl('line', { x1: X(lo), y1: Y(v), x2: X(n), y2: Y(v), class: 'v-gridline' }));
+      if (v !== 0 || lo === 0) svg.append(txt(X(v), Y(Math.max(lo, 0)) + 16, signed(v), 'v-t2', 12));
+      if (v) svg.append(txt(X(Math.max(lo, 0)) - 12, Y(v), signed(v), 'v-t2', 12));
     }
-    svg.append(svgEl('line', { x1: X(0), y1: Y(0), x2: X(n) + 10, y2: Y(0), class: 'v-axis' }));
-    svg.append(svgEl('line', { x1: X(0), y1: Y(0), x2: X(0), y2: Y(n) - 10, class: 'v-axis' }));
-    svg.append(txt(X(n) + 18, Y(0), 'x', 'v-t v-strong', 15));
-    svg.append(txt(X(0), Y(n) - 20, 'y', 'v-t v-strong', 15));
+    const o = Math.max(lo, 0);
+    svg.append(svgEl('line', { x1: X(lo), y1: Y(o), x2: X(n) + 10, y2: Y(o), class: 'v-axis' }));
+    svg.append(svgEl('line', { x1: X(o), y1: Y(lo), x2: X(o), y2: Y(n) - 10, class: 'v-axis' }));
+    svg.append(txt(X(n) + 18, Y(o), 'x', 'v-t v-strong', 15));
+    svg.append(txt(X(o), Y(n) - 20, 'y', 'v-t v-strong', 15));
     if (this.cfg.line && this.pts.length > 1) {
       const sorted = [...this.pts].sort((a, b) => a[0] - b[0]);
       svg.append(svgEl('polyline', { points: sorted.map(([x, y]) => `${X(x)},${Y(y)}`).join(' '), class: 'v-arc' }));
+    }
+    if (this.cfg.closed && this.done) {
+      svg.append(svgEl('polygon', { points: this.cfg.targets.map(([x, y]) => `${X(x)},${Y(y)}`).join(' '), class: 'v-fill v-soft v-edge' }));
     }
     for (const [x, y] of this.pts) {
       const good = this.cfg.targets.some((t) => t[0] === x && t[1] === y);
@@ -677,15 +652,20 @@ export class Plot extends Model {
     hit.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       const p = svgPoint(svg, e);
-      const x = Math.round((p.x - pad) / S), y = Math.round(n - (p.y - pad) / S);
-      if (x < 0 || y < 0 || x > n || y > n) return;
+      const x = Math.round((p.x - pad) / S) + lo, y = Math.round(n - (p.y - pad) / S);
+      if (x < lo || y < lo || x > n || y > n) return;
       if (this.has(x, y)) this.pts = this.pts.filter((q) => q[0] !== x || q[1] !== y);
       else this.pts.push([x, y]);
       this.last = [x, y];
       this.changed();
     });
     svg.append(hit);
-    const msg = this.last ? `You tapped <b>(${this.last[0]}, ${this.last[1]})</b>: ${this.last[0]} across, ${this.last[1]} up.` : 'Tap where the lines cross. Go across first, then up.';
+    const where = ([x, y]) => (lo < 0
+      ? `${Math.abs(x)} ${x < 0 ? 'left' : 'right'}, ${Math.abs(y)} ${y < 0 ? 'down' : 'up'}`
+      : `${x} across, ${y} up`);
+    const msg = this.last
+      ? `You tapped <b>(${signed(this.last[0])}, ${signed(this.last[1])})</b>: ${where(this.last)}.`
+      : lo < 0 ? 'Start at (0, 0) in the middle. Go left or right first, then up or down.' : 'Tap where the lines cross. Go across first, then up.';
     this.root.replaceChildren(svg, el('div', { class: 'manip-readout', html: msg }));
   }
 }
@@ -871,16 +851,16 @@ export class Tagger extends Model {
   describe() { return this.on.size ? `You picked ${[...this.on].join(', ')}.` : 'Nothing picked yet.'; }
 
   render() {
-    const pic = renderVisual({ kind: 'shape', name: this.cfg.shape });
+    const pic = this.cfg.shape ? renderVisual({ kind: 'shape', name: this.cfg.shape }) : this.cfg.visual ? renderVisual(this.cfg.visual) : '';
     const tags = el('div', { class: 'manip-buttons tag-row' }, ...this.cfg.tags.map((t) => {
-      const b = el('button', { class: `btn small toggle${this.on.has(t) ? ' on' : ''}`, type: 'button', text: t, 'aria-pressed': String(this.on.has(t)) });
+      const b = el('button', { class: `btn ${this.cfg.big ? '' : 'small '}toggle${this.on.has(t) ? ' on' : ''}`, type: 'button', text: t, 'aria-pressed': String(this.on.has(t)) });
       b.addEventListener('click', () => { if (this.on.has(t)) this.on.delete(t); else this.on.add(t); this.changed(); });
       return b;
     }));
     const right = this.cfg.correct.filter((t) => this.on.has(t)).length;
     const wrong = [...this.on].filter((t) => !this.cfg.correct.includes(t)).length;
-    const msg = wrong ? `One of your picks does not fit. Check its rules again.` : `${right} of ${this.cfg.correct.length} names found.`;
-    this.root.replaceChildren(el('div', { class: 'quiz-visual', html: pic }), tags, el('div', { class: 'manip-readout', text: msg }));
+    const msg = wrong ? `One of your picks does not fit. Check its rules again.` : `${right} of ${this.cfg.correct.length} ${this.cfg.noun ?? 'names'} found.`;
+    this.root.replaceChildren(...(pic ? [el('div', { class: 'quiz-visual', html: pic })] : []), tags, el('div', { class: 'manip-readout', text: msg }));
   }
 }
 
@@ -1004,5 +984,6 @@ export class CompareRows extends Model {
 export const MODELS = {
   strips: Strips, hundred: Hundred, numberline: NumberLine, area: AreaModel, protractor: Protractor, place: PlaceChart, cubes: Cubes,
   share: Share, steptap: StepTap, tape: TapeBuild, fracgrid: FracGrid, plot: Plot, slide: PlaceSlide, jumps: Jumps, level: Level, tags: Tagger, paren: Paren, rows2: CompareRows,
+  ...GRADE6_MODELS,
 };
 export { gcd };

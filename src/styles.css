@@ -743,6 +743,18 @@ tr.dim td { color: var(--frost-dim); }
 .cmp-grid .place-cell.added .pd { color: var(--frost-dim); }
 .cmp-grid .place-dot { grid-row: span 1; }
 
+/* ------------------------------------------------ grade 6 models */
+.card-row { font-size: 1.5em; min-height: 56px; }
+.step-op.card { min-width: 56px; min-height: 56px; padding: 0 10px; display: inline-grid; place-items: center; }
+.step-op.card:disabled { cursor: default; opacity: 1; }
+.step-op.card.soft { border-color: var(--teal); background: rgba(56, 240, 210, 0.18); }
+.step-op.card.used { opacity: 0.35; }
+.card-row.sorted { min-height: 60px; padding: 6px 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); border: 1.5px dashed rgba(169, 196, 255, 0.35); }
+.card-arrow { font-size: 1.6em; color: var(--frost); line-height: 1; }
+.mult-line { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; width: 100%; max-width: 640px; }
+.mult-line .card-row { justify-content: flex-start; font-size: 1.15em; }
+.mult-line .step-op.card { min-width: 44px; min-height: 44px; }
+
 /* ------------------------------------------------ Book 2 title and shelf */
 .logo-2.logo-book2 { background: linear-gradient(90deg, #ffd166, #ff9a3c 30%, #ff5c8a 58%, #2ec4b6 85%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 5px 0 #5a1e3a); }
 button.book-card { font: inherit; color: inherit; cursor: pointer; }
