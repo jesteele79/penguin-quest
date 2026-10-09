@@ -71,12 +71,25 @@ export class TouchControls {
     this.lookZone.addEventListener('pointercancel', endLook);
 
     // Buttons
-    this.jump.addEventListener('pointerdown', (e) => { e.preventDefault(); input.key('Space', true, ' '); });
-    this.jump.addEventListener('pointerup', () => input.key('Space', false, ' '));
+    // Held for as long as the finger stays on it (that is a glide in Skyreach), and let go however the touch ends:
+    // a finger sliding off the button must not leave Space held down.
+    this.jump.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { this.jump.setPointerCapture(e.pointerId); } catch { /* the release handlers still cover it */ }
+      this.jumpHeld = true;
+      input.key('Space', true, ' ');
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.jump.addEventListener(ev, () => this.releaseJump());
     this.slide.addEventListener('pointerdown', (e) => { e.preventDefault(); input.touchSlide = true; });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) this.slide.addEventListener(ev, () => { input.touchSlide = false; });
     this.menu.addEventListener('click', () => onMenu?.());
     this.journal.addEventListener('click', () => onJournal?.());
+  }
+
+  releaseJump() {
+    if (!this.jumpHeld) return;
+    this.jumpHeld = false;
+    this.input.key('Space', false, ' ');
   }
 
   // Shown when touch is the active device and the penguin can move.
@@ -88,6 +101,7 @@ export class TouchControls {
     if (!show) {
       this.input.touchAxis.forward = this.input.touchAxis.turn = 0;
       this.input.touchSlide = false;
+      this.releaseJump();
       this.base.classList.add('hidden');
     }
   }
