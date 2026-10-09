@@ -5,6 +5,7 @@ import { Round, V, awardMedal, MEDAL_ICON } from './common.js';
 import { toHTML } from '../../math/fmt.js';
 import { WATER_Y } from '../../world/layout.js';
 import { mergeColored, mat } from '../../core/geo.js';
+import { BOOK } from '../../books/current.js';
 
 const FISH_COLORS = [0xff9a3c, 0x4dd8ff, 0xff72c8, 0x7dff9a];
 let fishGeo = null;
@@ -37,10 +38,12 @@ class FishingActivity {
     const d = G.world.ctx.dock;
     this.base = V(d.waterEnd.x - 1.4, d.top, d.waterEnd.z);
     G.player.teleport(this.base.x, this.base.z, Math.PI / 2, d.top);
+    // Where the fish swim: the water, or for a book without water at the pier, its own level.
+    this.waterY = BOOK.fishWater?.(d) ?? WATER_Y;
     G.player.frozen = true;
     G.hud.setVisible(false);
     G.audio.setMood('quiz');
-    this.center = V(this.base.x + 8.5, WATER_Y, this.base.z);
+    this.center = V(this.base.x + 8.5, this.waterY, this.base.z);
     // High over the shoulder: the answers spread across open water below the question, and the penguin stays out of the way.
     G.cam.setShot({ pos: this.base.clone().add(V(-4.5, 7.5, 3.0)), look: this.center.clone().add(V(0, 0.4, 0)), fov: 58 }, 1.0);
     // Rod in the right flipper
@@ -76,7 +79,7 @@ class FishingActivity {
     const spread = n === 4 ? [-6, -2, 2, 6] : n === 3 ? [-4.5, 0, 4.5] : [-3, 3];
     p.choices.forEach((c, i) => {
       const m = new THREE.Mesh(bigFish(), new THREE.MeshLambertMaterial({ color: FISH_COLORS[i % 4], emissive: FISH_COLORS[i % 4], emissiveIntensity: 0.35, vertexColors: true }));
-      const lane = V(this.center.x, WATER_Y - 0.55, this.center.z + spread[i]);
+      const lane = V(this.center.x, this.waterY - 0.55, this.center.z + spread[i]);
       m.position.copy(lane);
       m.scale.setScalar(1.6);
       G.scene.add(m);
@@ -185,7 +188,7 @@ class FishingActivity {
       if (f.jump !== undefined) {
         f.jump += dt;
         const k = Math.min(1, f.jump / 0.9);
-        f.mesh.position.set(f.lane.x + (this.base.x - f.lane.x) * k, WATER_Y + Math.sin(k * Math.PI) * 5 + (this.base.y - WATER_Y) * k, f.lane.z + (this.base.z - f.lane.z) * k);
+        f.mesh.position.set(f.lane.x + (this.base.x - f.lane.x) * k, this.waterY + Math.sin(k * Math.PI) * 5 + (this.base.y - this.waterY) * k, f.lane.z + (this.base.z - f.lane.z) * k);
         f.mesh.rotation.z = k * 6;
         if (k >= 1) f.mesh.visible = false;
         continue;
@@ -198,7 +201,7 @@ class FishingActivity {
         continue;
       }
       const a = t * 0.9 + f.phase;
-      f.mesh.position.set(f.lane.x + Math.cos(a) * 1.3, WATER_Y - 0.55 + Math.sin(t * 2 + f.phase) * 0.08, f.lane.z + Math.sin(a) * 0.9);
+      f.mesh.position.set(f.lane.x + Math.cos(a) * 1.3, this.waterY - 0.55 + Math.sin(t * 2 + f.phase) * 0.08, f.lane.z + Math.sin(a) * 0.9);
       f.mesh.rotation.y = -a - Math.PI / 2 + Math.sin(t * 9 + f.phase) * 0.15;
       f.label.setPos(f.mesh.position);
     }

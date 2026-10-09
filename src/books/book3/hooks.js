@@ -96,6 +96,9 @@ export const HOOKS = {
 
   frame: skyFrame,
 
+  // Sky carp swim in the air just below the end of the mooring pier, rising to the bait.
+  fishWater: (dock) => dock.top - 1.6,
+
   // Glider wings come from Captain Swoop once the wind pinwheels are balanced.
   update(q) {
     G.player.canGlide = q.done('ch1') || (q.active('ch1') && q.st('ch1').step >= 2);

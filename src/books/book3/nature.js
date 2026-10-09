@@ -18,7 +18,7 @@ const SOFT_RIM = { color: 0xf0e8ff, power: 2.6, strength: 0.22 };
 const CLEAR = [
   { ...LOC.home, r: 15 }, { ...LOC.arrival, r: 12 }, { ...LOC.camp, r: 7 }, { ...LOC.counter, r: 5 }, { ...LOC.tower, r: 12 },
   { ...LOC.vale, r: 12 }, { ...LOC.liftView, r: 8 }, { ...LOC.arena, r: 11 }, { ...LOC.well2, r: 4 }, { ...LOC.dome, r: 16 }, { ...LOC.clockFace, r: 8 },
-  { ...LOC.kiln, r: 16 }, { ...LOC.scope, r: 12 }, { ...LOC.spire, r: 16 }, { ...LOC.meadow, r: 14 }, { x: LOC.rocco.x - 6, z: LOC.rocco.z - 4, r: 6 },
+  { ...LOC.kiln, r: 16 }, { ...LOC.scope, r: 12 }, { ...LOC.spire, r: 16 }, { ...LOC.meadow, r: 14 }, { x: LOC.rocco.x - 6, z: LOC.rocco.z - 4, r: 6 }, { x: LOC.rocco.x - 4, z: LOC.rocco.z + 2, r: 7 },
   { ...NURSERY, r: 9 }, { ...PATROL_BOARD, r: 4 }, { ...FESTIVAL, r: 12 }, { x: LOC.dock.x1 - 12, z: LOC.dock.z, r: 6 },
 ];
 for (const c of Object.values(CRYSTALS)) CLEAR.push({ ...c, r: 8 });

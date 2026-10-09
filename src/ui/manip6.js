@@ -101,7 +101,8 @@ export class Balance extends Model {
 // ------------------------------------------------------------ ratio table
 // Columns that keep the same ratio. Add another batch, multiply or divide the first column, until a
 // column has the target number in the target row.
-// cfg: { names: [A, B], a, b, target: { row, value }, ops: ['add', 'times', 'divide'], times: [2, 3, 5, 10], divide: [2, 3, 4] }
+// cfg: { names: [A, B], one: [a, b] (the names for just one), a, b, target: { row, value }, ops: ['add', 'times', 'divide'],
+//   times: [2, 3, 5, 10], divide: [2, 3, 4] }
 export class RatioTable extends Model {
   static kind = 'ratiotable';
 
@@ -155,9 +156,9 @@ export class RatioTable extends Model {
     if (ops.includes('times')) for (const k of this.cfg.times ?? [2, 3, 5, 10]) buttons.push(button(`× ${k}`, () => this.add([a * k, b * k])));
     if (ops.includes('divide')) for (const k of this.cfg.divide ?? [2, 3, 4]) if (a % k === 0 && b % k === 0) buttons.push(button(`÷ ${k}`, () => this.add([a / k, b / k])));
     buttons.push(button('Start over', () => { this.cols = [[a, b]]; this.changed(); }, 'btn small ghost'));
-    const h = this.hit;
-    const msg = h ? `<b>${h[0]}</b> ${names[0]} go with <b>${h[1]}</b> ${names[1]}. Every column is the same ratio!`
-      : `Every column must keep the same ratio as ${a} to ${b}. Find the column with ${this.cfg.target.value} ${names[this.cfg.target.row]}.`;
+    const h = this.hit, say = (n, r) => `${n === 1 ? this.cfg.one?.[r] ?? names[r] : names[r]}`;
+    const msg = h ? `<b>${h[0]}</b> ${say(h[0], 0)} ${h[0] === 1 ? 'goes' : 'go'} with <b>${h[1]}</b> ${say(h[1], 1)}. Every column is the same ratio!`
+      : `Every column must keep the same ratio as ${a} to ${b}. Find the column with ${this.cfg.target.value} ${say(this.cfg.target.value, this.cfg.target.row)}.`;
     this.root.replaceChildren(svg, el('div', { class: 'manip-buttons' }, ...buttons), el('div', { class: 'manip-readout', html: msg }));
   }
 }

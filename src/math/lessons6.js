@@ -13,7 +13,7 @@ export const LESSONS6 = {
     hook: 'Captain Swoop packs the glider hangar: for every 3 kites there are 2 gliders. That "for every" is a **ratio**, and it stays the same as the hangar fills up.',
     explore: {
       model: 'ratiotable', prompt: 'Add more batches of 3 kites and 2 gliders until there are 12 kites.', success: '12 kites go with 8 gliders. Still 3 kites for every 2 gliders!',
-      cfg: { names: ['kites', 'gliders'], a: 3, b: 2, target: { row: 0, value: 12 }, ops: ['add'] },
+      cfg: { names: ['kites', 'gliders'], one: ['kite', 'glider'], a: 3, b: 2, target: { row: 0, value: 12 }, ops: ['add'] },
     },
     see: { text: 'A ratio compares two amounts. **3 to 2**, **3 : 2** and **for every 3 kites there are 2 gliders** all say the same thing. Order matters: kites to gliders is 3 : 2, but gliders to kites is 2 : 3.', visual: { kind: 'ratioTable', a: 3, b: 2, k: 4, A: 'kites', B: 'gliders' } },
     watch: {
@@ -35,7 +35,7 @@ export const LESSONS6 = {
     hook: 'Swoop mixes glider paint: 2 cups of blue for every 5 cups of white. A bigger batch has to keep the same ratio, or the color changes!',
     explore: {
       model: 'ratiotable', prompt: 'Make a bigger batch with 20 cups of white. Use the × buttons.', success: '8 cups of blue to 20 cups of white: the same color, just more of it!',
-      cfg: { names: ['blue cups', 'white cups'], a: 2, b: 5, target: { row: 1, value: 20 }, ops: ['times'], times: [2, 3, 4, 10] },
+      cfg: { names: ['blue cups', 'white cups'], one: ['blue cup', 'white cup'], a: 2, b: 5, target: { row: 1, value: 20 }, ops: ['times'], times: [2, 3, 4, 10] },
     },
     see: { text: 'Multiply **both** numbers in a ratio by the same number and you get an **equivalent ratio**: 2 : 5 = 4 : 10 = 8 : 20.', visual: { kind: 'ratioTable', a: 2, b: 5, k: 4, A: 'blue', B: 'white' } },
     watch: {
@@ -58,7 +58,7 @@ export const LESSONS6 = {
     hook: 'Every 4 laps of the race course take 6 minutes. A table keeps track as the laps add up.',
     explore: {
       model: 'ratiotable', prompt: 'Grow the table until it shows 16 laps.', success: '16 laps take 24 minutes!',
-      cfg: { names: ['laps', 'minutes'], a: 4, b: 6, target: { row: 0, value: 16 }, ops: ['add', 'times'], times: [2, 5] },
+      cfg: { names: ['laps', 'minutes'], one: ['lap', 'minute'], a: 4, b: 6, target: { row: 0, value: 16 }, ops: ['add', 'times'], times: [2, 5] },
     },
     see: { text: 'A **double number line** is a ratio table stretched out: the laps line and the minutes line match up tick for tick.', visual: { kind: 'dnl', names: ['laps', 'minutes'], top: ['0', '4', '8', '12', '16'], bottom: ['0', '6', '12', '18', '24'] } },
     watch: {
@@ -80,7 +80,7 @@ export const LESSONS6 = {
     hook: 'Nimbus sells cloud candy by the bag. Which bag is the better deal? Find the price of **one** candy.',
     explore: {
       model: 'ratiotable', prompt: 'A bag of 12 candies costs 36 coins. Divide to find the price of 1 candy.', success: 'One candy costs 3 coins. That is the **unit rate**!',
-      cfg: { names: ['candies', 'coins'], a: 12, b: 36, target: { row: 0, value: 1 }, ops: ['divide'], divide: [2, 3, 4, 6, 12] },
+      cfg: { names: ['candies', 'coins'], one: ['candy', 'coin'], a: 12, b: 36, target: { row: 0, value: 1 }, ops: ['divide'], divide: [2, 3, 4, 6, 12] },
     },
     see: { text: 'A **unit rate** tells how much for **one**: 3 coins per candy. "Per" means "for each".', visual: { kind: 'dnl', names: ['candies', 'coins'], top: ['0', '1', '4', '12'], bottom: ['0', '3', '12', '36'] } },
     watch: {
@@ -102,7 +102,7 @@ export const LESSONS6 = {
     hook: 'A glider flies 60 meters in 3 seconds. How fast is that? Find how far it goes in **one** second.',
     explore: {
       model: 'ratiotable', prompt: 'Divide to find how far the glider flies in 1 second.', success: '20 meters in 1 second: 20 meters per second. That is its speed!',
-      cfg: { names: ['seconds', 'meters'], a: 3, b: 60, target: { row: 0, value: 1 }, ops: ['divide'], divide: [3] },
+      cfg: { names: ['seconds', 'meters'], one: ['second', 'meter'], a: 3, b: 60, target: { row: 0, value: 1 }, ops: ['divide'], divide: [3] },
     },
     see: { text: '**Speed** is a unit rate: distance for each unit of time, like 20 meters per second. Once you know it, any time is easy.', visual: { kind: 'dnl', names: ['seconds', 'meters'], top: ['0', '1', '3', '5'], bottom: ['0', '20', '60', '100'] } },
     watch: {
@@ -124,7 +124,7 @@ export const LESSONS6 = {
     hook: 'Rocco\'s glass rods are measured in feet, but his chart uses inches. 1 foot is always 12 inches: a ratio that never changes.',
     explore: {
       model: 'ratiotable', prompt: 'How many inches are 4 feet? Grow the table.', success: '4 feet is 48 inches!',
-      cfg: { names: ['feet', 'inches'], a: 1, b: 12, target: { row: 0, value: 4 }, ops: ['add', 'times'], times: [2, 3, 5, 10] },
+      cfg: { names: ['feet', 'inches'], one: ['foot', 'inch'], a: 1, b: 12, target: { row: 0, value: 4 }, ops: ['add', 'times'], times: [2, 3, 5, 10] },
     },
     see: { text: '1 foot = 12 inches, so feet to inches is always **1 : 12**. Multiply feet by 12 to get inches; divide inches by 12 to get feet.', visual: { kind: 'ratioTable', a: 1, b: 12, k: 4, A: 'feet', B: 'inches' } },
     watch: {
