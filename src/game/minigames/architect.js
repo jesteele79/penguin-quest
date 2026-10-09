@@ -5,6 +5,7 @@ import { G, pushActivity } from '../../core/state.js';
 import { QuizActivity } from '../activities.js';
 import { V, awardMedal } from './common.js';
 import { BOOK } from '../../books/current.js';
+import { disposeTree } from '../../core/geo.js';
 
 const A = BOOK.architect;
 const MAX = 400;
@@ -203,6 +204,7 @@ class ArchitectActivity extends QuizActivity {
     this.clearBuild();
     G.scene.remove(this.cubes, this.ghost);
     for (const st of this.statues) G.scene.remove(st);
+    for (const o of [this.cubes, this.ghost, ...this.statues]) disposeTree(o);
   }
 }
 

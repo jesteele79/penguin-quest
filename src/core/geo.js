@@ -56,7 +56,7 @@ const _p = new THREE.Vector3();
 export function disposeTree(obj, keep = []) {
   const shared = new Set(keep), mats = new Set();
   obj.traverse((o) => {
-    if (o.isMesh && !shared.has(o.geometry)) o.geometry.dispose();
+    if (o.geometry && !o.isSprite && !shared.has(o.geometry)) o.geometry.dispose();
     if (o.material) [o.material].flat().forEach((m) => mats.add(m));
   });
   mats.forEach((m) => m.dispose());

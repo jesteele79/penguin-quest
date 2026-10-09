@@ -7,6 +7,7 @@ import { toHTML } from '../../math/fmt.js';
 import { SLALOM } from '../../world/layout.js';
 import { BOOK } from '../../books/current.js';
 import { damp } from '../../core/mathutil.js';
+import { disposeTree } from '../../core/geo.js';
 
 const GATES = [9, 18, 27, 36, 45, 54];
 const FINISH = 61;
@@ -198,7 +199,7 @@ class SlalomActivity {
     G.player.rail = false;
     G.cam.release(0.8);
     G.hud.setVisible(true);
-    for (const o of this.objects) G.scene.remove(o);
+    for (const o of this.objects) { G.scene.remove(o); disposeTree(o); }
     for (const g of this.gates) g.labels.forEach((l) => l.remove());
   }
 }

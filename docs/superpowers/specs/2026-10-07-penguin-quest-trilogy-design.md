@@ -479,3 +479,5 @@ All five phases are done and deployed: the three books are playable from start t
   4 times in 5) needs roughly 20 to 75 more problems of practice; a struggling one a few hundred, spread over
   the practice spots and daily patrol. Earlier grades' skills are taken as known and a clean first answer
   confirms them, so review takes at most about a quarter of the problems (in Book 2 it had taken half).
+- Long sessions are checked for leaks (`tools/plans/leaks.mjs`): every mini-game in all three books is played
+  over and over while the graphics memory and scene are counted, and nothing grows after the first round.

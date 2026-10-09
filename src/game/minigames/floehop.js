@@ -30,6 +30,14 @@ function makeFloe(x, z, y = WATER_Y + 0.05) {
   return { mesh: m, platform };
 }
 
+function dropFloe(f) {
+  G.scene.remove(f.mesh);
+  f.mesh.material.dispose();
+  G.world.collision.removePlatform(f.platform);
+  f.label?.remove();
+  f.gone = true;
+}
+
 // The finished path stays as a bridge.
 export function buildFloeBridge(xs) {
   if (!xs?.length || buildFloeBridge.done) return;
@@ -167,7 +175,7 @@ class FloeHopActivity {
 
   finish() {
     G.save.data.flags.floeBridge = this.xs.map((x) => Math.round(x * 10) / 10);
-    for (const f of this.kept) { G.scene.remove(f.mesh); G.world.collision.removePlatform(f.platform); }
+    this.kept.forEach(dropFloe);
     this.kept = [];
     buildFloeBridge(G.save.data.flags.floeBridge);
     popActivity(this);
@@ -175,8 +183,6 @@ class FloeHopActivity {
   }
 
   quit() {
-    for (const f of [...this.floes, ...this.kept]) { G.scene.remove(f.mesh); G.world.collision.removePlatform(f.platform); f.label?.remove(); }
-    this.floes = []; this.kept = [];
     const j = G.world.ctx.launch;
     popActivity(this);
     G.player.teleport(j.waterEnd.x, j.waterEnd.z + 2, Math.PI, j.top);
@@ -196,7 +202,7 @@ class FloeHopActivity {
       if (f.sinking) {
         f.mesh.position.y -= dt * 2.2;
         f.mesh.rotation.z += dt * 0.4;
-        if (f.mesh.position.y < -4) { G.scene.remove(f.mesh); G.world.collision.removePlatform(f.platform); f.gone = true; }
+        if (f.mesh.position.y < -4) dropFloe(f);
         continue;
       }
       if (f.rise < 1) {
@@ -235,7 +241,10 @@ class FloeHopActivity {
   exit() {
     G.quiz.close();
     G.player.airAssist = null;
-    for (const f of this.floes) f.label?.remove();
+    // Including the wrong floes of the last row, which are still sinking when the hop ends.
+    [...this.floes, ...this.kept].forEach(dropFloe);
+    this.floes = [];
+    this.kept = [];
   }
 }
 

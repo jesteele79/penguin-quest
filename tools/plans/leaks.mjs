@@ -4,7 +4,7 @@ import { helpers } from './fullrun.mjs';
 // keep growing, which would mean something is never freed. The first round may add shapes that are built once
 // and kept; after that each count should hold steady.
 // Run: node tools/shoot.mjs tools/plans/leaks.mjs --size 800x500 [--query book=book2]
-// LEAK_GAMES=fishing,crystal,hats,battle,market picks what is repeated (any mini-game name works).
+// LEAK_GAMES=fishing,crystal,hats,battle,market picks what is repeated (any mini-game name works); LEAK_ROUNDS how often.
 export default async (page) => {
   await page.eval(`const {G}=window.__pq; G.dev.newGame({name:'Sam',grade:4,scarf:'coral'}); G.save.data.settings.pace='free'; ${helpers}
     for (const id of ['ch0','ch1','ch2','ch3','ch4','ch5','ch6','ch7']) G.save.data.q[id] = { done: true, step: 99, data: {} };
@@ -17,7 +17,7 @@ export default async (page) => {
       return { geo: R.info.memory.geometries, tex: R.info.memory.textures, objs, dom: document.getElementsByTagName('*').length, anim: G.world.animated.length }; };
     return 1;`);
   const games = (process.env.LEAK_GAMES ?? 'fishing,crystal,hats,battle,market').split(',');
-  for (let round = 0; round < 5; round++) {
+  for (let round = 0; round < +(process.env.LEAK_ROUNDS ?? 5); round++) {
     const r = await page.eval(`const {G}=window.__pq; const before = window.__count(); const done = [];
       for (const k of ${JSON.stringify(games)}) {
         if (k === 'crystal') { const c = G.world.ctx.crystals.lake.base; G.dev.tp(c.x + 3, c.z, -Math.PI / 2); G.quests.useCrystal('lake'); await T.solve(30); await T.settle(1); }
