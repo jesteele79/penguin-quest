@@ -10,7 +10,7 @@ import { T } from '../books/terms.js';
 import { GAMES } from './games.js';
 import { DOMAINS, SKILLS } from '../math/skills.js';
 import { cocoaOrder } from '../math/skills/decimals.js';
-import { bookById, voyages, placeName } from '../books/books.js';
+import { bookById, voyages, placeName, nextBook, isUnlocked, bookStatus, skillsToGo } from '../books/books.js';
 import { ShopScreen, VoyageScreen } from './screens.js';
 import { ACTIVE } from '../books/active.js';
 import { domainOf, regionOf } from '../books/regions.js';
@@ -240,6 +240,8 @@ export class QuestEngine {
         const npc = this.ferryFor(onward.id);
         return { text: `${npc === 'cinder' ? 'Fly' : 'Sail'} to ${placeName(onward.world)} with ${NPCS[npc]?.name ?? 'a friend'}`, target: G.npcs.get(npc)?.pos ?? null, npc };
       }
+      const practice = this.unlockPractice();
+      if (practice) return practice;
       const offer = SIDE.find((d) => this.sideOpen(d));
       if (offer) return { text: `New side quest: talk to ${NPCS[offer.giver].name}`, target: G.npcs.get(offer.giver).pos, npc: offer.giver };
       return { text: `Free play: ${T.patrol}, collections and practice`, target: null };
@@ -596,6 +598,19 @@ export class QuestEngine {
   onwardVoyage() {
     const here = bookById(ACTIVE);
     return voyages(G.save.data, G.tutor, ACTIVE).find((b) => b.n > here.n) ?? null;
+  }
+
+  // With the story done but the next book still waiting on mastery, the way on is practice: at the restored
+  // crystal whose subject has the most of this grade's skills left to master.
+  unlockPractice() {
+    const here = bookById(ACTIVE), next = nextBook(here);
+    if (!next?.ready || isUnlocked(G.save.data, G.tutor, next)) return null;
+    const st = bookStatus(G.save.data, G.tutor, here), togo = skillsToGo(st);
+    if (!st.storyDone || !togo) return null;
+    const left = (r) => st.missing.filter((s) => s.domain === domainOf(r)).length;
+    const r = REGIONS.filter((x) => this.s.crystals[x] && left(x) > 0).sort((a, b) => left(b) - left(a))[0];
+    if (!r) return null;
+    return { text: `Practice at the ${T.crystalOf(REGION_INFO[r].name)}: ${togo} more skill${togo > 1 ? 's' : ''} to master to open Book ${next.n}`, target: V(CRYSTALS[r].x, 0, CRYSTALS[r].z) };
   }
 
   // Who in this book carries a penguin to that book. The Captain always sails and Cinder always flies, whatever
