@@ -43,7 +43,14 @@ html, body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  -webkit-user-select: none;
+  /* No "copy / look up" bubble when a finger rests on the screen (iPad). */
+  -webkit-touch-callout: none;
 }
+/* Quick taps (11 on the keypad) must not be read as a double-tap to zoom the page. */
+button { touch-action: manipulation; }
+/* Typing fields stay selectable: iPad Safari will not let you type in a field that inherits user-select: none. */
+input, textarea { user-select: text; -webkit-user-select: text; }
 
 #app { position: fixed; inset: 0; overflow: hidden; background: var(--night); }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
