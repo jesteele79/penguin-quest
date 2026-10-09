@@ -126,7 +126,11 @@ export class HUD {
   attachWorldPrompt(labels, onTap) {
     this.bubble = labels.add('', { cls: 'prompt-bubble interactive', maxDist: 45 });
     this.bubble.visible = false;
-    this.bubble.node.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); onTap?.(); });
+    // So is the plain prompt shown for something with no place in the world.
+    for (const node of [this.bubble.node, this.prompt]) {
+      node.classList.add('interactive');
+      node.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); onTap?.(); });
+    }
   }
 
   setPromptKey(key) { if (key !== this.promptKey) { this.promptKey = key; this.last.prompt = undefined; } }

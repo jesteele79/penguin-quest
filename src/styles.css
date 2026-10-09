@@ -183,6 +183,8 @@ kbd {
   opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .hud-prompt.show { opacity: 1; transform: translate(-50%, 0); }
+/* Tappable only while it shows; faded out it must not catch touches meant for the world. */
+#ui .hud-prompt:not(.show) { pointer-events: none; }
 .hud-prompt kbd { background: var(--lantern); color: #2a1a00; border-color: #fff0c0; }
 
 .hud-controls {
