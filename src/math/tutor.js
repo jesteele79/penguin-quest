@@ -20,6 +20,11 @@ export class Tutor {
     this.grade = grade;
     this.book = book;
     this.rng = new Rng(seed);
+    // Saves from before review skills could be confirmed: one taken as known and only ever answered cleanly
+    // since (nothing else reaches mastery in under four answers) counts as mastered again.
+    for (const e of Object.values(state.skills)) {
+      if (e.confirmed === undefined && e.n > 0 && e.n < 4 && e.c === e.n && e.m >= MASTERED) e.confirmed = true;
+    }
   }
 
   inBook(skill) { return !this.book || this.book.has(skill); }
@@ -44,7 +49,7 @@ export class Tutor {
 
   isMastered(id) {
     const e = this.entry(id);
-    return e.m >= MASTERED && (e.n >= 4 || e.assumed);
+    return e.m >= MASTERED && (e.n >= 4 || e.assumed || e.confirmed);
   }
 
   // A book's own grade is open from the start. Skills above it (and above the child's grade) open once
@@ -154,6 +159,9 @@ export class Tutor {
     const wasMastered = this.isMastered(problem.skill);
     const score = result.firstTry ? (result.hintUsed ? 0.6 : 1) : result.solved ? 0.3 : 0;
     if (e.assumed && e.n === 0) {
+      // A skill from an earlier grade, taken as known: a clean first answer confirms it, so it stays mastered and
+      // comes back now and then for review, not four times in a row ahead of the book's own grade.
+      e.confirmed = score >= 1 && e.m >= MASTERED;
       e.m = score >= 1 ? Math.max(e.m, 0.9) : score > 0.5 ? 0.8 : 0.5;
     } else {
       e.m += RATE * (score - e.m);

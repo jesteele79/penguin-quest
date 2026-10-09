@@ -65,6 +65,7 @@ npm test          # math engine, lessons, all three books' stories, and the Book
 npm run build     # dist/PenguinQuest.html (single file), dist/pwa (installable), dist/artifact
 npm run dev       # unminified build with the playtest helpers on window.T and G.dev
 npm run check     # quest sites on sensible terrain and not crowding each other
+node tools/progress.mjs   # pacing: simulated students, skills mastered by each story's end, practice to unlock
 node tools/shoot.mjs <plan.mjs> --size 1366x768 [--query book=book2]   # drive the dev build in headless Chrome
 node tools/mapdump.mjs book2 .cache/map-book2.ppm                        # top-down map of a book's terrain
 node tools/shoot.mjs tools/plans/overlaps.mjs --query book=book3          # things inside something solid, blocked roads

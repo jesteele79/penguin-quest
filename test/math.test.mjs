@@ -212,6 +212,19 @@ test('tutor reports a skill the moment it becomes mastered', () => {
   assert.equal(hits, 1);
 });
 
+test('a review skill answered cleanly at the first go stays mastered', () => {
+  const tutor = new Tutor(emptyTutorState(), 5, 3);
+  const [kept, missed] = SKILL_LIST.filter((s) => s.grade === 4);
+  assert.ok(tutor.isMastered(kept.id), 'earlier-grade skills start out taken as known');
+  tutor.record(tutor.next(kept.domain, { skills: [kept.id] }), { solved: true, firstTry: true, hintUsed: false });
+  assert.ok(tutor.isMastered(kept.id), 'a clean answer keeps it mastered');
+  tutor.record(tutor.next(missed.domain, { skills: [missed.id] }), { solved: true, firstTry: false, hintUsed: false });
+  assert.ok(!tutor.isMastered(missed.id), 'a miss means it needs practice again');
+  const old = emptyTutorState();
+  old.skills[kept.id] = { m: 0.9, n: 1, c: 1, s: 1, t: 0, assumed: false };
+  assert.ok(new Tutor(old, 5, 3).isMastered(kept.id), 'and one answered cleanly in an older save');
+});
+
 test('cocoa orders: the typed answer is correct and choices are sound', () => {
   for (let tier = 1; tier <= 3; tier++) {
     for (let seed = 1; seed <= 300; seed++) {

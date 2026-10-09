@@ -470,6 +470,12 @@ All five phases are done and deployed: the three books are playable from start t
 - Layout tests keep everything the player walks to on an island and away from the rim, every bridge
   joining two islands and every updraft on solid ground.
 - Navigation is checked by walking, not teleporting, in all three books: tools walk every sky bridge both ways
-  and follow the gold guide trail on foot from the start to every friend, crystal, quest spot, game and
-  treasure. The trail keeps to the paths, crosses bridges and stepping stones, avoids walls, huts and lava,
-  and joins a path at its nearest point rather than doubling back.
+  and follow the gold guide trail on foot to every friend, crystal, quest spot and game, from the start and
+  from random spots a wandering child might reach. The trail keeps to the paths, crosses bridges, the lava
+  causeway and the floes, avoids walls, huts and lava, and joins a path at its nearest point rather than
+  doubling back. The pause menu has Back to the start for a penguin that is lost or stuck.
+- Pacing is checked with simulated students (`tools/progress.mjs`). Each story serves about 210 problems. A
+  strong student reaches the next book's unlock line as the story ends; an average one (right first time
+  4 times in 5) needs roughly 20 to 75 more problems of practice; a struggling one a few hundred, spread over
+  the practice spots and daily patrol. Earlier grades' skills are taken as known and a clean first answer
+  confirms them, so review takes at most about a quarter of the problems (in Book 2 it had taken half).

@@ -63,6 +63,23 @@ test('each book teaches its own grade, with review below and a few previews abov
 });
 
 // Typed-answer games (the cheer-up battle, the boss) ask for these domains in every book.
+test('a strong student spends most of a book on its own grade', () => {
+  for (const book of BOOKS) {
+    const skills = gradeSkills(book.grade);
+    const domains = [...new Set(skills.map((s) => s.domain))].filter((d) => skills.filter((s) => s.domain === d).length > 1);
+    for (const seed of [1, 2, 3]) {
+      const tutor = new Tutor(emptyTutorState(), book.grade, seed, bookScope(book.id));
+      let own = 0;
+      for (let k = 0; k < 200; k++) {
+        const p = tutor.next(domains[k % domains.length]);
+        if (SKILLS[p.skill].grade === book.grade) own += 1;
+        tutor.record(p, { solved: true, firstTry: true, hintUsed: false });
+      }
+      assert.ok(own >= 120, `${book.id} seed ${seed}: only ${own} of 200 problems were grade ${book.grade}`);
+    }
+  }
+});
+
 test('every book can always serve a typed problem for the battles', () => {
   for (const id of ['book1', 'book2', 'book3']) {
     for (const grade of [4, 5, 6]) {
