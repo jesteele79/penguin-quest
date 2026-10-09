@@ -9,6 +9,7 @@ import { mergeColored, mat } from '../../core/geo.js';
 import { lambert } from '../../core/materials.js';
 import { FishSchool } from '../../actors/school.js';
 import { LOC, CRYSTALS, WATER_Y } from './layout.js';
+import { controlText } from '../../ui/controls.js';
 
 const RING = 1.45;
 const LANE = 4.4;
@@ -74,7 +75,7 @@ class SnorkelActivity {
     this.school = new FishSchool(G.scene, ROWS.length * 3);
     this.school.follow(G.player);
     const panel = G.quiz;
-    panel.open({ title: 'Snorkel Trail', subtitle: 'Swim through the right ring. Hold Shift to swim faster!', color: '#2ec4b6', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    panel.open({ title: 'Snorkel Trail', subtitle: controlText('Swim through the right ring. {Hold Shift} to swim faster!'), color: '#2ec4b6', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onHint: () => { if (this.round && !this.round.over) { this.round.hint(); G.audio.play('hint'); panel.showHint(this.round.p); } },
       onContinue: () => { panel.feedback.innerHTML = ''; panel.steps.classList.add('hidden'); panel.contBtn.classList.add('hidden'); },

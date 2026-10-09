@@ -9,6 +9,7 @@ import { toHTML } from '../../math/fmt.js';
 import { mergeColored, mat } from '../../core/geo.js';
 import { lambert } from '../../core/materials.js';
 import { LOC, poolDist } from './layout.js';
+import { controlText } from '../../ui/controls.js';
 
 const P = LOC.lavaPool;
 const R = 1.75;
@@ -166,7 +167,7 @@ class LavaHopActivity {
     G.audio.setMood('quiz');
     G.hud.setVisible(true);
     const panel = G.quiz;
-    panel.open({ title: 'Lava Hop', subtitle: 'Hop onto the cool stone with the right answer. Space to jump!', color: '#ff6b35', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    panel.open({ title: 'Lava Hop', subtitle: controlText('Hop onto the cool stone with the right answer. {Space to jump}!'), color: '#ff6b35', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onHint: () => { if (this.round && !this.round.over) { this.round.hint(); G.audio.play('hint'); panel.showHint(this.round.p); } },
       onContinue: () => { panel.feedback.innerHTML = ''; panel.steps.classList.add('hidden'); panel.contBtn.classList.add('hidden'); },

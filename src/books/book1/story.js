@@ -55,7 +55,7 @@ export const MAIN = [
           ['professor', 'Each crystal is sealed with number magic. Only a clever penguin who can think with numbers can wake them up again.'],
           ['professor', "That's you, {name}! Keep your scarf on. Every puzzle you solve makes it glow a little brighter."],
           ['professor', 'First, let us warm up those flippers. Can you find the three golden snowflakes near the igloo?'],
-          ['professor', 'Walk with W or the up arrow. Turn with A and D. Space jumps, and holding Shift makes you belly-slide!'],
+          ['professor', '{How to move}'],
         ],
         onDone: 'showControls',
       },
@@ -71,7 +71,7 @@ export const MAIN = [
         type: 'game', game: 'warmup', auto: true, at: 'professor', label: 'Warm-up puzzles', text: 'Finish the warm-up puzzles with the Professor',
         after: [
           ['professor', 'Wonderful! You are going to be great at this.'],
-          ['professor', 'Take this: your very own Aurora Journal. Press J any time to see your quests.'],
+          ['professor', 'Take this: your very own Aurora Journal. {Press J} any time to see your quests.'],
           ['professor', 'The first crystal is at Glimmer Lake. Captain Flipper is down at the fishing dock. He will know what to do.'],
           ['professor', 'Follow the golden sparkle trail. It always points to your next goal. Off you go!'],
         ],
@@ -96,7 +96,7 @@ export const MAIN = [
         after: [
           ['captain', "Now THAT'S a haul! You've got the sharpest fins in the bay."],
           ['captain', "But look out there: the channel buoys have gone dark. Boats can't find their way home!"],
-          ['captain', "Could you swim out and relight all four? Just jump in the lake. Penguins are born swimmers! Hold Shift to swim faster."],
+          ['captain', "Could you swim out and relight all four? Just jump in the lake. Penguins are born swimmers! {Hold Shift} to swim faster."],
         ],
       },
       {
@@ -136,7 +136,7 @@ export const MAIN = [
         lines: [
           ["fern", "Oh! A visitor! I'm Fern. I look after the crystals in this grove."],
           ['fern', 'The Glooms sealed the Grove Crystal with three Fraction Locks. Each lock must be filled with exactly the right amount of light.'],
-          ['fern', 'Walk up to each lock and press E. Fill all three and the seal will break!'],
+          ['fern', 'Walk up to each lock and {press E}. Fill all three and the seal will break!'],
         ],
       },
       {
@@ -289,7 +289,7 @@ export const MAIN = [
         type: 'sites', set: 'beacons', text: (d, t) => `Light the signal beacons on the high hills (${d}/${t})`, shard: true,
         after: [
           ['skipper', 'The whole bay is watching! Now climb the ramp to the stone circle at the top.'],
-          ['skipper', 'When a Gloom comes close, type the answer to its puzzle and press Enter to send it some aurora light!'],
+          ['skipper', 'When a Gloom comes close, type the answer to its puzzle and {press Enter} to send it some aurora light!'],
         ],
       },
       {
@@ -391,7 +391,7 @@ export const SIDE = [
     blurb: 'Race down the sledding hill through answer gates. Beat your best time!',
     offer: [
       ['lulu', 'Race me down the sledding hill, south of the igloo!'],
-      ['lulu', 'You zoom down all by yourself. Before each gate, pick the lane with the right answer: press 1, 2 or 3, or the arrow keys!'],
+      ['lulu', 'You zoom down all by yourself. Before each gate, pick the lane with the right answer: {pick a lane}!'],
       ['lulu', 'Right answers give you a speed boost. Wrong ones cost you 2 seconds. Ready?'],
     ],
     steps: [{ type: 'game', game: 'slalom', at: 'slalomTop', label: 'Start the slalom', text: 'Race down the sledding hill', after: [['lulu', 'Wheee! You can race again any time to win a better medal!']] }],
@@ -422,7 +422,7 @@ export const SIDE = [
     blurb: 'Read grid coordinates on the treasure map to dig up four treasures.',
     offer: [
       ['captain', "Arr, you've earned this: my old treasure map! Four treasures are buried around the bay."],
-      ['captain', 'The map has a grid. Open it with M. Count across first for x, then up for y. When you are close, you will see sparkles in the snow. Press E to dig!'],
+      ['captain', 'The map has a grid. {Press M} to open it. Count across first for x, then up for y. When you are close, you will see sparkles in the snow. {Press E} to dig!'],
     ],
     steps: [{ type: 'treasure', text: (n, clue) => `Treasure ${n + 1} of 4: ${clue}`, after: [['captain', 'All four treasures! You are a true pirate penguin. Keep this hat, matey!']], reward: { items: ['hat:pirate'] } }],
   },
@@ -458,16 +458,16 @@ export const SIDE = [
 // What friends say when there is nothing quest-related to talk about.
 export const CHATTER = {
   professor: [
-    'Hold Shift while you run to belly-slide. Downhill is the fastest!',
-    'Press M to open your map. The gold star shows where to go next.',
+    '{Hold Shift} while you run to belly-slide. Downhill is the fastest!',
+    '{Press M} to open your map. The gold star shows where to go next.',
     "The Glooms aren't bad, you know. They're just cold and grumpy.",
-    'If a puzzle feels tricky, press H for a hint. Even great scientists ask for hints.',
+    'If a puzzle feels tricky, {press H} for a hint. Even great scientists ask for hints.',
     'Check the Aurora Patrol board by my igloo. There are new tasks every day!',
-    'Penguins are wonderful swimmers. Jump in the lake and hold Shift to zoom!',
+    'Penguins are wonderful swimmers. Jump in the lake and {hold Shift} to zoom!',
     'This cracked star badge? A souvenir from my days in the old Star Guild. A long story, for another day.',
   ],
   mo: ['There are 30 golden snowflakes hidden around the bay. Some are on top of hills!'],
-  lulu: ['Did you know penguins can belly-slide really fast? Hold Shift while you run. Wheee!', 'The sledding hill is just south of here!'],
+  lulu: ['Did you know penguins can belly-slide really fast? {Hold Shift} while you run. Wheee!', 'The sledding hill is just south of here!'],
   sunny: ['I saw a treasure chest on top of a snowy hill! I bet more are hiding around the bay.', 'Treasure chests have puzzles inside. And coins!'],
   captain: ["A penguin can hold its breath for 20 minutes. I can do about 3.", 'The fish are biting today, matey!'],
   fern: ['Crystals grow a tiny bit every full moon.', 'Fractions are just pieces of a whole. Like slices of a crystal pie!'],

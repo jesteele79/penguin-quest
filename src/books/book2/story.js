@@ -55,7 +55,7 @@ export const MAIN = [
           ['professor', 'But it is cooling. Deep in the volcano sits the Heart-Ember, and five Ember Vents feed it heat. Someone has bolted strange brass valves onto all five!'],
           ['professor', 'If the Heart goes cold, the current stops, and these islands will slowly drift apart.'],
           ['professor', 'First, stretch those flippers. The beach around camp is sprinkled with sea glass. Can you find three pieces?'],
-          ['professor', 'Walk with W or the up arrow, turn with A and D. Space jumps, and Shift is for belly-sliding. Sand is very slidey!'],
+          ['professor', '{How to move} Sand is very slidey!'],
         ],
         onDone: 'showControls',
       },
@@ -70,7 +70,7 @@ export const MAIN = [
       {
         type: 'game', game: 'warmup', auto: true, at: 'professor', label: 'Warm-up puzzles', text: 'Finish the warm-up puzzles with the Professor',
         after: [
-          ['professor', 'Wonderful! Here is your Island Journal. Press J any time to see your quests.'],
+          ['professor', 'Wonderful! Here is your Island Journal. {Press J} any time to see your quests.'],
           ['professor', 'The nearest vent is at the Lava Forge, up the jungle path to the north. A rockhopper named Rocco works there.'],
           ['professor', 'Follow the golden sparkle trail. I will call you on the radio if I learn anything new!'],
         ],
@@ -136,7 +136,7 @@ export const MAIN = [
         lines: [
           ['isa', "Oh, hello. I'm Isa. I look after the coral here."],
           ['isa', 'When the water got cold, the coral lost its colors. It is not gone, just very, very tired.'],
-          ['isa', 'Each coral bed needs exactly the right share of warm water and sunlight. Fractions, really. Could you swim out to them? Hold Shift to swim faster.'],
+          ['isa', 'Each coral bed needs exactly the right share of warm water and sunlight. Fractions, really. Could you swim out to them? {Hold Shift} to swim faster.'],
         ],
       },
       {
@@ -404,7 +404,7 @@ export const SIDE = [
     blurb: 'Sand-board down the volcano\'s ash slope through answer gates.',
     offer: [
       ['kai', 'Want to race down the ash slope on the volcano? It is like snow, but warm and gray!'],
-      ['kai', 'Before each gate, pick the lane with the right answer: press 1, 2 or 3, or the arrow keys. Right answers make you zoom!'],
+      ['kai', 'Before each gate, pick the lane with the right answer: {pick a lane}. Right answers make you zoom!'],
     ],
     steps: [{ type: 'game', game: 'slalom', at: 'slalomTop', label: 'Start the slalom', text: 'Race down the ash slope', after: [['kai', 'Wooo! Race again any time for a better medal!']] }],
     reward: { coins: 30 },
@@ -432,7 +432,7 @@ export const SIDE = [
     blurb: 'Read coordinates on Tortuga\'s sea chart to find four old treasures.',
     offer: [
       ['tortuga', 'Little one, I have carried this sea chart for a very long time. Four treasures are buried on these islands.'],
-      ['tortuga', 'Open it with M. Count across first for x, then up for y. When you are near, the sand will sparkle. Press E to dig.'],
+      ['tortuga', '{Press M} to open it. Count across first for x, then up for y. When you are near, the sand will sparkle. {Press E} to dig.'],
     ],
     steps: [{ type: 'treasure', text: (n, clue) => `Treasure ${n + 1} of 4: ${clue}`, after: [['tortuga', 'All four. You read the sea like a turtle now. Keep this compass scarf, for your journeys.']], reward: { items: ['scarf:compass'] } }],
   },
@@ -468,10 +468,10 @@ export const SIDE = [
 export const CHATTER = {
   professor: [
     'Penguins in the tropics? Yes! Galapagos penguins live right on the equator. They cool off by panting, like puppies.',
-    'Press M for the map. The gold star shows where to go next.',
+    '{Press M} for the map. The gold star shows where to go next.',
     'If a puzzle feels new, look for the lesson. Every expert was a beginner once.',
     'Check the Island Patrol board by camp. New tasks every day!',
-    'The sea here is warm enough for long swims. Hold Shift to zoom!',
+    'The sea here is warm enough for long swims. {Hold Shift} to zoom!',
     'My radio picks up the strangest humming from the volcano at night.',
   ],
   captain: ['I sail back to Glacier Bay any time you like. Just say the word, matey.', 'Warm water, warm flippers. I could get used to this!'],

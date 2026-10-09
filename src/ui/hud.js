@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { G } from '../core/state.js';
 import { REGION_INFO } from '../game/content.js';
 import { T } from '../books/terms.js';
 import { ICON, portraitSVG } from './icons.js';
@@ -33,7 +34,9 @@ export class HUD {
     this.objective = el('div', { class: 'hud-objective' }, el('div', { class: 'hud-obj-label', text: 'Next' }), this.objText, this.objDist);
     this.root.append(this.objective);
 
-    this.mini = el('canvas', { class: 'hud-minimap', width: 300, height: 300, 'aria-label': 'Minimap' });
+    // Tapping or clicking the little map opens the big one (the way to the map on a tablet).
+    this.mini = el('canvas', { class: 'hud-minimap interactive', width: 300, height: 300, 'aria-label': 'Minimap: open the map' });
+    this.mini.addEventListener('click', () => { if (G.inGame && G.player && !G.player.frozen) G.screens.map(); });
     this.crystalRow = el('div', { class: 'hud-crystals' });
     this.root.append(el('div', { class: 'hud-right' }, el('div', { class: 'hud-mini-wrap' }, this.mini), this.crystalRow));
 

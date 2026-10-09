@@ -45,7 +45,8 @@ class SlalomActivity {
     G.audio.setMood('battle');
     this.buildCourse();
     const panel = G.quiz;
-    panel.open({ title: 'Slalom', subtitle: 'Press 1, 2 or 3 (or ← ↑ →) to pick a lane', color: '#ffd166', layout: 'top', readAloud: false });
+    const how = { touch: 'Tap a sign, or steer, to pick its lane', pad: 'Steer, or use the D-pad, to pick a lane' }[G.input.mode] ?? 'Press 1, 2 or 3 (or ← ↑ →) to pick a lane';
+    panel.open({ title: 'Slalom', subtitle: how, color: '#ffd166', layout: 'top', readAloud: false });
     panel.handlers = { onClose: () => this.quit(), onHint: () => {}, onContinue: () => {} };
     panel.setProgress(0, GATES.length);
     this.prepareGate(0);
@@ -95,7 +96,7 @@ class SlalomActivity {
     g.choiceIdx = idx;
     idx.forEach((ci, lane) => {
       const pos = this.point(g.d, LANES[lane], 3.2);
-      g.labels.push(G.labels.add(`<b class="k">${lane + 1}</b><span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'fish-label', pos, offsetY: 0, maxDist: 80, clear: true }));
+      g.labels.push(G.labels.add(`<b class="k">${lane + 1}</b><span>${toHTML(p.choices[ci].label)}</span>`, { cls: 'fish-label', pos, offsetY: 0, maxDist: 80, clear: true, onTap: () => this.choose(lane) }));
     });
     this.answered = null;
     G.quiz.showProblem(p, { format: 'none', showSkill: false });
@@ -159,6 +160,13 @@ class SlalomActivity {
 
   update(dt) {
     const pl = G.player;
+    // A stick, on screen or on a controller, steers into a lane (as tapping a sign does, from the countdown on).
+    const ahead = this.gates[this.nextGate];
+    if (ahead?.round && G.input.mode !== 'keys') {
+      const t = G.input.turn, f = G.input.forward;
+      const lane = t > 0.55 ? 0 : t < -0.55 ? 2 : f > 0.6 && Math.abs(t) < 0.3 ? 1 : null;
+      if (lane !== null && lane !== this.answered) this.choose(lane);
+    }
     if (this.state === 'countdown') {
       const before = Math.ceil(this.count);
       this.count -= dt;

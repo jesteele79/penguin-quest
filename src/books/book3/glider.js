@@ -7,6 +7,7 @@ import { G, pushActivity, popActivity } from '../../core/state.js';
 import { Round } from '../../game/minigames/common.js';
 import { toHTML } from '../../math/fmt.js';
 import { LOC, UPDRAFTS, WATER_Y } from './layout.js';
+import { controlText } from '../../ui/controls.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const RING = 1.9;
@@ -43,7 +44,7 @@ class GliderTrials {
     G.audio.setMood('quiz');
     G.hud.setVisible(true);
     const panel = G.quiz;
-    panel.open({ title: 'Glider Trials', subtitle: 'Jump off the tower and hold Space to glide through the right ring!', color: '#ffb000', layout: 'top', readAloud: G.save.data.settings.readAloud });
+    panel.open({ title: 'Glider Trials', subtitle: controlText('Jump off the tower and {hold Space} to glide through the right ring!'), color: '#ffb000', layout: 'top', readAloud: G.save.data.settings.readAloud });
     panel.handlers = {
       onHint: () => { if (this.round && !this.round.over) { this.round.hint(); G.audio.play('hint'); panel.showHint(this.round.p); } },
       onContinue: () => { panel.feedback.innerHTML = ''; panel.steps.classList.add('hidden'); panel.contBtn.classList.add('hidden'); },
@@ -178,7 +179,7 @@ class GliderTrials {
     const offDeck = Math.hypot(pl.pos.x - this.deck.x, pl.pos.z - this.deck.z) > 5;
     if ((pl.grounded && offDeck) || pl.pos.y < this.deck.y - 14) {
       if (!this.next) {
-        G.toasts.toast(pl.gliding || along > 0 ? 'Missed! Aim for a ring.' : 'Hold Space while you fall to glide!', { ms: 1800 });
+        G.toasts.toast(pl.gliding || along > 0 ? 'Missed! Aim for a ring.' : controlText('{Hold Space} while you fall to glide!'), { ms: 1800 });
         this.next = 'retry';
       }
       G.audio.play('whoosh');

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GAMES } from '../src/game/games.js';
 import { G } from '../src/core/state.js';
+import { controlText } from '../src/ui/controls.js';
 
 const BOOKS = {
   book1: {
@@ -38,6 +39,36 @@ function speakers(story) {
   walk(story.SIDE);
   return out;
 }
+
+// Every string a book shows: story lines, chatter, objective texts.
+function texts(o, out = []) {
+  if (typeof o === 'string') out.push(o);
+  else if (Array.isArray(o)) o.forEach((x) => texts(x, out));
+  else if (o && typeof o === 'object') Object.values(o).forEach((x) => texts(x, out));
+  return out;
+}
+
+test('control instructions read right on every device', () => {
+  const was = G.input;
+  try {
+    for (const [mode, family] of [['keys', 'xbox'], ['touch', 'xbox'], ['pad', 'ps'], ['pad', 'xbox'], ['pad', 'nin']]) {
+      G.input = { mode, family };
+      for (const [id, B] of Object.entries(BOOKS)) {
+        for (const t of texts([B.story.MAIN, B.story.SIDE, B.story.CHATTER])) {
+          const out = controlText(t.replaceAll('{name}', 'Sam'));
+          assert.ok(!/\{[A-Za-z]/.test(out), `${id} (${mode}): unknown control in "${t}"`);
+          if (mode !== 'keys') assert.ok(!/\b(Shift|Space|arrow keys|press [JMEH])\b/.test(out), `${id} (${mode}): keyboard words in "${out}"`);
+        }
+      }
+    }
+    G.input = { mode: 'touch' };
+    assert.equal(controlText('{Press J} any time.'), 'Tap the book button any time.');
+    G.input = { mode: 'pad', family: 'ps' };
+    assert.equal(controlText('Jump in and {hold Shift} to zoom!'), 'Jump in and hold ○ to zoom!');
+  } finally {
+    G.input = was;
+  }
+});
 
 for (const [id, B] of Object.entries(BOOKS)) {
   test(`${id}: every speaker is in the cast`, () => {

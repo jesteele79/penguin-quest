@@ -15,6 +15,7 @@ import { ShopScreen, VoyageScreen } from './screens.js';
 import { ACTIVE } from '../books/active.js';
 import { domainOf, regionOf } from '../books/regions.js';
 import { orbitShot, angleToPlayer } from './minigames/common.js';
+import { controlText } from '../ui/controls.js';
 
 const V = (x, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 export const todayStr = () => new Date().toLocaleDateString('en-CA');
@@ -53,7 +54,7 @@ export class QuestEngine {
 
   lines(arr) {
     return arr.map(([who, text]) => {
-      const t = text.replaceAll('{name}', this.s.profile.name);
+      const t = controlText(text.replaceAll('{name}', this.s.profile.name));
       if (!who) return { who: '', text: t, portrait: false };
       const n = NPCS[who];
       return { who: n.name, text: t, portrait: n.portrait, pitch: n.pitch, accent: n.accent };
@@ -360,7 +361,7 @@ export class QuestEngine {
     if (offer) {
       return this.say(offer.offer, npcId).then(() => {
         this.start(offer.id);
-        G.toasts.toast(`New side quest: <b>${offer.title}</b>. Press J to see your quests.`, { ms: 4200 });
+        G.toasts.toast(controlText(`New side quest: <b>${offer.title}</b>. {Press J} to see your quests.`), { ms: 4200 });
       });
     }
     // 7. Shop

@@ -60,7 +60,7 @@ export const MAIN = [
       {
         type: 'game', game: 'warmup', auto: true, at: 'professor', label: 'Warm-up puzzles', text: 'Finish the warm-up puzzles with the Professor',
         after: [
-          ['professor', 'Splendid! Here is your Sky Journal. Press J any time to see your quests.'],
+          ['professor', 'Splendid! Here is your Sky Journal. {Press J} any time to see your quests.'],
           ['professor', 'Vela, one of the young glider cadets, has been waiting to meet you. And the Glider Guild is at the Wind Gardens, across the bridge to the north-west.'],
           ['vela', 'Hi! You are the penguin who saved the aurora AND the volcano? Wow. Captain Swoop wants to meet you!'],
         ],
@@ -84,7 +84,7 @@ export const MAIN = [
         type: 'sites', set: 'pinwheels', text: (d, t) => `Balance the wind pinwheels (${d}/${t})`, shard: true,
         after: [
           ['swoop', 'Feel that? A straight, steady breeze! You are a natural.'],
-          ['swoop', 'You know what that means: glider wings for you. Hold Space while you fall and you will glide!'],
+          ['swoop', 'You know what that means: glider wings for you. {Hold Space} while you fall and you will glide!'],
           ['swoop', 'Now the Glider Trials. Jump off the launch tower and fly through the rings with the right answers.'],
         ],
       },
@@ -368,7 +368,7 @@ export const SIDE = [
     blurb: 'Belly-slide down the Wind Gardens meadow through answer gates.',
     offer: [
       ['comet', 'Race me down the meadow at the Wind Gardens! The grass is super slidey after rain.'],
-      ['comet', 'Before each gate, pick the lane with the right answer: press 1, 2 or 3, or the arrow keys. Right answers make you zoom!'],
+      ['comet', 'Before each gate, pick the lane with the right answer: {pick a lane}. Right answers make you zoom!'],
     ],
     steps: [{ type: 'game', game: 'slalom', at: 'slalomTop', label: 'Start the kite run', text: 'Race down the Wind Gardens meadow', after: [['comet', 'Whoosh! Race again any time for a better medal!']] }],
     reward: { coins: 30 },
@@ -396,7 +396,7 @@ export const SIDE = [
     blurb: 'Tock\'s chart has (0, 0) in the middle. Find four treasures in all four quadrants.',
     offer: [
       ['tock', 'Tick! I hid four treasures years ago and wrote down where. On a chart with zero in the MIDDLE. Very clever of me. Tock.'],
-      ['tock', 'Open it with M. Left of zero is negative x, below zero is negative y. When you are close, the ground sparkles. Press E to dig!'],
+      ['tock', '{Press M} to open it. Left of zero is negative x, below zero is negative y. When you are close, the ground sparkles. {Press E} to dig!'],
     ],
     steps: [{ type: 'treasure', text: (n, clue) => `Treasure ${n + 1} of 4: ${clue}`, after: [['tock', 'All four! In all four quadrants! Keep this Stardust scarf. Tick!']], reward: { items: ['scarf:stardust'] } }],
   },
@@ -432,10 +432,10 @@ export const SIDE = [
 export const CHATTER = {
   professor: [
     'Emperor penguins are the tallest penguins in the world. Astra is very proud of that.',
-    'Press M for the map. The gold star shows where to go next.',
+    '{Press M} for the map. The gold star shows where to go next.',
     'If a puzzle feels new, look for the lesson. Every expert was a beginner once.',
     'Check the Sky Patrol board in town. New tasks every day!',
-    'Hold Space while you fall to glide. The view from up here is wonderful.',
+    '{Hold Space} while you fall to glide. The view from up here is wonderful.',
     'Every constellation is a picture made of points. Like a graph!',
   ],
   cinder: ['Want to fly back down to the sea? Just ask. The airship never gets tired.', 'I fix everything with gears. Up here, so does Tock.'],
