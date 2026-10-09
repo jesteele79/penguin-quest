@@ -533,9 +533,10 @@ tr.dim td { color: var(--frost-dim); }
   .quiz-choices { grid-template-columns: 1fr; }
   .ng-grid { grid-template-columns: 1fr; }
   .ng-portrait { width: 110px; height: 110px; margin: 0 auto; }
-  .map-panel { flex-direction: column; align-items: center; }
   .boss-bar { width: calc(100vw - 32px); }
 }
+/* The map keeps its legend beside it down to small windows; only phones stack them. */
+@media (max-width: 640px) { .map-panel { flex-direction: column; align-items: center; } }
 @media (max-width: 520px) {
   .hud-mini-wrap, .hud-minimap { width: 104px; height: 104px; }
   .hud-portrait { width: 44px; height: 44px; }
@@ -692,6 +693,11 @@ tr.dim td { color: var(--frost-dim); }
 .lesson-done { display: grid; place-items: center; gap: 8px; padding: 18px; font-family: var(--display); font-size: 1.6em; color: var(--lantern); }
 .lesson-done .ico { width: 64px; height: 64px; }
 .lesson-foot { display: flex; gap: 10px; align-items: center; }
+/* On short screens the buttons stay pinned to the bottom of the panel and tall pictures shrink to fit. */
+@media (max-height: 760px) {
+  .lesson-foot { position: sticky; bottom: -20px; margin: 0 -24px -20px; padding: 12px 24px 16px; background: var(--panel-bot); border-top: 1px solid rgba(169, 196, 255, 0.15); z-index: 1; }
+  .lesson-stage .manip-svg { max-height: 36vh; }
+}
 .lesson-foot .grow { flex: 1; }
 .lesson-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(169, 196, 255, 0.12); }
 .reduce-motion .lesson-steps li.fresh { animation: none; }

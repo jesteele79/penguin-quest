@@ -356,6 +356,22 @@ function enterGame(isNew) {
 }
 
 // ------------------------------------------------------------ loop
+// On narrow screens a quiz runs along the bottom of the screen, so the 3D picture slides up by half the covered
+// height to keep the action (answer rings, fish, stones) in the part still in view.
+let lift = 0, cover = 0, coverT = 0;
+function liftForQuiz(dt) {
+  const camera = G.cam.camera;
+  coverT -= dt;
+  if (coverT <= 0) {
+    coverT = 0.2;
+    const p = G.quiz?.isOpen ? G.quiz.panel.getBoundingClientRect() : null;
+    cover = p && p.width > window.innerWidth * 0.7 && window.innerHeight - p.bottom < 48 ? Math.min(0.7, (window.innerHeight - p.top) / window.innerHeight) : 0;
+  }
+  lift = damp(lift, cover / 2, 5, dt);
+  if (lift > 0.002) camera.setViewOffset(1, 1, 0, lift, 1, 1);
+  else if (camera.view?.enabled) camera.clearViewOffset();
+}
+
 function startLoop() {
   const timer = new THREE.Timer();
   timer.connect(document);
@@ -510,6 +526,7 @@ function startLoop() {
     }
 
     const showTrail = G.inGame && G.save.data.settings.showTrail && G.top instanceof ExploreActivity;
+    liftForQuiz(dt);
     world.update(dt, time, camera, G.inGame ? player.pos : V(0, 0, 0));
     world.roads.update(time, dt, player.pos, showTrail, world.pixelScale);
     input.endFrame();
