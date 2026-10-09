@@ -346,6 +346,9 @@ sup { font-size: 0.62em; }
 .banner { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%) scale(0.8); text-align: center; opacity: 0; pointer-events: none; width: min(900px, 92vw); }
 .banner.show { animation: banner 3.4s ease forwards; }
 #ui.quiz-top .banner { top: 62%; }
+/* With a quiz down the right side, a banner ("Skill mastered!") centres on the open space to its left. */
+#ui.quiz-side .banner { left: calc((100vw - 562px) / 2); width: min(900px, calc(100vw - 600px)); }
+#ui.quiz-side .banner-title { font-size: clamp(30px, 4vw, 60px); }
 .banner-title { font-family: var(--display); font-size: clamp(34px, 5.5vw, 68px); color: #fff; line-height: 1.05; text-shadow: 0 4px 0 color-mix(in srgb, var(--c) 55%, #000), 0 0 40px var(--c); }
 .banner-sub { font-size: clamp(16px, 2vw, 22px); font-weight: 600; margin-top: 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
 @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); } 20% { transform: translate(-50%, -50%) scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -54%) scale(1); } }
@@ -543,6 +546,7 @@ tr.dim td { color: var(--frost-dim); }
   .quiz.layout-side, .quiz.layout-top { left: 16px; right: 16px; width: auto; top: auto; bottom: 16px; max-height: 70vh; transform: translateY(30px); }
   .quiz.layout-side.show, .quiz.layout-top.show { transform: none; }
   #ui.quiz-top .banner { top: 22%; }
+  #ui.quiz-side .banner { left: 50%; width: min(900px, 92vw); }
   .quiz-choices { grid-template-columns: 1fr; }
   .ng-grid { grid-template-columns: 1fr; }
   .ng-portrait { width: 110px; height: 110px; margin: 0 auto; }
@@ -648,6 +652,9 @@ tr.dim td { color: var(--frost-dim); }
 .touch-btn.menu { right: 18px; top: 200px; width: 58px; height: 58px; font-size: 24px; }
 .touch-btn.journal { right: 18px; top: 268px; width: 58px; height: 58px; font-size: 22px; }
 [data-input="touch"] .hud-controls { display: none; }
+/* Key names on buttons and on the dialog's "next" mean nothing to a finger or a game controller. */
+[data-input="touch"] .btn kbd, [data-input="pad"] .btn kbd,
+[data-input="touch"] .dlg-more kbd, [data-input="pad"] .dlg-more kbd { display: none; }
 
 /* ------------------------------------------------ quiet HUD */
 .hud-name { display: none; }

@@ -103,11 +103,12 @@ export class QuizPanel {
     this.autoRead = readAloud;
     this.panel.classList.add('show');
     this.uiRoot.classList.toggle('quiz-top', layout === 'top');
+    this.uiRoot.classList.toggle('quiz-side', layout === 'side');
   }
 
   close() {
     this.panel.classList.remove('show');
-    this.uiRoot.classList.remove('quiz-top');
+    this.uiRoot.classList.remove('quiz-top', 'quiz-side');
     this.input.blur();
     if ('speechSynthesis' in window) try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   }
