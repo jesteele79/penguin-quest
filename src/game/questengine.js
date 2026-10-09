@@ -238,7 +238,7 @@ export class QuestEngine {
       const onward = this.onwardVoyage();
       if (onward) {
         const npc = this.ferryFor(onward.id);
-        return { text: `${onward.travel === 'fly' ? 'Fly' : 'Sail'} to ${placeName(onward.world)} with ${NPCS[npc]?.name ?? 'a friend'}`, target: G.npcs.get(npc)?.pos ?? null, npc };
+        return { text: `${npc === 'cinder' ? 'Fly' : 'Sail'} to ${placeName(onward.world)} with ${NPCS[npc]?.name ?? 'a friend'}`, target: G.npcs.get(npc)?.pos ?? null, npc };
       }
       const offer = SIDE.find((d) => this.sideOpen(d));
       if (offer) return { text: `New side quest: talk to ${NPCS[offer.giver].name}`, target: G.npcs.get(offer.giver).pos, npc: offer.giver };
@@ -344,9 +344,12 @@ export class QuestEngine {
       const to = open.find((b) => b.n > here.n) ?? open[0];
       if (to) {
         const sailor = npcId === 'captain';
-        const line = to.n < here.n
-          ? (sailor ? `Homesick for ${placeName(to.world)}, matey? My boat is ready whenever you are.` : `Want to fly down to ${placeName(to.world)}? Hop in, the airship is ready!`)
-          : (sailor ? `${to.world} ${to.world.endsWith('s') ? 'are' : 'is'} waiting, matey! Shall we set sail?` : `Ready to fly up to ${placeName(to.world)}? The airship is all fueled up!`);
+        // A boat cannot reach the sky islands, so the Captain sails out to meet Cinder's airship.
+        const line = sailor && to.travel === 'fly'
+          ? `${to.world} is up above the clouds, matey! I'll sail you out to meet Cinder's airship.`
+          : to.n < here.n
+            ? (sailor ? `Homesick for ${placeName(to.world)}, matey? My boat is ready whenever you are.` : `Want to fly down to ${placeName(to.world)}? Hop in, the airship is ready!`)
+            : (sailor ? `${to.world} ${to.world.endsWith('s') ? 'are' : 'is'} waiting, matey! Shall we set sail?` : `Ready to fly up to ${placeName(to.world)}? The airship is all fueled up!`);
         return this.say([[npcId, line]], npcId).then(() => pushActivity(new VoyageScreen(to.id, () => { this.voyageDeclined = true; })));
       }
     }
@@ -595,7 +598,8 @@ export class QuestEngine {
     return voyages(G.save.data, G.tutor, ACTIVE).find((b) => b.n > here.n) ?? null;
   }
 
-  // Who in this book carries a penguin to that book.
+  // Who in this book carries a penguin to that book. The Captain always sails and Cinder always flies, whatever
+  // the destination: the Captain takes a penguin bound for the sky out to meet Cinder's airship.
   ferryFor(bookId) { return Object.keys(BOOK.ferries ?? {}).find((npc) => BOOK.ferries[npc].includes(bookId)) ?? 'captain'; }
 
   // A book that has just opened is announced once (mastery can tip it over at any time, not only at the end).
@@ -606,7 +610,7 @@ export class QuestEngine {
     d.flags.announced = [...(d.flags.announced ?? []), book.id];
     G.audio.play('fanfare');
     const npc = this.ferryFor(book.id);
-    G.toasts.showBanner(`Book ${book.n} unlocked: ${book.title}!`, `${NPCS[npc]?.name ?? 'A friend'} is ready to ${book.travel === 'fly' ? 'fly' : 'sail'} you there`, book.colors[1], 5600);
+    G.toasts.showBanner(`Book ${book.n} unlocked: ${book.title}!`, `${NPCS[npc]?.name ?? 'A friend'} is ready to ${npc === 'cinder' ? 'fly' : 'sail'} you there`, book.colors[1], 5600);
     G.saveSoon();
   }
 
